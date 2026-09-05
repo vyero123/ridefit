@@ -24,6 +24,11 @@ var Filters = (function () {
         if (!h) { return undefined; }
         if (!VVY.has(c.legroom2) || !VVY.has(c.headroom2)) { return undefined; }
         var b = VVY.roomBand(h, c.headroom2, c.legroom2); return b.band === 'roomy' || b.band === 'ok'; } },
+    { k: 'frontFit', l: 'Front row fits me', g: 'Crew', d: function (c, ctx) {
+        var f = VVY.rowFit(c, 1, ctx.party.person || 70); return f.band === 'unknown' ? undefined : (f.band === 'roomy' || f.band === 'ok'); } },
+    { k: 'row2Fit', l: '2nd row fits who sits there', g: 'Crew', d: function (c, ctx) {
+        var pr = VVY.partyRows(c, { person: ctx.party.person || 70, people: ctx.party.people || [] }); if (!pr[2] || pr[2].band === 'unknown') { return undefined; }
+        return pr[2].band === 'roomy' || pr[2].band === 'ok'; } },
     { k: 'rows3', l: '3rd row', g: 'Layout', d: function (c) { return VVY.has(c.rows) ? c.rows >= 3 : undefined; } },
     { k: 'bed', l: 'Pickup bed', g: 'Layout', d: function (c) { return c.bodyClass ? /pickup/.test(c.bodyClass) : undefined; } },
     { k: 'crew', l: 'Crew cab', g: 'Layout', d: function (c) { return c.cab ? c.cab === 'crew' : undefined; } },

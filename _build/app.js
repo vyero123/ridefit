@@ -9,6 +9,7 @@
     person: 75, metric: false,
     lift: 0, tireMode: 'stock', tireCustom: 35,
     layout: 'overlay',
+    view: 'exterior',   /* 'exterior' | 'interior' (cutaway with the crew seated) */
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
@@ -33,6 +34,11 @@
       }
     };
   }
+  /* breadcrumb: the last user action, appended to any window.onerror report so a sanitised
+     "Script error." on file:// still says what was being done */
+  function crumb(s) { try { window.RideFitCrumb = s; } catch (e0) {} }
+  /* timers run outside every handler's try/catch: route them through the same reporter */
+  function safeTimer(fn, ms) { return setTimeout(function () { try { fn(); } catch (err) { try { window.RideFitReport(err, 'timer'); } catch (e2) {} } }, ms); }
   var supportsPassive = false;
   try { window.addEventListener('x', null, Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; return true; } })); } catch (e1) { supportsPassive = false; }
   function listen(el, type, fn) { if (el.addEventListener) { el.addEventListener(type, safe(fn), supportsPassive ? { passive: true } : false); } }
@@ -203,7 +209,11 @@
 
     var vehicles = [eA]; if (eB) { vehicles.push(eB); }
     var scene = byId('scene');
-    scene.innerHTML = VVY.renderScene(vehicles, state.person, state.metric, { layout: state.layout, animate: changed && !reduceMotion, party: state.party, interactive: true });
+    if (state.view === 'interior') {
+      scene.innerHTML = VVY.renderInterior(eA, state.person, state.metric, { party: state.party, interactive: true });
+    } else {
+      scene.innerHTML = VVY.renderScene(vehicles, state.person, state.metric, { layout: state.layout, animate: changed && !reduceMotion, party: state.party, interactive: true });
+    }
     if (changed && !reduceMotion) {
       scene.className = scene.className.replace(/\s*vvy-anim/g, '');
       void scene.offsetWidth;
@@ -221,6 +231,7 @@
     state.fitOnly = !!Filters.state.must.fitsCrew;
     byId('fitOnly').checked = state.fitOnly;
     byId('fitOnlyRank').checked = state.fitOnly;
+    state.party.person = state.person;
     Filters.setContext({ party: state.party });
     renderFind();
     renderShortlist(A, B);
@@ -251,7 +262,7 @@
       lg.push('<span class="namepill pillB"><span class="chip chipB">B</span> ' + esc(label(B)) + ' <span class="sub">' + esc(B.name) + '</span></span> <button type="button" class="xbtn" id="clearB" title="Remove comparison">&#215;</button> <button type="button" class="xbtn" id="swapAB" title="Swap A and B">&#8646;</button>');
     }
     byId('legend').innerHTML = lg.join('<span class="sep"></span>');
-    if (B) { byId('clearB').onclick = clearB; byId('swapAB').onclick = swapAB; }
+    if (B) { byId('clearB').onclick = safe(clearB); byId('swapAB').onclick = safe(swapAB); }
 
     /* state chip bar: summary + navigation */
     var crewN = state.party.adults + state.party.kids, petsN = state.party.dogs + state.party.cats;
@@ -289,6 +300,8 @@
 
     /* compare tab readouts */
     byId('cmpSel').innerHTML = B ? '' : '(none selected)';
+    var vb = document.querySelectorAll('#viewBtns button');
+    for (i = 0; i < vb.length; i++) { vb[i].className = (vb[i].getAttribute('data-view') === state.view) ? 'chipbtn on' : 'chipbtn'; }
     var lay = document.querySelectorAll('#layoutBtns button');
     for (i = 0; i < lay.length; i++) {
       lay[i].className = (lay[i].getAttribute('data-layout') === state.layout) ? 'chipbtn on' : 'chipbtn';
@@ -352,6 +365,14 @@
     var sb = byId('statebar').querySelector('[data-seg="find"]'); if (sb) { sb.innerHTML = 'Find · ' + n + ' match'; sb.className = 'stchip on'; }
     renderRank();
   }
+  function setView(v) {
+    state.view = v === 'interior' ? 'interior' : 'exterior';
+    crumb('view: ' + state.view);
+    render();
+    var sc = byId('scene');
+    if (!reduceMotion) { sc.className = sc.className.replace(/\s*vvy-anim/g, ''); void sc.offsetWidth; sc.className += ' vvy-anim'; }
+  }
+  window.RideFitView = { set: function (v) { setView(v); }, get: function () { return state.view; } };
   function setA(k) { state.a = k; fillSelects(); render(); }
   function setB(k) { state.b = (k === state.a) ? null : k; fillSelects(); render(); }
   function clearB() { state.b = null; fillSelects(); render(); }
@@ -364,9 +385,9 @@
   /* ---------- selector handlers ---------- */
 
   function bindTriple(ids, setter) {
-    byId(ids[0]).onchange = function () { var v = byId(ids[0]).value; setter(v === '' ? null : v + '|0|0'); };
-    byId(ids[1]).onchange = function () { setter(byId(ids[0]).value + '|' + byId(ids[1]).value + '|0'); };
-    byId(ids[2]).onchange = function () { setter(byId(ids[0]).value + '|' + byId(ids[1]).value + '|' + byId(ids[2]).value); };
+    byId(ids[0]).onchange = safe(function () { var v = byId(ids[0]).value; setter(v === '' ? null : v + '|0|0'); });
+    byId(ids[1]).onchange = safe(function () { setter(byId(ids[0]).value + '|' + byId(ids[1]).value + '|0'); });
+    byId(ids[2]).onchange = safe(function () { setter(byId(ids[0]).value + '|' + byId(ids[1]).value + '|' + byId(ids[2]).value); });
   }
 
   /* ---------- search (reusable) ---------- */
@@ -392,9 +413,9 @@
       box.innerHTML = s.join('');
       box.className = 'vvy-results open';
     }
-    input.onkeyup = run;
-    input.onchange = run;
-    box.onclick = function (e) {
+    input.onkeyup = safe(run);
+    input.onchange = safe(run);
+    box.onclick = safe(function (e) {
       var t = e.target || e.srcElement;
       while (t && t !== document.body) {
         if (t.getAttribute && t.getAttribute('data-key')) {
@@ -404,7 +425,7 @@
         }
         t = t.parentNode;
       }
-    };
+    });
   }
 
   /* ---------- sheet: one layer, four cards ----------
@@ -452,30 +473,32 @@
       var i, hs = [grab, bar];
       for (i = 0; i < hs.length; i++) {
         if (hs[i].addEventListener) {
-          hs[i].addEventListener('touchstart', onStart, false);
-          hs[i].addEventListener('touchmove', onMove, false);
-          hs[i].addEventListener('touchend', onEnd, false);
+          hs[i].addEventListener('touchstart', safe(onStart), false);
+          hs[i].addEventListener('touchmove', safe(onMove), false);
+          hs[i].addEventListener('touchend', safe(onEnd), false);
         }
       }
-      bar.onclick = function (e) {
+      bar.onclick = safe(function (e) {
         var t = e.target || e.srcElement;
         if (t && t.getAttribute && t.getAttribute('data-seg')) {
           var n = t.getAttribute('data-seg');
+          crumb('segment: ' + n);
           if (n === seg && pos !== 'peek') { setPos('peek'); } else { open(n, pos === 'peek' ? 'half' : pos); }
         }
-      };
-      byId('statebar').onclick = function (e) {
+      });
+      byId('statebar').onclick = safe(function (e) {
         var t = e.target || e.srcElement;
         while (t && t !== document.body) {
           if (t.getAttribute && t.getAttribute('data-seg')) {
+            crumb('chip: ' + t.getAttribute('data-seg'));
             open(t.getAttribute('data-seg'));
             if (t.getAttribute('data-open') === 'mods') { try { byId('modsExp').open = true; } catch (e1) {} }
             return;
           }
           t = t.parentNode;
         }
-      };
-      document.onkeydown = function (e) { e = e || window.event; if (e.keyCode === 27) { setPos('peek'); } };
+      });
+      document.onkeydown = safe(function (e) { e = e || window.event; if (e.keyCode === 27) { setPos('peek'); } });
       setSeg('vehicle'); setPos('peek');
     }
     return { init: init, open: open, setSeg: setSeg, setPos: setPos };
@@ -485,6 +508,8 @@
   /* ---------- rankings card ---------- */
 
   var COLS = [
+    { k: 'fit1', l: 'Front fit', fit: 1 },
+    { k: 'fit2', l: '2nd-row fit', fit: 2 },
     { k: 'height', l: 'Height' },
     { k: 'length', l: 'Length' },
     { k: 'clearance', l: 'Clearance' },
@@ -508,10 +533,21 @@
       rows.push(c);
     }
     var k = state.rankSort, dir = state.rankDir;
+    /* per-row fit of the party (tallest rider assigned to each row): margins in inches */
+    var pr = {}, pctx = { person: state.person, people: state.party.people };
+    function rowsOf(c) { if (!pr[c.key]) { pr[c.key] = VVY.partyRows(c, pctx); } return pr[c.key]; }
+    function fitVal(c, n) { var f = rowsOf(c)[n]; if (!f || f.band === 'unknown') { return null; } var w = f.hs === null ? f.ls : (f.ls === null ? f.hs : Math.min(f.hs, f.ls)); return w; }
+    function fitCell(c, n) {
+      var f = rowsOf(c)[n];
+      if (!f) { return '<td class="fitc none"><i>' + (n === 2 && (!VVY.has(c.rows) || c.rows < 2) ? 'no row' : 'empty') + '</i></td>'; }
+      if (f.band === 'unknown') { return '<td class="fitc none"><i>—</i></td>'; }
+      function m(v) { if (v === null) { return '<i>—</i>'; } var x = state.metric ? v * 2.54 : v; return '<b>' + (x >= 0 ? '+' : '&#8722;') + (Math.round(Math.abs(x) * 10) / 10) + '</b>'; }
+      return '<td class="fitc ' + f.band + '" title="tallest rider ' + VVY.personLabel(rowsOf(c).tall[n], state.metric) + ': headroom / legroom margin">' + m(f.hs) + '<small>h</small> ' + m(f.ls) + '<small>l</small></td>';
+    }
     rows.sort(function (x, y) {
       var ns = Filters.niceScore(y) - Filters.niceScore(x);
       if (ns !== 0) { return ns; }
-      var a = x[k], b = y[k];
+      var a = (k === 'fit1' || k === 'fit2') ? fitVal(x, k === 'fit1' ? 1 : 2) : x[k], b = (k === 'fit1' || k === 'fit2') ? fitVal(y, k === 'fit1' ? 1 : 2) : y[k];
       var ha = VVY.has(a), hb = VVY.has(b);
       if (!ha && !hb) { return 0; }
       if (!ha) { return 1; }
@@ -532,6 +568,7 @@
       h.push('<tr class="' + cls + '" data-key="' + c.key + '"><td class="name">' + (badge ? '<span class="namepill ' + (cls === 'isA' ? 'pillA' : 'pillB') + '">' + badge + esc(c.brand + ' ' + c.model) + '</span>' : esc(c.brand + ' ' + c.model)) + fitBadge(c) + heartBtn(c) + '<span>' + esc(c.name) + '</span></td>');
       var j, v;
       for (j = 0; j < COLS.length; j++) {
+        if (COLS[j].fit) { h.push(fitCell(c, COLS[j].fit)); continue; }
         v = c[COLS[j].k];
         h.push('<td>' + (VVY.has(v) ? (COLS[j].plain ? String(v) : (COLS[j].mass ? VVY.mass(v, state.metric) : VVY.shortDim(v, state.metric))) : '<i>—</i>') + '</td>');
       }
@@ -580,11 +617,15 @@
   }
 
   /* ---------- cats: easter egg animator ----------
-     Reads data-spots from the rendered <g class="vvy-cats">, then eases each cat between spots on its
-     own slow timer and occasionally shows the "meow" bubble. Uses setTimeout + rAF only; never runs
-     when reduced motion is requested (cats are placed statically instead) and never in static mode. */
+     Reads data-spots + data-geo from the rendered <g class="vvy-cats">. Cats LOCOMOTE: they walk
+     horizontally along the ground or a vehicle surface (hood, roof, bed rail) and climb or drop
+     VERTICALLY at the vehicle's faces (front, rear, cab back) to change level — never a diagonal
+     free flight. The one exception is the windshield spot, which keeps the original eased hop
+     (the user likes it). setTimeout + rAF only; never runs under reduced motion (static placement)
+     and never in static mode. Cats are not clickable; the bubble stays anchored to the mouth. */
   var Cats = (function () {
-    var timers = [], raf = null, cats = [], spots = [], running = false;
+    var timers = [], raf = null, cats = [], spots = [], geo = {}, running = false;
+    var WALK = 22, CLIMB = 11, DROP = 26;   /* scene units per second */
     function stop() {
       var i; for (i = 0; i < timers.length; i++) { clearTimeout(timers[i]); }
       timers = []; cats = []; running = false;
@@ -594,8 +635,6 @@
     function ease(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
     function place(c, x, y, flip) {
       c.el.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ')' + (flip ? ' scale(-1 1)' : ''));
-      /* the bubble is drawn from x=6 to x=25 in the cat's frame; mirroring it about x=15.5 keeps it
-         beside the head while undoing the parent flip so "meow" reads left-to-right */
       /* mirror the bubble about the mouth x so the tail tip stays on the mouth when the cat faces
          left; the group's own scale(-1 1) then flips it back, leaving "meow" readable */
       try { c.meow.setAttribute('transform', flip ? 'translate(' + (2 * VVY.CAT_MOUTH_X).toFixed(1) + ' 0) scale(-1 1)' : ''); } catch (e3) {}
@@ -605,42 +644,118 @@
       if (spots.length > 1 && idx === c.spot) { idx = (idx + 1) % spots.length; }
       return idx;
     }
+    /* which surface a point sits on, by its y */
+    function levelOf(y) {
+      if (Math.abs(y - geo.groundY) < 1.5) { return 'ground'; }
+      if (geo.roofY !== null && Math.abs(y - geo.roofY) < 1.5) { return 'roof'; }
+      if (geo.hoodY !== null && Math.abs(y - geo.hoodY) < 1.5) { return 'hood'; }
+      if (geo.railY !== null && Math.abs(y - geo.railY) < 1.5) { return 'rail'; }
+      return 'other';
+    }
+    /* legs: [{x, y, kind:'walk'|'climb'|'drop'|'fly'}] from (fx,fy) to (tx,ty) */
+    function route(fx, fy, tx, ty, fromName, toName) {
+      var legs = [], x = fx, y = fy;
+      function walk(nx) { if (Math.abs(nx - x) > 0.5) { legs.push({ x: nx, y: y, kind: 'walk' }); x = nx; } }
+      function vert(ny) { if (Math.abs(ny - y) > 0.5) { legs.push({ x: x, y: ny, kind: ny < y ? 'climb' : 'drop' }); y = ny; } }
+      if (fromName === 'windshield' || toName === 'windshield') { return [{ x: tx, y: ty, kind: 'fly' }]; }
+      var a = levelOf(fy), b = levelOf(ty);
+      if (a === 'other' || b === 'other') { return [{ x: tx, y: ty, kind: 'fly' }]; }
+      /* bring the cat down to the ground first unless it can stay on its level or step straight across */
+      if (a === b) { walk(tx); vert(ty); return legs; }
+      if (a === 'hood') { walk(Math.min(geo.front, x)); vert(geo.groundY); a = 'ground'; }
+      if (a === 'roof') {
+        if (geo.cabRearX !== null && geo.railY !== null) { walk(geo.cabRearX); vert(geo.railY); a = 'rail'; }
+        else { walk(geo.rear); vert(geo.groundY); a = 'ground'; }
+      }
+      if (a === 'rail' && b !== 'roof') { walk(geo.rear); vert(geo.groundY); a = 'ground'; }
+      /* now climb to the target level */
+      if (b === 'ground') { walk(tx); vert(ty); return legs; }
+      if (b === 'hood') { walk(Math.min(geo.front, tx)); vert(ty); walk(tx); return legs; }
+      if (b === 'rail') { walk(geo.rear); vert(ty); walk(tx); return legs; }
+      if (b === 'roof') {
+        if (geo.cabRearX !== null && geo.railY !== null) {
+          if (a === 'ground') { walk(geo.rear); vert(geo.railY); }
+          walk(geo.cabRearX); vert(ty); walk(tx);
+        } else { walk(geo.rear); vert(ty); walk(tx); }
+        return legs;
+      }
+      return [{ x: tx, y: ty, kind: 'fly' }];
+    }
+    function legDur(c, leg) {
+      var dxl = Math.abs(leg.x - c.x), dyl = Math.abs(leg.y - c.y);
+      if (leg.kind === 'fly') { return 2500 + Math.random() * 2500; }
+      if (leg.kind === 'walk') { return Math.max(500, dxl / WALK * 1000); }
+      if (leg.kind === 'climb') { return Math.max(500, dyl / CLIMB * 1000); }
+      return Math.max(350, dyl / DROP * 1000);
+    }
+    function startLeg(c) {
+      var leg = c.legs[c.leg];
+      c.from = { x: c.x, y: c.y }; c.to = { x: leg.x, y: leg.y }; c.kind = leg.kind;
+      c.t0 = now(); c.dur = legDur(c, leg); c.moving = true;
+      if (Math.abs(leg.x - c.x) > 0.5) { c.flip = leg.x < c.x; }
+    }
     function schedule(c) {
       var wait = 4000 + Math.random() * 6000;
-      timers.push(setTimeout(function () {
+      timers.push(safeTimer(function () {
         if (!running) { return; }
-        c.from = { x: c.x, y: c.y }; c.spot = pickSpot(c); c.to = { x: spots[c.spot][0] + (Math.random() * 10 - 5), y: spots[c.spot][1] };
-        c.t0 = now(); c.dur = 2500 + Math.random() * 2500; c.moving = true; c.flip = c.to.x < c.from.x;
+        var fromName = spots[c.spot] ? spots[c.spot][2] : '';
+        c.spot = pickSpot(c);
+        var tx = spots[c.spot][0] + (Math.random() * 10 - 5), ty = spots[c.spot][1];
+        c.legs = route(c.x, c.y, tx, ty, fromName, spots[c.spot][2]); c.leg = 0;
+        if (!c.legs.length) { schedule(c); return; }
+        startLeg(c);
         tick();
       }, wait));
       var mw = 6000 + Math.random() * 9000;
-      timers.push(setTimeout(function () {
+      timers.push(safeTimer(function () {
         if (!running) { return; }
         try { c.meow.setAttribute('opacity', '1'); } catch (e1) {}
-        timers.push(setTimeout(function () { try { c.meow.setAttribute('opacity', '0'); } catch (e2) {} }, 1800));
+        timers.push(safeTimer(function () { try { c.meow.setAttribute('opacity', '0'); } catch (e2) {} }, 1800));
         if (running) { scheduleMeow(c); }
       }, mw));
     }
     function scheduleMeow(c) {
-      timers.push(setTimeout(function () {
+      timers.push(safeTimer(function () {
         if (!running) { return; }
         try { c.meow.setAttribute('opacity', '1'); } catch (e1) {}
-        timers.push(setTimeout(function () { try { c.meow.setAttribute('opacity', '0'); } catch (e2) {} }, 1800));
+        timers.push(safeTimer(function () { try { c.meow.setAttribute('opacity', '0'); } catch (e2) {} }, 1800));
         scheduleMeow(c);
       }, 9000 + Math.random() * 12000));
     }
     function now() { return new Date().getTime(); }
     function tick() {
       if (!running) { return; }
-      var any = false, i, c, p;
+      try { tickBody(); } catch (err) { running = false; try { window.RideFitReport(err, 'cats'); } catch (e9) {} }
+    }
+    function tickBody() {
+      var any = false, i, c, p, e, bob, x, y;
       for (i = 0; i < cats.length; i++) {
         c = cats[i];
         if (!c.moving) { continue; }
-        p = (now() - c.t0) / c.dur; if (p >= 1) { p = 1; c.moving = false; }
-        var e = ease(p), hop = Math.sin(p * Math.PI * 6) * 1.2 * (1 - Math.abs(2 * p - 1));
-        c.x = c.from.x + (c.to.x - c.from.x) * e; c.y = c.from.y + (c.to.y - c.from.y) * e - Math.abs(hop);
-        place(c, c.x, c.y, c.flip);
-        if (!c.moving) { c.y = c.to.y; place(c, c.x, c.y, c.flip); schedule(c); } else { any = true; }
+        p = (now() - c.t0) / c.dur; if (p >= 1) { p = 1; }
+        if (c.kind === 'fly') {
+          /* the original windshield hop, unchanged */
+          e = ease(p); bob = Math.sin(p * Math.PI * 6) * 1.2 * (1 - Math.abs(2 * p - 1));
+          x = c.from.x + (c.to.x - c.from.x) * e; y = c.from.y + (c.to.y - c.from.y) * e - Math.abs(bob);
+        } else if (c.kind === 'walk') {
+          /* steady trot with a little bounce, feet on the surface */
+          x = c.from.x + (c.to.x - c.from.x) * p; bob = Math.abs(Math.sin(p * c.dur / 140)) * 0.7;
+          y = c.from.y - bob;
+        } else if (c.kind === 'climb') {
+          /* scramble up: linear with paw-over-paw jitter, hugging the face */
+          y = c.from.y + (c.to.y - c.from.y) * p; x = c.from.x + Math.sin(p * c.dur / 90) * 0.6;
+        } else {
+          /* drop: accelerate down, land */
+          e = p * p; y = c.from.y + (c.to.y - c.from.y) * e; x = c.from.x;
+        }
+        c.x = x; c.y = y;
+        place(c, x, y, c.flip);
+        if (p >= 1) {
+          c.x = c.to.x; c.y = c.to.y; place(c, c.x, c.y, c.flip);
+          c.leg++;
+          if (c.leg < c.legs.length) { startLeg(c); any = true; }
+          else { c.moving = false; schedule(c); }
+        } else { any = true; }
       }
       if (any) { raf = (window.requestAnimationFrame ? window.requestAnimationFrame(tick) : setTimeout(tick, 33)); }
     }
@@ -649,7 +764,11 @@
       var g = scene.querySelector ? scene.querySelector('.vvy-cats') : null;
       if (!g) { return; }
       try { spots = JSON.parse(g.getAttribute('data-spots')); } catch (e0) { return; }
-      var els = g.querySelectorAll('.vvy-cat'), i;
+      try { geo = JSON.parse(g.getAttribute('data-geo') || '{}'); } catch (e5) { geo = {}; }
+      geo.groundY = spots[0] ? spots[0][1] : 0;
+      var i, gk, need = ['front', 'rear', 'hoodY', 'roofY', 'railY', 'cabRearX'];
+      for (i = 0; i < need.length; i++) { gk = need[i]; if (geo[gk] === undefined) { geo[gk] = null; } }
+      var els = g.querySelectorAll('.vvy-cat');
       if (reduceMotion) {
         /* static placement: spread the cats over the spots, no timers */
         for (i = 0; i < els.length; i++) {
@@ -661,7 +780,7 @@
       running = true;
       for (i = 0; i < els.length; i++) {
         var tr = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(els[i].getAttribute('transform') || '');
-        var c = { el: els[i], meow: els[i].querySelector('.vvy-meow'), x: tr ? parseFloat(tr[1]) : 0, y: tr ? parseFloat(tr[2]) : 0, spot: 0, moving: false };
+        var c = { el: els[i], meow: els[i].querySelector('.vvy-meow'), x: tr ? parseFloat(tr[1]) : 0, y: tr ? parseFloat(tr[2]) : 0, spot: 0, moving: false, legs: [], leg: 0, flip: false };
         cats.push(c);
         schedule(c);
       }
@@ -690,24 +809,28 @@
 
     byId('people').onclick = safe(onPeopleClick);
     byId('people').oninput = safe(onPeopleInput); byId('people').onchange = safe(onPeopleInput);
-    byId('addAdult').onclick = function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'adult', h: 66 }); render(); } };
-    byId('addKid').onclick = function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 45 }); render(); } };
-    byId('unitBtn').onclick = function () { state.metric = !state.metric; render(); };
+    byId('addAdult').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'adult', h: 66 }); render(); } });
+    byId('addKid').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 45 }); render(); } });
+    byId('unitBtn').onclick = safe(function () { state.metric = !state.metric; render(); });
 
     byId('lift').oninput = safe(onLift); byId('lift').onchange = safe(onLift);
-    byId('tireChips').onclick = function (e) {
+    byId('tireChips').onclick = safe(function (e) {
       var t = e.target || e.srcElement;
       if (t && t.getAttribute && t.getAttribute('data-tire')) { state.tireMode = t.getAttribute('data-tire'); render(); }
-    };
+    });
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
-    byId('resetMods').onclick = function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); };
+    byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
-    byId('layoutBtns').onclick = function (e) {
+    byId('layoutBtns').onclick = safe(function (e) {
       var t = e.target || e.srcElement;
       if (t && t.getAttribute && t.getAttribute('data-layout')) { state.layout = t.getAttribute('data-layout'); render(); }
-    };
-    byId('clearBtn').onclick = clearB;
-    byId('swapBtn').onclick = swapAB;
+    });
+    byId('viewBtns').onclick = safe(function (e) {
+      var t = e.target || e.srcElement;
+      if (t && t.getAttribute && t.getAttribute('data-view')) { setView(t.getAttribute('data-view')); }
+    });
+    byId('clearBtn').onclick = safe(clearB);
+    byId('swapBtn').onclick = safe(swapAB);
 
     Sheet.init();
     /* direct manipulation on the drawing: people -> Crew, vehicle -> Vehicle, ghost "?" -> Compare.
@@ -725,11 +848,21 @@
       function unpress() { var hs = scene.querySelectorAll ? scene.querySelectorAll('.vvy-hit') : [], i; for (i = 0; i < hs.length; i++) { setCls(hs[i], 'vvy-hit'); } }
       function fire(h) {
         var kind = attr(h, 'data-hit');
+        crumb('scene tap: ' + kind);
         setCls(h, 'vvy-hit pressed');
-        setTimeout(unpress, 220);
+        safeTimer(unpress, 220);
         if (kind === 'crew') { Sheet.open('crew'); }
         else if (kind === 'vehicle') { Sheet.open('vehicle'); }
-        else if (kind === 'compare') { Sheet.open('compare'); try { var sb = byId('searchB'); if (sb && sb.focus) { sb.focus(); } } catch (e1) {} }
+        else if (kind === 'view') { setView(state.view === 'interior' ? 'exterior' : 'interior'); }
+        else if (kind === 'compare') {
+          Sheet.open('compare');
+          /* focus the search box only after the segment is visible and layout has flushed —
+             never in the same tick as the reveal (WebKit/Gecko can throw on hidden nodes) */
+          var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+          raf(function () { raf(function () {
+            try { var sb = byId('searchB'); if (sb && sb.focus && sb.offsetParent !== null) { sb.focus(); } } catch (e1) { try { window.RideFitReport(e1, 'focus'); } catch (e2) {} }
+          }); });
+        }
       }
       scene.onclick = safe(function (e) { e = e || window.event; var h = hitOf(e.target || e.srcElement); if (h) { fire(h); } });
       scene.onkeydown = safe(function (e) {
@@ -743,47 +876,47 @@
 
     var steps = document.querySelectorAll('[data-step]');
     for (i = 0; i < steps.length; i++) {
-      steps[i].onclick = (function (k, dlt) { return function () {
+      steps[i].onclick = (function (k, dlt) { return safe(function () {
         var v = state.party[k] + dlt; if (v < 0) { v = 0; } if (v > 12) { v = 12; }
         state.party[k] = v; render();
-      }; })(steps[i].getAttribute('data-step'), parseInt(steps[i].getAttribute('data-d'), 10));
+      }); })(steps[i].getAttribute('data-step'), parseInt(steps[i].getAttribute('data-d'), 10));
     }
-    byId('fitOnly').onchange = function () { Filters.setMust('fitsCrew', !!byId('fitOnly').checked); render(); };
-    byId('fitOnlyRank').onchange = function () { Filters.setMust('fitsCrew', !!byId('fitOnlyRank').checked); render(); };
+    byId('fitOnly').onchange = safe(function () { Filters.setMust('fitsCrew', !!byId('fitOnly').checked); render(); });
+    byId('fitOnlyRank').onchange = safe(function () { Filters.setMust('fitsCrew', !!byId('fitOnlyRank').checked); render(); });
     byId('findBody').onclick = safe(onFindClick);
     byId('fpresets').onclick = safe(onFindClick);
     byId('ftokens').onclick = safe(onFindClick);
     byId('fpanel').onclick = safe(onFindClick);
     /* typeahead: focus or typing opens the browsable panel; Browse opens it WITHOUT focusing the
        input, so on a phone the keyboard stays down and the list is thumb-browsable */
-    byId('ftype').onfocus = function () { panelOpen = true; renderPanel(); };
-    byId('ftype').onkeyup = function (e) { e = e || window.event; if (e.keyCode === 27) { panelOpen = false; byId('ftype').blur(); } else { panelOpen = true; } renderPanel(); };
-    byId('ftype').oninput = function () { panelOpen = true; renderPanel(); };
-    byId('fbrowse').onclick = function () { panelOpen = !panelOpen; renderPanel(); };
+    byId('ftype').onfocus = safe(function () { panelOpen = true; renderPanel(); });
+    byId('ftype').onkeyup = safe(function (e) { e = e || window.event; if (e.keyCode === 27) { panelOpen = false; byId('ftype').blur(); } else { panelOpen = true; } renderPanel(); });
+    byId('ftype').oninput = safe(function () { panelOpen = true; renderPanel(); });
+    byId('fbrowse').onclick = safe(function () { panelOpen = !panelOpen; renderPanel(); });
     document.addEventListener('click', safe(function (e) {
       var t = e.target || e.srcElement, inside = false;
       while (t && t !== document.body) { if (t.id === 'fpanel' || t.id === 'ftype' || t.id === 'fbrowse') { inside = true; break; } t = t.parentNode; }
       if (!inside && panelOpen) { panelOpen = false; renderPanel(); }
     }), true);
     byId('findBody').oninput = safe(onFindInput); byId('findBody').onchange = safe(onFindInput);
-    byId('fclear').onclick = function () { Filters.clear(); render(); };
-    byId('fshow').onclick = function () { Sheet.open('rank', 'full'); renderRank(); };
-    byId('shortlist').onclick = function (e) {
+    byId('fclear').onclick = safe(function () { Filters.clear(); render(); });
+    byId('fshow').onclick = safe(function () { Sheet.open('rank', 'full'); renderRank(); });
+    byId('shortlist').onclick = safe(function (e) {
       var t = e.target || e.srcElement; if (!t || !t.getAttribute) { return; }
       if (t.getAttribute('data-sla')) { setA(t.getAttribute('data-sla')); return; }
       if (t.getAttribute('data-slb')) { setB(t.getAttribute('data-slb')); return; }
       if (t.getAttribute('data-slx')) { toggleShort(t.getAttribute('data-slx')); return; }
-    };
+    });
     Filters.setVehicles(FLAT);
 
-    byId('rankBtn2').onclick = openRank;
+    byId('rankBtn2').onclick = safe(openRank);
     byId('rankTable').onclick = safe(onRankClick);
-    byId('rankFilter').onkeyup = function () { state.rankFilter = byId('rankFilter').value; renderRank(); };
-    byId('rankClass').onchange = function () { state.rankClass = byId('rankClass').value; renderRank(); };
-    byId('pickBtns').onclick = function (e) {
+    byId('rankFilter').onkeyup = safe(function () { state.rankFilter = byId('rankFilter').value; renderRank(); });
+    byId('rankClass').onchange = safe(function () { state.rankClass = byId('rankClass').value; renderRank(); });
+    byId('pickBtns').onclick = safe(function (e) {
       var t = e.target || e.srcElement;
       if (t && t.getAttribute && t.getAttribute('data-pick')) { state.pickTarget = t.getAttribute('data-pick'); renderRank(); }
-    };
+    });
 
     fillClassFilter();
     byId('lift').value = 0;

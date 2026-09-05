@@ -17,6 +17,8 @@ cd _build
 python3 export_vehicles.py    # data.json (editing store) -> ../vehicles.json
 python3 build.py              # inlines vehicles.json + prerenders the default scene -> ../vehicles-vs-you.html
 python3 sanity.py             # cheap checks
+NODE_PATH=<dir with jsdom> node verify.js        # jsdom: boot, sweeps, find, rankings, compare, interior, ES5
+NODE_PATH=<dir with jsdom> node verify_cats.js   # cat locomotion: axis-aligned legs only
 cp ../vehicles-vs-you.html ../index.html
 ```
 

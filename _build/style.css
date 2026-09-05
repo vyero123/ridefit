@@ -284,6 +284,16 @@ table.rank tbody tr:hover { background: #f5f7fa; }
 table.rank tr.isA { background: #e8f0f8; }
 table.rank tr.isB { background: #fdf3e0; }
 table.rank td i { color: #cbd2d9; font-style: normal; }
+table.rank td.fitc { font-size: 12px; padding-left: 5px; padding-right: 5px; }
+table.rank td.fitc b { font-weight: 700; }
+table.rank td.fitc small { font-size: 9px; color: #7b8794; margin-left: 1px; }
+table.rank td.fitc.roomy b, table.rank td.fitc.ok b { color: #0b5b32; }
+table.rank td.fitc.ok { background: rgba(227,246,236,.6); }
+table.rank td.fitc.roomy { background: rgba(227,246,236,.35); }
+table.rank td.fitc.tight { background: #fff4d6; } table.rank td.fitc.tight b { color: #7a5410; }
+table.rank td.fitc.cramped { background: #fde8e6; } table.rank td.fitc.cramped b { color: #8a1c14; }
+table.rank td.fitc.none i { font-size: 10px; }
+@media (max-width: 480px) { table.rank { font-size: 12px; } table.rank th, table.rank td { padding: 6px 5px; } table.rank td.fitc { font-size: 11px; } }
 
 /* ---------- LIVE, phone: pinned scene + fixed bottom sheet ---------- */
 @media (max-width: 899px) {

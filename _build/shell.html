@@ -27,8 +27,16 @@ window.RideFitReport = function (err, where) {
 window.onerror = function (msg, url, line, col, err) {
   if (err) { window.RideFitReport(err, 'window'); return false; }
   var s = String(msg);
-  if (/^Script error\.?$/.test(s)) { s = 'Script error (details hidden by the browser for file:// pages — open the page over https to see them; per-script checks below will say which block failed)'; }
-  window.RideFitReport(s + ' (line ' + line + ':' + col + ')', 'window');
+  var crumb = ''; try { if (window.RideFitCrumb) { crumb = ' — last action: ' + window.RideFitCrumb; } } catch (e) {}
+  if (/^Script error\.?$/.test(s)) {
+    /* No Error object and a sanitised message = the throwing script is CROSS-ORIGIN to this page.
+       Over https this page's own scripts are same-origin and always report a real message, so this
+       almost certainly comes from a browser extension, content blocker or injected userscript. */
+    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'probably outside this page (extension / content blocker / injected script), not the app';
+    window.RideFitReport('Script error with no detail — ' + where + crumb, 'browser');
+    return false;
+  }
+  window.RideFitReport(s + ' (line ' + line + ':' + col + ')' + crumb, 'window');
   return false;
 };
 </script>
@@ -113,6 +121,10 @@ window.onerror = function (msg, url, line, col, err) {
       </div>
       <select id="configSel" data-live disabled aria-label="Configuration">{{CONFIG_OPTIONS}}</select>
       <label class="chk"><input type="checkbox" id="fitOnly" data-live disabled> Only show vehicles that fit my crew</label>
+      <div class="chips" id="viewBtns" aria-label="View">
+        <button type="button" class="chipbtn on" data-view="exterior" data-live disabled>Outside</button>
+        <button type="button" class="chipbtn" data-view="interior" data-live disabled>Inside, crew seated</button>
+      </div>
 
       <details class="exp" id="modsExp">
         <summary>Lift &amp; tires <span class="vvy-note" id="modsSummary">stock</span></summary>
