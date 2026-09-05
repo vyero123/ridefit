@@ -28,7 +28,8 @@ setTimeout(function () {
   var occS = function (r) { return seaS.occ[r].map(function (x) { return x ? (x.you ? 'you' : x.kind + x.h) : '-'; }).join(','); };
   check(occS(1) === 'you,adult65,-' && occS(2) === 'kid50,kid43,dog22', 'seating order: driver you, 2nd adult front, kids rear, dog takes the spare rear seat, bench middle last (' + occS(1) + ' | ' + occS(2) + ')');
   check(/\.pane\.a \{[^}]*height: 34vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /body\.live \{ height: 100vh; height: 100dvh; overflow: hidden; \}/.test(html) && /body\.live \.scrollarea \{[^}]*overflow: auto/.test(html) && /padding-bottom: 100px/.test(html), 'vertical budget: pinned 100dvh body, profile pane reserved, scroll area is the only scroller, sheet peek = 100px padding');
-  check(/<div id="scene" class="scene open">/.test(html) && /aria-expanded="true"/.test(html), 'static first paint: seats fold open');
+  check(/<div id="scene" class="scene open">/.test(html) && /aria-expanded="true"/.test(html) && /id="foldBtn"[^>]*>[^<]*<span class="fchev">&#9652;<\/span> See the specs</.test(html), 'static first paint: seats fold open, button offers the specs');
+  check(/RideFitNote = function/.test(html) && /#extnote \{/.test(html) && /It is not from Ride Fit/.test(html), 'outside errors: quiet closable note channel exists');
   check(/rfEnv\(\)/.test(html) && /RideFitInReveal/.test(html) && /addEventListener\('error'/.test(html) && /unhandledrejection/.test(html), 'error instrumentation: timing + environment evidence, reveal marker, resource + promise listeners');
   check(html.indexOf("Dogs don't take a seat") < 0 && html.indexOf('need a rear row folded') < 0 && html.indexOf('will most likely need') < 0, 'no stale "dogs take no seat" copy');
   check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
@@ -70,7 +71,14 @@ setTimeout(function () {
   check(/Your dog/.test($('room').textContent), 'room guidance places the dogs');
   /* fold */
   check($('scene').className.indexOf('open') >= 0 && /\bfoldopen\b/.test(d.body.className) && $('foldBtn').style.display !== 'none', 'seats fold OPEN by default, body.foldopen set, button shown');
-  click($('foldBtn')); check($('scene').className.indexOf('open') < 0 && !/\bfoldopen\b/.test(d.body.className) && $('foldBtn').getAttribute('aria-expanded') === 'false' && /reveal: seats fold closed/.test(w.RideFitCrumb), 'fold closes, crumb names the panel: ' + w.RideFitCrumb); click($('foldBtn'));
+  check(/See the specs/.test($('foldBtn').textContent), 'fold open: button reads "See the specs"');
+  click($('foldBtn')); check($('scene').className.indexOf('open') < 0 && !/\bfoldopen\b/.test(d.body.className) && $('foldBtn').getAttribute('aria-expanded') === 'false' && /See who sits where/.test($('foldBtn').textContent) && /reveal: seats fold closed/.test(w.RideFitCrumb), 'fold closes, button reads "See who sits where", crumb names the panel'); click($('foldBtn'));
+  /* outside error -> quiet note, no red bar, no breadcrumb-as-cause; own error -> red bar */
+  w.webkit = { messageHandlers: {} }; w.onerror('Script error.', '', 0, 0, undefined);
+  var note = $('extnote');
+  check(!!note && $('errbar').style.display !== 'block' && note.textContent.indexOf('last action') < 0 && /not from Ride Fit/.test(note.textContent) && /webkit\.messageHandlers/.test($('extnote-detail').textContent), 'sanitised outside error -> quiet note, red bar stays hidden, no breadcrumb, details kept');
+  click(note.querySelector('button[aria-label="Dismiss"]')); check(!$('extnote'), 'outside-error note is dismissible');
+  w.onerror('TypeError: boom', 'https://x/', 1, 1, new w.Error('boom')); check($('errbar').style.display === 'block' && /boom/.test($('errbar').textContent), 'own error still shows the red bar'); $('errbar').style.display = 'none'; $('errbar').textContent = '';
   check(/reveal: seats fold open/.test(w.RideFitCrumb) && w.RideFitInReveal === '' && w.RideFitRevealDone > 0, 'reveal marker cleared after the fold handler, done-time recorded');
   /* prove the instrumentation: an error thrown inside a reveal is caught with its real message */
   w.RideFitReport = (function (orig) { return function (err, where) { w.__lastReport = [String(err && err.message || err), where]; return orig(err, where); }; })(w.RideFitReport);

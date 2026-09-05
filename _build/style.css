@@ -8,6 +8,10 @@ body {
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   color: #1f2933; background: #f3f5f8;
 }
+/* quiet note for errors that are NOT ours: small, grey, closable; details on demand */
+#extnote { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #f3f5f8; color: #52606d; border-bottom: 1px solid #e4e7eb; padding: 5px 12px; font-size: 12px; }
+#extnote .extnote-btn { font: inherit; font-size: 11px; border: 1px solid #cbd2d9; background: #fff; color: #52606d; border-radius: 99px; padding: 2px 8px; cursor: pointer; }
+#extnote pre { flex-basis: 100%; margin: 4px 0 0; white-space: pre-wrap; font-size: 11px; color: #7b8794; font-family: ui-monospace, Menlo, Consolas, monospace; }
 #errbar {
   display: none; background: #b3261e; color: #fff; padding: 10px 14px;
   font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -26,9 +30,7 @@ body {
 .pane.b { height: 0; }
 .scene.open .pane.b { height: 240px; margin-top: 4px; }
 .fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; color: #1f4e79; background: #f3f5f8; border: 1px solid #e4e7eb; border-radius: 8px; padding: 6px 10px; text-align: left; cursor: pointer; height: 30px; }
-.fold .fchev { display: inline-block; transition: transform .2s; margin-right: 4px; }
-.scene.open .fold .fchev { transform: rotate(180deg); }
-.scene.open .fold { color: #52606d; }
+.fold .fchev { display: inline-block; margin-right: 4px; }
 body.static .fold { display: none; }
 body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the seats view open */
 /* comparison split (peek inside / seats for A and B): two equal panes, fold hidden */

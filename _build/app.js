@@ -55,6 +55,13 @@
     catch (err) { try { window.RideFitReport(err, 'reveal ' + name); } catch (e2) {} }
     finally { try { window.RideFitInReveal = ''; window.RideFitRevealDone = new Date().getTime(); } catch (e3) {} }
   }
+  /* the fold button says what tapping will DO: open -> offer the specs; closed -> offer the seats */
+  function foldLabel() {
+    var b = byId('foldBtn');
+    b.innerHTML = state.fold ? '<span class="fchev">&#9652;</span> See the specs' : '<span class="fchev">&#9662;</span> See who sits where';
+    b.setAttribute('aria-expanded', state.fold ? 'true' : 'false');
+    b.setAttribute('aria-label', state.fold ? 'Collapse the seats view and see the specs' : 'Expand the seats view and see who sits where');
+  }
   function setBodyFlag(flag, on) {
     var b = document.body, re = new RegExp('(^|\\s)' + flag + '(\\s|$)', 'g');
     var cls = b.className.replace(re, ' ').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
@@ -257,7 +264,7 @@
     paneB.innerHTML = htmlB;
     paneB.style.display = (split || !eB) ? '' : 'none';
     byId('foldBtn').style.display = (split || eB) ? 'none' : '';
-    byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
+    foldLabel();
     if (changed && !reduceMotion) {
       paneA.className = 'pane a'; void paneA.offsetWidth; paneA.className = 'pane a vvy-anim';
       paneB.className = 'pane b'; void paneB.offsetWidth; paneB.className = 'pane b vvy-anim';
@@ -872,7 +879,7 @@
       reveal('seats fold ' + (state.fold ? 'open' : 'closed'), function () {
         byId('scene').className = 'scene' + (state.fold ? ' open' : '');
         setBodyFlag('foldopen', state.fold);
-        byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
+        foldLabel();
       });
     });
     byId('viewCtl').onclick = safe(onViewCtl);

@@ -9,7 +9,7 @@
    RideFitReport(err, where) is the PRIMARY channel: it receives the real Error object from
    try/catch (name, message, first stack line) even on file:// where WebKit sanitises
    window.onerror to "Script error." at 0:0. window.onerror is only the fallback. */
-window.RideFitReport = function (err, where) {
+window.RideFitReport = function (err, where, opts) {
   try {
     var b = document.getElementById('errbar');
     if (!b) { b = document.createElement('div'); b.id = 'errbar'; if (document.body) { document.body.insertBefore(b, document.body.firstChild); } }
@@ -24,6 +24,25 @@ window.RideFitReport = function (err, where) {
     b.style.display = 'block';
   } catch (e) {}
 };
+/* Quiet channel for errors that are NOT this page's: a small closable note instead of the red bar.
+   Shown once; the details stay available behind "details". */
+window.RideFitNote = function (summary, detail) {
+  try {
+    var n = document.getElementById('extnote');
+    if (n) { var c = document.getElementById('extnote-count'); if (c) { c.setAttribute('data-n', String(parseInt(c.getAttribute('data-n') || '1', 10) + 1)); c.textContent = ' (×' + c.getAttribute('data-n') + ')'; } var dd = document.getElementById('extnote-detail'); if (dd) { dd.appendChild(document.createTextNode('\n' + detail)); } return; }
+    n = document.createElement('div'); n.id = 'extnote'; n.setAttribute('role', 'status');
+    var t = document.createElement('span'); t.appendChild(document.createTextNode(summary)); n.appendChild(t);
+    var cnt = document.createElement('span'); cnt.id = 'extnote-count'; cnt.setAttribute('data-n', '1'); n.appendChild(cnt);
+    var more = document.createElement('button'); more.type = 'button'; more.className = 'extnote-btn'; more.appendChild(document.createTextNode('details'));
+    var close = document.createElement('button'); close.type = 'button'; close.className = 'extnote-btn'; close.setAttribute('aria-label', 'Dismiss'); close.appendChild(document.createTextNode('×'));
+    var d = document.createElement('pre'); d.id = 'extnote-detail'; d.style.display = 'none'; d.appendChild(document.createTextNode(detail));
+    more.onclick = function () { d.style.display = d.style.display === 'none' ? 'block' : 'none'; };
+    close.onclick = function () { if (n.parentNode) { n.parentNode.removeChild(n); } };
+    n.appendChild(more); n.appendChild(close); n.appendChild(d);
+    var host = document.getElementById('errbar');
+    if (host && host.parentNode) { host.parentNode.insertBefore(n, host.nextSibling); } else if (document.body) { document.body.insertBefore(n, document.body.firstChild); }
+  } catch (e) {}
+};
 /* Evidence gathering for errors that reach the GLOBAL handlers. Every handler and timer in the app
    runs inside try/catch and reports through RideFitReport with the real message, so anything that
    arrives here escaped all of that. The report says: how long after the app's last handler finished,
@@ -36,6 +55,10 @@ function rfEnv() {
   try { if (window.webkit && window.webkit.messageHandlers) { var mh = [], k; for (k in window.webkit.messageHandlers) { mh.push(k); } e.push('webkit.messageHandlers: ' + (mh.length ? mh.slice(0, 6).join(',') : 'present')); } } catch (x3) {}
   try { var sc = document.scripts, n = 0, i; for (i = 0; i < sc.length; i++) { if (sc[i].src) { n++; } } if (n) { e.push(n + ' external <script> tag(s) not from this page'); } } catch (x4) {}
   return e.length ? ' · environment: ' + e.join('; ') : ' · environment: no injected globals detected';
+}
+function rfIdle() {
+  /* true when nothing in the app ran for a while before this error arrived */
+  try { var now = new Date().getTime(), last = Math.max(window.RideFitRevealDone || 0, window.RideFitCrumbAt || 0); return !window.RideFitInReveal && (!last || now - last > 2000); } catch (x) { return false; }
 }
 function rfTiming() {
   var now = new Date().getTime(), t = '';
@@ -52,10 +75,16 @@ window.onerror = function (msg, url, line, col, err) {
   var s = String(msg);
   if (/^Script error\.?$/.test(s) && !url) {
     /* No Error object, no URL, sanitised message: the throwing script is not same-origin with this
-       page. Over https this page's own inline scripts always report a real message, so the evidence
-       below is what decides it — read the timing and environment lines rather than this label. */
-    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'not from this page\'s own scripts (they always report in full over https)';
-    window.RideFitReport('Script error with no detail — ' + where + crumb + rfTiming() + rfEnv(), 'browser');
+       page — this page's own inline scripts always report in full (over https). Every app handler
+       and timer is wrapped and reports through RideFitReport with a real message, so this is code
+       injected by the browser or an extension. Field evidence (2026-09): fires ~63 s after the last
+       user action while the page sits idle, with webkit.messageHandlers present. It is presented
+       quietly and WITHOUT the breadcrumb, which would wrongly read as a cause. */
+    var idle = rfIdle();
+    var summary = (location.protocol === 'file:')
+      ? 'A script outside this page reported an error (file:// hides which). The app is unaffected.'
+      : 'A browser add-on or injected script reported an error' + (idle ? ' while the page was idle' : '') + '. It is not from Ride Fit and the app is unaffected.';
+    window.RideFitNote(summary, 'Script error with no detail — not from this page\'s own scripts' + rfTiming() + rfEnv());
     return false;
   }
   window.RideFitReport(s + ' (' + (url || 'no url') + ' ' + line + ':' + col + ')' + crumb + rfTiming(), 'window');
@@ -109,7 +138,7 @@ try {
          hold A and B and the view control flips both. -->
     <div id="scene" class="scene open">
       <div class="pane a" id="paneA">{{STATIC_SVG}}</div>
-      <button type="button" class="fold" id="foldBtn" aria-expanded="true" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
+      <button type="button" class="fold" id="foldBtn" aria-expanded="true" aria-controls="paneB" aria-label="Collapse the seats view and see the specs" data-live disabled><span class="fchev">&#9652;</span> See the specs</button>
       <div class="pane b" id="paneB">{{STATIC_INSIDE}}</div>
     </div>
   </section>
