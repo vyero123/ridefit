@@ -76,7 +76,16 @@ body.live.foldopen .scene.two { flex: none; display: grid; }
 /* header row 1: the app name never shrinks or clips; the vehicle name(s) take the rest and WRAP
    rather than truncate. Row 2 (.heroctl) holds the comparison pills only when a comparison is set. */
 .herohead { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; min-height: 30px; }
-.brand { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; flex: none; white-space: nowrap; line-height: 1; }
+/* brand lockup: inline SVG at a fixed 30px height (400:128 -> ~94px wide), never clips; below 340px
+   of viewport the lockup gives way to the text wordmark. The dark lockup is used only when the
+   scheme is dark; the page itself stays light, so the lockup tile reads like an app icon. */
+.brand { flex: none; display: inline-flex; align-items: center; height: 30px; text-decoration: none; color: #1C3040; }
+.brand .lockup { height: 30px; width: auto; display: block; }
+.brand .lockup-dark { display: none; }
+.brand .brandtext { display: none; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; white-space: nowrap; line-height: 1; font-family: 'Poppins','Century Gothic',Futura,'Trebuchet MS','Segoe UI',Arial,sans-serif; }
+.brand .brandtext b { color: #C4661A; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .brand .lockup-light { display: none; } .brand .lockup-dark { display: block; } }
+@media (max-width: 339px) { .brand .lockup { display: none !important; } .brand .brandtext { display: inline; } }
 .legend { font-size: 15px; font-weight: 700; color: #1f2933; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; flex: 1 1 auto; line-height: 1.25; }
 .legend .namepill { font-size: 15px; padding: 2px 9px; white-space: normal; }
 .legend .sub { font-size: 12px; font-weight: 500; }

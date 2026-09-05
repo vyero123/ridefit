@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ride Fit — will it fit, and how tall is it next to you?</title>
+<!-- brand: option C (warm blue + orange). Inlined as data URIs so the file stays self-contained.
+     The SVG favicon follows prefers-color-scheme itself; iOS needs a PNG for the home screen. -->
+<link rel="icon" type="image/svg+xml" href="{{FAVICON_URI}}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{TOUCH_URI}}">
+<meta name="theme-color" content="#F7F2E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16212B" media="(prefers-color-scheme: dark)">
 <script>
 /* Error trap installed FIRST so a failure below still surfaces visibly. ES5 only.
    RideFitReport(err, where) is the PRIMARY channel: it receives the real Error object from
@@ -122,7 +128,7 @@ try {
   <section class="hero" id="hero">
     <!-- header row 1: app name + vehicle name(s); row 2 (comparison only): the view pills -->
     <div class="herohead">
-      <span class="brand">Ride Fit</span>
+      <span class="brand" role="img" aria-label="Ride Fit" title="Ride Fit">{{LOCKUP_LIGHT}}{{LOCKUP_DARK}}<span class="brandtext" aria-hidden="true">Ride<b>Fit</b></span></span>
       <span class="legend" id="legend"><span class="namepill pillA">{{DEF_LEGEND}}</span></span>
     </div>
     <div class="heroctl" id="viewCtl" style="display:none" role="group" aria-label="Comparison view">

@@ -104,6 +104,28 @@ def options(items, sel):
     return ''.join('<option value="%d"%s>%s</option>' % (i, ' selected' if i == sel else '', html.escape(n))
                    for i, n in enumerate(items))
 
+# --- brand assets (../brand, committed with the project) -> inlined, no external requests ---------
+import base64, re as _re
+BRAND = os.path.abspath(os.path.join(HERE, '..', 'brand'))
+def brand_asset(name, mode="r"):
+    with open(os.path.join(BRAND, name), mode if mode == 'rb' else 'r', **({} if mode == 'rb' else {'encoding': 'utf-8'})) as f:
+        return f.read()
+def svg_inline(svg, cls):
+    # strip the xml namespace attr (inline SVG in HTML) and tag the root with a class
+    svg = _re.sub(r'\s*xmlns="http://www.w3.org/2000/svg"', '', svg, count=1)
+    return svg.replace('<svg ', '<svg class="' + cls + '" focusable="false" ', 1)
+lockup_light = svg_inline(brand_asset('ridefit4-c-lockup-light.svg'), 'lockup lockup-light')
+lockup_dark = svg_inline(brand_asset('ridefit4-c-lockup-dark.svg'), 'lockup lockup-dark')
+# favicon: ONE svg carrying both small variants; a media query inside the svg picks the scheme
+fav_l = brand_asset('ridefit4-c-icon-light-small.svg'); fav_d = brand_asset('ridefit4-c-icon-dark-small.svg')
+def inner(svg):
+    return _re.sub(r'^<svg[^>]*>', '', svg.strip(), count=1)[:-len('</svg>')]
+favicon_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+               '<style>.d{display:none}@media (prefers-color-scheme:dark){.l{display:none}.d{display:inline}}</style>'
+               '<g class="l">' + inner(fav_l) + '</g><g class="d">' + inner(fav_d) + '</g></svg>')
+favicon_uri = 'data:image/svg+xml;base64,' + base64.b64encode(favicon_svg.encode('utf-8')).decode('ascii')
+touch_uri = 'data:image/png;base64,' + base64.b64encode(brand_asset("ridefit4-c-icon-light-small-180.png", "rb")).decode('ascii')
+
 shell = read('shell.html')
 repl = {
     '{{CSS}}': read('style.css'),
@@ -116,6 +138,10 @@ repl = {
     '{{STATIC_INSIDE}}': static['inside'],
     '{{STATIC_FIT}}': static['fit'],
     '{{LIMITS_JSON}}': json.dumps(static['limits']),
+    '{{LOCKUP_LIGHT}}': lockup_light,
+    '{{LOCKUP_DARK}}': lockup_dark,
+    '{{FAVICON_URI}}': favicon_uri,
+    '{{TOUCH_URI}}': touch_uri,
     '{{STATIC_SPECS}}': static['specs'],
     '{{STATIC_COMPS}}': static['comps'],
     '{{STATIC_SRC}}': static['src'],

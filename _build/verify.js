@@ -49,6 +49,10 @@ setTimeout(function () {
   check(html.indexOf("Dogs don't take a seat") < 0 && html.indexOf('need a rear row folded') < 0 && html.indexOf('will most likely need') < 0, 'no stale "dogs take no seat" copy');
   check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
   check((html.match(/Vadim Yerokhin/g) || []).length === 1, 'attribution exactly once');
+  /* brand */
+  check(/<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml;base64,/.test(html) && /<link rel="apple-touch-icon" sizes="180x180" href="data:image\/png;base64,/.test(html), 'favicon (svg, scheme-aware) + apple-touch-icon (png) inlined as data URIs');
+  check(d.querySelectorAll('.brand svg.lockup-light').length === 1 && d.querySelectorAll('.brand svg.lockup-dark').length === 1 && /\.brand \.lockup \{ height: 30px; width: auto/.test(html) && /@media \(max-width: 339px\) \{ \.brand \.lockup \{ display: none !important; \}/.test(html), 'header lockup inline at a fixed 30px, text wordmark fallback below 340px');
+  check(!/(src|href)="https?:/.test(html.replace(/<footer[\s\S]*?<\/footer>/, '')), 'no external requests (data URIs only)');
   check(!/class="chip chip[AB]"/.test(html) && !/>A<\/button>|>B<\/button>/.test(html) && /<div class="heroctl" id="viewCtl"/.test(html) && /\.legend \{[^}]*flex-wrap: wrap/.test(html), 'header: no A/B letters anywhere, view pills on their own row, names wrap');
   /* sweep every config through the selectors, exterior + interior */
   /* jsdom re-parses ~700 KB of markup per render, so the DOM sweep samples every STEP-th config
