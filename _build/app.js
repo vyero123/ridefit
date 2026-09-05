@@ -297,9 +297,9 @@
     var cmpWrap = byId('cmpWrap');
     if (eB) {
       cmpWrap.style.display = '';
-      byId('cmpTitle').innerHTML = '<span class="namepill pillA"><span class="chip chipA">A</span> ' + esc(label(A)) + '</span> <span class="vs">vs</span> <span class="namepill pillB"><span class="chip chipB">B</span> ' + esc(label(B)) + '</span>';
+      byId('cmpTitle').innerHTML = '<span class="namepill pillA">' + esc(label(A)) + '</span> <span class="vs">vs</span> <span class="namepill pillB">' + esc(label(B)) + '</span>';
       byId('cmpBody').innerHTML = VVY.vsHtml(eA, eB, state.metric) +
-        '<h3 class="sub"><span class="namepill pillB"><span class="chip chipB">B</span> ' + esc(label(B)) + '</span> <span class="vvy-note">' + esc(B.name) + '</span></h3>' +
+        '<h3 class="sub"><span class="namepill pillB">' + esc(label(B)) + '</span> <span class="vvy-note">' + esc(B.name) + '</span></h3>' +
         VVY.specsHtml(eB, state.metric) + VVY.compsHtml(eB, state.person, state.metric) + VVY.sourceHtml(B);
     } else {
       cmpWrap.style.display = 'none';
@@ -307,11 +307,12 @@
 
     /* legend chips above the scene */
     var lg = [];
-    lg.push('<span class="namepill pillA"><span class="chip chipA">A</span> ' + esc(label(A)) + ' <span class="sub">' + esc(A.name) + '</span></span>');
+    lg.push('<span class="namepill pillA">' + esc(label(A)) + ' <span class="sub">' + esc(A.name) + '</span></span>');
     if (B) {
-      lg.push('<span class="namepill pillB"><span class="chip chipB">B</span> ' + esc(label(B)) + ' <span class="sub">' + esc(B.name) + '</span></span> <button type="button" class="xbtn" id="clearB" title="Remove comparison">&#215;</button> <button type="button" class="xbtn" id="swapAB" title="Swap A and B">&#8646;</button>');
+      lg.push('<span class="vs">vs</span>');
+      lg.push('<span class="namepill pillB">' + esc(label(B)) + ' <span class="sub">' + esc(B.name) + '</span></span><span class="xbtns"><button type="button" class="xbtn" id="swapAB" title="Swap the two vehicles">&#8646;</button><button type="button" class="xbtn" id="clearB" title="Remove comparison">&#215;</button></span>');
     }
-    byId('legend').innerHTML = lg.join('<span class="sep"></span>');
+    byId('legend').innerHTML = lg.join(' ');
     if (B) { byId('clearB').onclick = safe(clearB); byId('swapAB').onclick = safe(swapAB); }
 
     /* state chip bar: summary + navigation */
@@ -373,10 +374,10 @@
   }
   function renderShortlist(A, B) {
     var o = [], i, c;
-    if (!state.shortlist.length) { byId('shortlist').innerHTML = '<span class="empty">Shortlist vehicles with &#9829; in Rankings; they land here for A / B.</span>'; return; }
+    if (!state.shortlist.length) { byId('shortlist').innerHTML = '<span class="empty">Shortlist vehicles with &#9829; in Rankings; they land here to set the main vehicle or the comparison.</span>'; return; }
     for (i = 0; i < state.shortlist.length; i++) {
       c = find(state.shortlist[i]);
-      o.push('<span class="sl">' + esc(c.brand + ' ' + c.model) + ' <button type="button" data-sla="' + c.key + '">A</button><button type="button" data-slb="' + c.key + '">B</button><button type="button" data-slx="' + c.key + '" title="Remove">&#215;</button></span>');
+      o.push('<span class="sl">' + esc(c.brand + ' ' + c.model) + ' <button type="button" class="slA" data-sla="' + c.key + '" title="Make this the main vehicle">main</button><button type="button" class="slB" data-slb="' + c.key + '" title="Compare with this">compare</button><button type="button" data-slx="' + c.key + '" title="Remove">&#215;</button></span>');
     }
     byId('shortlist').innerHTML = o.join('');
   }
@@ -608,7 +609,7 @@
     var badge, cls;
     for (i = 0; i < rows.length; i++) {
       c = rows[i];
-      badge = c.key === state.a ? '<span class="chip chipA">A</span>' : (c.key === state.b ? '<span class="chip chipB">B</span>' : '');
+      badge = c.key === state.a ? '<span class="dot dotA"></span>' : (c.key === state.b ? '<span class="dot dotB"></span>' : '');
       cls = c.key === state.a ? 'isA' : (c.key === state.b ? 'isB' : '');
       h.push('<tr class="' + cls + '" data-key="' + c.key + '"><td class="name">' + (badge ? '<span class="namepill ' + (cls === 'isA' ? 'pillA' : 'pillB') + '">' + badge + esc(c.brand + ' ' + c.model) + '</span>' : esc(c.brand + ' ' + c.model)) + fitBadge(c) + heartBtn(c) + '<span>' + esc(c.name) + '</span></td>');
       var j, v;

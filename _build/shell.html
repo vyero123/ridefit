@@ -91,10 +91,13 @@ try {
 <!-- ===== MAIN COLUMN: pinned scene, state chips, facts ===== -->
 <main class="main">
   <section class="hero" id="hero">
+    <!-- header row 1: app name + vehicle name(s); row 2 (comparison only): the view pills -->
     <div class="herohead">
       <span class="brand">Ride Fit</span>
-      <span class="legend" id="legend"><span class="namepill pillA"><span class="chip chipA">A</span> {{DEF_LEGEND}}</span></span>
-      <span class="viewctl" id="viewCtl" style="display:none" role="group" aria-label="Comparison view">
+      <span class="legend" id="legend"><span class="namepill pillA">{{DEF_LEGEND}}</span></span>
+    </div>
+    <div class="heroctl" id="viewCtl" style="display:none" role="group" aria-label="Comparison view">
+      <span class="viewctl">
         <button type="button" class="vbtn on" data-view="profile" data-live disabled>Profile</button>
         <button type="button" class="vbtn" data-view="cutaway" data-live disabled>Peek inside</button>
         <button type="button" class="vbtn" data-view="overhead" data-live disabled>Seats</button>
@@ -245,7 +248,7 @@ try {
       <h2 class="q">Against what?</h2>
       <div class="cmpgrid">
         <div class="cmpcol colA">
-          <div class="cmphead"><span class="chip chipA">A</span> Main vehicle</div>
+          <div class="cmphead"><span class="dot dotA"></span> Main vehicle</div>
           <div class="searchwrap">
             <input type="text" id="searchA2" data-live disabled placeholder="Search for vehicle A" autocomplete="off" aria-label="Search vehicle A">
             <div class="vvy-results" id="resultsA2"></div>
@@ -258,7 +261,7 @@ try {
           <button type="button" id="swapBtn" class="swapbig" data-live disabled title="Swap A and B"><span class="swapicon">&#8646;</span><span class="swaplbl">Swap</span></button>
         </div>
         <div class="cmpcol colB">
-          <div class="cmphead"><span class="chip chipB">B</span> Compare with <span id="cmpSel" class="vvy-note"></span></div>
+          <div class="cmphead"><span class="dot dotB"></span> Compare with <span id="cmpSel" class="vvy-note"></span></div>
           <div class="searchwrap">
             <input type="text" id="searchB" data-live disabled placeholder="Search for vehicle B" autocomplete="off" aria-label="Search vehicle B">
             <div class="vvy-results" id="resultsB"></div>
@@ -278,7 +281,7 @@ try {
         <button type="button" class="chipbtn" data-view="cutaway" data-live disabled>Peek inside</button>
         <button type="button" class="chipbtn" data-view="overhead" data-live disabled>Seats</button>
       </div>
-      <p class="hint">Vehicle A is blue, vehicle B amber, drawn side by side at the same scale with the same crew. One control flips both to the inside views: the cutaway measures headroom and knee room, the seats view shows who sits where. The comparison table appears under the drawing.</p>
+      <p class="hint">The main vehicle is blue, the comparison amber, drawn side by side at the same scale with the same crew. One control flips both to the inside views: the cutaway measures headroom and knee room, the seats view shows who sits where. The comparison table appears under the drawing.</p>
     </section>
 
     <!-- ---- Card: Rankings ---- -->
@@ -292,8 +295,8 @@ try {
         <label class="chk small"><input type="checkbox" id="fitOnlyRank" data-live disabled> Only fits</label>
         <span class="hint">Next tap sets:</span>
         <span class="chips" id="pickBtns">
-          <button type="button" class="chipbtn on" data-pick="A" data-live disabled>Main (A)</button>
-          <button type="button" class="chipbtn" data-pick="B" data-live disabled>Compare (B)</button>
+          <button type="button" class="chipbtn on" data-pick="A" data-live disabled>Main vehicle</button>
+          <button type="button" class="chipbtn" data-pick="B" data-live disabled>Comparison</button>
         </span>
       </div>
       <div id="rankTable"></div>

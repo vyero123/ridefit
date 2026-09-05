@@ -691,13 +691,13 @@ var VVY = (function () {
       o.push('<line x1="2" y1="' + Y(yIn) + '" x2="' + gx1 + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/>');
       o.push(haloText(' x="' + gx1 + '" y="' + r1(ty) + '" text-anchor="end" font-size="' + GF + '" font-weight="700" fill="' + color + '" font-family="' + FONT + '"', esc(label), 1.6));
     }
-    guide(A.height, shortDim(A.height, metric) + ' roof' + (B ? ' A' : ''), PAL.A.guide, false);
+    guide(A.height, shortDim(A.height, metric) + ' roof', PAL.A.guide, false);
     /* hood / bed labels go below their lines so they never sit on the roof label when heights are close */
-    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood' + (B ? ' A' : ''), '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7); }
-    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed' + (B ? ' A' : ''), '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true); }
+    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood', '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7); }
+    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed', '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true); }
     if (B) {
-      guide(B.height, shortDim(B.height, metric) + ' roof B', PAL.B.guide, true);
-      if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed B', PAL.B.guide, true); }
+      guide(B.height, shortDim(B.height, metric) + ' roof', PAL.B.guide, true);
+      if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed', PAL.B.guide, true); }
     }
 
     if (inter) { o.push(hitOpen('crew', 'Your height and crew', px - Math.max(pw / 2, 9) - 3, Y(personIn) - 4, Math.max(pw, 18) + 6, personIn + 6)); }

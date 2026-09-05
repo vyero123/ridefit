@@ -35,7 +35,7 @@ body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the
 .scene.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .scene.two .fold { display: none; }
 .scene.two .pane.a, .scene.two .pane.b { height: 34vh; min-height: 170px; max-height: 320px; margin-top: 0; }
-.viewctl { margin-left: auto; display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
+.viewctl { display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
 .vbtn { font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 9px; border: 0; border-radius: 99px; background: transparent; color: #52606d; cursor: pointer; white-space: nowrap; }
 .vbtn.on { background: #1f2933; color: #fff; }
 @media (max-width: 599px) {
@@ -68,9 +68,18 @@ body.live.foldopen .scene.two { flex: none; display: grid; }
 .app { max-width: 1180px; margin: 0 auto; }
 .main { padding: 0 0 24px; }
 .hero { background: #fff; padding: 10px 12px 6px; border-bottom: 1px solid #e4e7eb; }
-.herohead { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; height: 30px; overflow: hidden; }
-.brand { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
-.legend { font-size: 12px; color: #52606d; display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* header row 1: the app name never shrinks or clips; the vehicle name(s) take the rest and WRAP
+   rather than truncate. Row 2 (.heroctl) holds the comparison pills only when a comparison is set. */
+.herohead { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; min-height: 30px; }
+.brand { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; flex: none; white-space: nowrap; line-height: 1; }
+.legend { font-size: 15px; font-weight: 700; color: #1f2933; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; flex: 1 1 auto; line-height: 1.25; }
+.legend .namepill { font-size: 15px; padding: 2px 9px; white-space: normal; }
+.legend .sub { font-size: 12px; font-weight: 500; }
+.legend .vs { color: #7b8794; font-weight: 500; font-size: 12px; }
+.legend .xbtns { display: inline-flex; gap: 4px; margin-left: 2px; }
+.heroctl { display: flex; justify-content: flex-end; margin: 0 0 6px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 99px; vertical-align: middle; margin-right: 5px; }
+.dotA { background: #3f6285; } .dotB { background: #e3a437; }
 .legend .sep { display: inline-block; width: 1px; height: 14px; background: #e4e7eb; margin: 0 4px; }
 .vvy-svg { display: block; }
 .pane.vvy-anim svg { animation: vvy-in .45s cubic-bezier(.2,.8,.2,1); }
@@ -292,6 +301,8 @@ input[type=range] { width: 100%; accent-color: #3f6285; margin: 4px 0; }
 .shortlist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .shortlist .sl { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 5px 6px 5px 10px; border-radius: 99px; background: #fbeed0; color: #7a5410; }
 .shortlist .sl button { font: inherit; font-size: 11px; border: 0; border-radius: 99px; padding: 3px 7px; cursor: pointer; background: #fff; color: #1f2933; }
+.shortlist .sl .slA { background: #e2ecf5; color: #1f4e79; }
+.shortlist .sl .slB { background: #fff; color: #7a5410; }
 .shortlist .empty { font-size: 12px; color: #7b8794; }
 .heart { font: inherit; border: 1px solid #e4e7eb; background: #fff; border-radius: 99px; width: 26px; height: 26px; padding: 0; cursor: pointer; color: #9aa5b1; font-size: 13px; margin-left: 4px; vertical-align: middle; }
 .heart.on { color: #b7791f; border-color: #f2dfae; background: #fbeed0; }
