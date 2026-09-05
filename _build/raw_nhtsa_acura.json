@@ -1,0 +1,6 @@
+[
+  {"brand":"Acura","model":"Integra","ratingYear":2025,"vehicleId":20067,"description":"2025 Acura INTEGRA 5 HB FWD","overall":5,"front":5,"side":5,"rollover":5,"rolloverProb":0.095,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":7},
+  {"brand":"Acura","model":"ADX","ratingYear":2025,"vehicleId":20785,"description":"2025 Acura ADX SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.155,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":5},
+  {"brand":"Acura","model":"RDX","ratingYear":2025,"vehicleId":20118,"description":"2025 Acura RDX SUV AWD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.15,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":29},
+  {"brand":"Acura","model":"MDX","ratingYear":2025,"vehicleId":20069,"description":"2025 Acura MDX SUV AWD","front":4,"side":5,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":3,"complaints":93}
+]

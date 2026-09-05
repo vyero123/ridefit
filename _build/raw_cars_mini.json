@@ -1,0 +1,4 @@
+[
+  {"brand":"Mini","model":"Countryman","trim":"S ALL4","year":2026,"msrp":38900,"mpgCity":24,"mpgHwy":32,"mpgCombined":27,"horsepower":241,"torque":295,"engine":"Intercooled Turbo Premium Gasoline I-4","cargo1":56,"cargo2":25,"packages":["Comfort Package Max","Signature Plus Trim","Favoured Style","John Cooper Works Style","Classic Style","Comfort Package","Iconic Trim","Comfort Package Plus"],"src":"cars.com 2026 Mini Countryman specs (S ALL4)"},
+  {"brand":"Mini","model":"Cooper","trim":"Cooper Oxford Edition FWD","year":2026,"msrp":29500,"mpgCity":27,"mpgHwy":39,"mpgCombined":32,"horsepower":161,"torque":184,"engine":"Intercooled Turbo Premium Gasoline I-4","packages":["Classic Style","Oxford Plus"],"src":"cars.com 2026 Mini Hardtop specs (Cooper Oxford Edition FWD)"}
+]

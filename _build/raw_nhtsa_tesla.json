@@ -1,0 +1,7 @@
+[
+  {"brand":"Tesla","model":"Cybertruck","ratingYear":2025,"vehicleId":20866,"description":"2025 TESLA CYBERTRUCK (ALL VARIANTS) PU/CC  AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.124,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":1},
+  {"brand":"Tesla","model":"Model 3","ratingYear":2025,"vehicleId":20796,"description":"2025 Tesla Model 3 (All variants) 4 DR AWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":3,"complaints":113},
+  {"brand":"Tesla","model":"Model Y","ratingYear":2025,"vehicleId":20798,"description":"2025 Tesla Model Y SUV AWD","overall":5,"front":5,"side":5,"rollover":5,"rolloverProb":0.079,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":3,"complaints":96},
+  {"brand":"Tesla","model":"Model S","ratingYear":2025,"vehicleId":20799,"description":"2025 Tesla Model S (All Variants) 5 HB AWD","rollover":5,"rolloverProb":0.057,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":6},
+  {"brand":"Tesla","model":"Model X","ratingYear":2025,"vehicleId":20800,"description":"2025 Tesla Model X (All Variants) SUV AWD","rollover":5,"rolloverProb":0.093,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":3,"complaints":15}
+]

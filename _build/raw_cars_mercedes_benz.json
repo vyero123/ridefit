@@ -1,0 +1,75 @@
+[
+  {
+    "brand": "Mercedes-Benz",
+    "model": "C-Class",
+    "trim": "C 300 Sedan",
+    "year": 2026,
+    "msrp": 49650,
+    "mpgCity": 25,
+    "mpgHwy": 35,
+    "mpgCombined": 29,
+    "horsepower": 255,
+    "torque": 295,
+    "engine": "Intercooled Turbo Gas/Electric I-4",
+    "packages": ["Exclusive Trim Package", "Pinnacle Trim Package", "Driver Assistance Package", "AMG Lite Plus", "AMG Line", "Night Package"],
+    "src": "cars.com 2026 Mercedes-Benz C-Class specs (C 300 Sedan)"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "E-Class",
+    "status": "no-page"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "S-Class",
+    "trim": "S 500 4MATIC Sedan",
+    "year": 2026,
+    "msrp": 119550,
+    "mpgCity": 20,
+    "mpgHwy": 29,
+    "mpgCombined": 23,
+    "horsepower": 442,
+    "torque": 413,
+    "engine": "Intercooled Turbo Gas/Electric I-6",
+    "packages": ["MANUFAKTUR Interior Package", "3D Technology Package", "MANUFAKTUR Exclusive Interior Package", "Executive Rear Seat Package Plus", "Exclusive Trim", "Pinnacle Trim", "AMG Line Package"],
+    "src": "cars.com 2026 Mercedes-Benz S-Class specs (S 500 4MATIC Sedan)"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "G-Class",
+    "trim": "G 550 SUV",
+    "year": 2026,
+    "msrp": 153900,
+    "mpgCity": 17,
+    "mpgHwy": 19,
+    "mpgCombined": 18,
+    "horsepower": 443,
+    "torque": 413,
+    "engine": "Intercooled Turbo Gas/Electric I-6",
+    "cargo1": 69,
+    "cargo2": 38,
+    "towing": 7000,
+    "packages": ["Night Package", "Exclusive Interior Package Plus", "MANUFAKTUR Interior Package", "Seat Comfort Package", "Rubber Mat Set", "Night Package Magno", "Night Package Magno Plus", "MANUFAKTUR Full Leather Package", "AMG Line", "MANUFAKTUR Dark Chrome Package", "Night Package Plus", "MANUFAKTUR Logo Package (Black)"],
+    "src": "cars.com 2026 Mercedes-Benz G-Class specs (G 550 SUV)"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQE",
+    "status": "no-page"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQS",
+    "status": "no-page"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQE SUV",
+    "status": "no-page"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQS SUV",
+    "status": "no-page"
+  }
+]

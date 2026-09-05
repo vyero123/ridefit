@@ -1,0 +1,10 @@
+[
+  {"brand":"Mercedes-Benz","model":"C-Class","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"E-Class","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"S-Class","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"G-Class","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"EQE","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"EQS","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"EQE SUV","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Mercedes-Benz","model":"EQS SUV","vehicleId":0,"note":"no NHTSA model name matched"}
+]

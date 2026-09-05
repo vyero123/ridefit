@@ -1,0 +1,292 @@
+[
+  {
+    "brand": "Genesis",
+    "model": "G70",
+    "name": "3.3T Sport Prestige AWD",
+    "year": 2026,
+    "template": "sedan",
+    "bodyClass": "sedan",
+    "height": 55.1,
+    "length": 184.4,
+    "width": 72.8,
+    "wheelbase": 111.6,
+    "clearance": 5.1,
+    "weight": 4063,
+    "tire": "255/35R19",
+    "seats": 5,
+    "rows": 2,
+    "legroom1": 42.6,
+    "shoulder1": 56.3,
+    "headroom2": 38.7,
+    "legroom2": 34.8,
+    "shoulder2": 54.6,
+    "cargo2": 10.5,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Genesis G70 features & specs (3.3T Sport Prestige 4dr Sedan AWD); tire listed as P255/35R W, rim size taken from 19 in. wheel spec",
+    "equipment": {
+      "3.3T Sport Prestige AWD": {
+        "standard": [
+          "leather seats", "12-way power driver seat", "8-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "power lumbar support", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "self-leveling headlights", "daytime running lights", "remote anti-theft alarm",
+          "10.3 inch infotainment display", "lexicon premium audio", "surround audio", "android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage door opener", "dual zone climate control", "rear ventilation ducts", "auto-dimming rearview mirror",
+          "19 inch alloy wheels", "all season tires", "temporary spare tire", "limited slip differential", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "severe weather kit", "roadside assistance kit", "cargo block", "illuminated door scuff plates", "first aid kit", "all season fitted liners", "reversible cargo tray", "door pocket film", "bumper applique", "wheel locks", "mudguards"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "G80",
+    "name": "3.5T Sport Prestige AWD",
+    "year": 2026,
+    "template": "sedan",
+    "bodyClass": "sedan",
+    "height": 57.7,
+    "length": 196.7,
+    "width": 75.8,
+    "wheelbase": 118.5,
+    "clearance": 5.5,
+    "weight": 4619,
+    "tire": "275/35R20",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 39.0,
+    "legroom1": 42.2,
+    "shoulder1": 58.3,
+    "headroom2": 37.8,
+    "legroom2": 38.7,
+    "shoulder2": 57.1,
+    "cargo2": 13.1,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Genesis G80 features & specs (3.5T Sport Prestige 4dr Sedan AWD); tire listed as 275/35R W, rim size taken from 20 in. wheel spec",
+    "equipment": {
+      "3.5T Sport Prestige AWD": {
+        "standard": [
+          "premium leather seats", "12-way power driver seat", "8-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "heated rear seats", "power lumbar support", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "daytime running lights", "remote anti-theft alarm",
+          "27 inch infotainment display", "bang & olufsen premium audio", "18 speakers", "surround audio", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "rear fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "parking assist", "wireless charging", "adaptive cruise control", "universal garage door opener", "three zone climate control", "auto-dimming rearview mirror",
+          "20 inch alloy wheels", "all season tires", "temporary spare tire", "limited slip differential", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "g2 package", "g3 package", "g4 package", "g5 package", "roadside assistance kit", "severe weather kit", "reversible cargo tray", "all season fitted liners", "first aid kit", "cargo organizer", "cargo blocks", "cargo mat", "illuminated door scuff plates", "wheel locks", "mudguards"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "G90",
+    "name": "3.5T E-Supercharger AWD",
+    "year": 2026,
+    "template": "sedan",
+    "bodyClass": "sedan",
+    "height": 58.7,
+    "length": 207.7,
+    "width": 76.0,
+    "wheelbase": 125.2,
+    "clearance": 5.8,
+    "weight": 5170,
+    "tire": "275/35R21",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 39.4,
+    "legroom1": 42.3,
+    "shoulder1": 59.1,
+    "headroom2": 38.0,
+    "legroom2": 37.8,
+    "shoulder2": 57.9,
+    "cargo1": 10.6,
+    "cargo2": 10.6,
+    "approx": [],
+    "src": "Edmunds 2026 Genesis G90 features & specs (3.5T E-Supercharger 4dr Sedan AWD)",
+    "equipment": {
+      "3.5T E-Supercharger AWD": {
+        "standard": [
+          "premium leather seats", "18-way power driver seat", "16-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "massaging front seats", "power lumbar support", "reclining rear seats", "heated rear seats", "ventilated rear seats", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "daytime running lights", "power adjustable front headrests", "remote anti-theft alarm",
+          "12.3 inch infotainment display", "bang & olufsen premium audio", "23 speakers", "surround audio", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "rear fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "automatic parking assist", "wireless charging", "adaptive cruise control", "universal garage door opener", "three zone climate control", "auto-dimming rearview mirror",
+          "21 inch alloy wheels", "all season tires", "center limited slip differential", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "severe weather kit", "g3 package", "g4 package", "roadside assistance kit", "cargo mat", "cargo block", "first aid kit", "wheel locks", "illuminated door sill plates"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "GV60",
+    "name": "Advanced AWD",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 62.4,
+    "length": 178.9,
+    "width": 74.4,
+    "wheelbase": 114.2,
+    "clearance": 6.3,
+    "weight": 4791,
+    "tire": "255/45R20",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 39.0,
+    "legroom1": 42.3,
+    "shoulder1": 57.5,
+    "headroom2": 38.1,
+    "legroom2": 37.6,
+    "shoulder2": 55.9,
+    "cargo1": 54.7,
+    "cargo2": 24.0,
+    "towing": 2000,
+    "approx": [],
+    "src": "Edmunds 2026 Genesis GV60 features & specs (Advanced 4dr SUV AWD)",
+    "equipment": {
+      "Advanced AWD": {
+        "standard": [
+          "leather seats", "8-way power driver seat", "8-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "power lumbar support", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "daytime running lights", "remote anti-theft alarm",
+          "27 inch infotainment display", "8 speakers", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage door opener", "dual zone climate control", "rear ventilation ducts", "auto-dimming rearview mirror",
+          "20 inch alloy wheels", "all season tires", "nacs fast-charge port", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "vehicle to load adapter", "nfc key card", "first aid kit", "severe weather kit", "g2 package", "g3 package", "g4 package", "g5 package", "g6 package", "roadside assistance kit", "cargo mat", "cargo net", "cargo cover", "all season fitted liners", "cross bars"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "GV70",
+    "name": "2.5T Advanced AWD",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 64.2,
+    "length": 185.6,
+    "width": 75.2,
+    "wheelbase": 113.2,
+    "clearance": 7.3,
+    "weight": 4332,
+    "tire": "235/55R19",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 38.6,
+    "legroom1": 41.3,
+    "shoulder1": 59.1,
+    "headroom2": 38.3,
+    "legroom2": 37.2,
+    "shoulder2": 56.9,
+    "cargo1": 56.9,
+    "cargo2": 28.9,
+    "towing": 3500,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Genesis GV70 features & specs (2.5T Advanced 4dr SUV AWD); tire listed as 235/55R V, rim size taken from 19 in. wheel spec",
+    "equipment": {
+      "2.5T Advanced AWD": {
+        "standard": [
+          "leather seats", "8-way power driver seat", "8-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "power lumbar support", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "adaptive headlights", "daytime running lights", "remote anti-theft alarm",
+          "27 inch infotainment display", "bang & olufsen premium audio", "16 speakers", "surround audio", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "rear fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage door opener", "dual zone climate control", "rear ventilation ducts", "auto-dimming rearview mirror",
+          "19 inch alloy wheels", "all season tires", "temporary spare tire", "center limited slip differential", "descent control", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "roadside assistance kit", "g1 package", "g2 package", "g3 package", "severe weather kit", "illuminated door scuff plates", "cargo cover", "all season fitted liners", "cargo mat", "cargo net", "cargo tray", "roof rack cross bars", "side step", "tow hitch"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "GV80",
+    "name": "3.5T Prestige AWD",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 67.5,
+    "length": 194.5,
+    "width": 77.8,
+    "wheelbase": 116.3,
+    "clearance": 8.1,
+    "weight": 5330,
+    "tire": "265/40R22",
+    "seats": 7,
+    "rows": 3,
+    "headroom1": 40.2,
+    "legroom1": 41.6,
+    "shoulder1": 60.6,
+    "headroom2": 38.4,
+    "legroom2": 38.7,
+    "shoulder2": 58.3,
+    "cargo1": 71.1,
+    "cargo3": 11.6,
+    "towing": 6000,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Genesis GV80 features & specs (3.5T Prestige 4dr SUV AWD); tire listed as 265/40R W, rim size taken from 22 in. wheel spec; third-row dimensions not listed",
+    "equipment": {
+      "3.5T Prestige AWD": {
+        "standard": [
+          "premium leather seats", "12-way power driver seat", "8-way power passenger seat", "driver memory seat", "heated front seats", "ventilated front seats", "power lumbar support", "reclining rear seats", "heated rear seats", "ventilated rear seats", "split-folding rear seatback", "folding rear center armrest", "power folding third row seats",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "daytime running lights", "remote anti-theft alarm",
+          "27 inch infotainment display", "bang & olufsen premium audio", "18 speakers", "surround audio", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "rear fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel", "heated steering wheel", "leather steering wheel", "surround view camera", "front and rear parking sensors", "parking assist", "wireless charging", "adaptive cruise control", "universal garage door opener", "third row cupholders", "four zone climate control", "digital rearview mirror", "auto-dimming rearview mirror",
+          "22 inch alloy wheels", "all season tires", "limited slip differential", "center locking differential", "descent control", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "g1 package", "g2 package", "g3 package", "g4 package", "severe weather kit", "roadside assistance kit", "cargo mat", "cargo net", "cargo blocks", "fragrance cartridge", "first aid kit", "all season fitted liners", "roof rack cross bars", "side steps", "tow hitch"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Genesis",
+    "model": "Electrified GV70",
+    "name": "Base AWD",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 64.2,
+    "length": 185.6,
+    "width": 75.2,
+    "wheelbase": 113.2,
+    "clearance": 6.9,
+    "weight": 5201,
+    "tire": "235/55R19",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 38.6,
+    "legroom1": 41.3,
+    "shoulder1": 59.1,
+    "hip1": 56.1,
+    "headroom2": 38.3,
+    "legroom2": 36.6,
+    "shoulder2": 56.9,
+    "hip2": 53.5,
+    "cargo1": 56.5,
+    "cargo2": 28.7,
+    "towing": 3500,
+    "approx": [],
+    "src": "Edmunds 2026 Genesis Electrified GV70 features & specs (4dr SUV AWD)",
+    "equipment": {
+      "Base AWD": {
+        "standard": [
+          "leather seats", "8-way power driver seat", "8-way power passenger seat", "heated front seats", "power lumbar support", "reclining rear seats", "split-folding rear seatback", "folding rear center armrest",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "stability control", "traction control", "tire pressure monitoring", "led headlamps", "daytime running lights", "remote anti-theft alarm",
+          "27 inch infotainment display", "8 speakers", "wireless android auto/apple carplay", "satellite radio", "usb connection",
+          "power moonroof", "rear fixed glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "tilt and telescopic steering wheel", "leather steering wheel", "rear view camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage door opener", "dual zone climate control", "rear ventilation ducts", "auto-dimming rearview mirror",
+          "19 inch alloy wheels", "all season tires", "descent control", "nacs fast-charge port", "telematics emergency service", "roadside assistance", "concierge service"
+        ],
+        "optional": [
+          "nfc key card", "vehicle to load adapter", "g1 package", "g2 package", "g3 package", "severe weather kit", "roadside assistance kit", "all season fitted liners", "cargo mat", "cargo net", "cargo tray", "cargo cover", "illuminated doorstep plates", "tow hitch", "roof rail cross bars"
+        ]
+      }
+    }
+  }
+]

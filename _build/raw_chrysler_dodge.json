@@ -1,0 +1,168 @@
+[
+  {
+    "brand": "Chrysler",
+    "model": "Pacifica",
+    "name": "Select",
+    "year": 2026,
+    "template": "minivan",
+    "bodyClass": "minivan",
+    "height": 69.9,
+    "length": 204.3,
+    "width": 79.6,
+    "wheelbase": 121.6,
+    "clearance": 5.1,
+    "weight": 4521,
+    "tire": "235/65R17",
+    "seats": 7,
+    "rows": 3,
+    "headroom1": 40.1,
+    "legroom1": 41.1,
+    "shoulder1": 63.8,
+    "hip1": 59.0,
+    "headroom2": 39.6,
+    "legroom2": 39.0,
+    "shoulder2": 63.0,
+    "hip2": 64.8,
+    "cargo1": 140.5,
+    "cargo3": 32.3,
+    "towing": 3600,
+    "approx": [],
+    "src": "Edmunds 2026 Chrysler Pacifica features & specs (Select 4dr Minivan)",
+    "equipment": {
+      "Select": {
+        "standard": [
+          "leatherette upholstery", "bucket front seats", "8-way power driver seat", "power driver lumbar", "driver seat memory", "heated front seats", "reclining rear seats", "folding third row bench",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "pre-collision system", "post-collision system", "side airbags", "three-row head airbags", "stability control", "traction control", "child seat anchors", "4-wheel abs", "emergency braking assist", "tire pressure monitoring", "led headlamps", "dusk sensing headlamps", "daytime running lights", "front fog lights", "turn signal mirrors", "remote anti-theft alarm", "engine immobilizer",
+          "10.1-inch infotainment display", "wireless android auto/apple carplay", "usb connection", "satellite radio", "6 speakers", "one-touch power windows", "hands-free entry", "heated mirrors",
+          "keyless ignition", "tilt and telescopic steering wheel", "steering wheel audio and cruise controls", "rear view camera", "rear parking sensors", "adaptive cruise control", "universal garage remote", "overhead console storage", "heated steering wheel", "three zone climate control", "auto-dimming rearview mirror", "trip computer", "17-inch alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "engine block heater", "safety sphere package", "uconnect theater family group", "100th anniversary package", "s appearance package", "roadside emergency kit", "8 passenger seating", "power sunroof", "inflatable spare tire kit", "18-inch polished aluminum wheels", "paint protection film", "splash guards", "chrome wheel locks"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Chrysler",
+    "model": "Voyager",
+    "name": "LX",
+    "year": 2026,
+    "template": "minivan",
+    "bodyClass": "minivan",
+    "height": 69.9,
+    "length": 203.8,
+    "width": 79.6,
+    "wheelbase": 121.6,
+    "clearance": 5.1,
+    "weight": 4330,
+    "tire": "235/65R17",
+    "seats": 7,
+    "rows": 3,
+    "headroom1": 40.1,
+    "legroom1": 41.1,
+    "shoulder1": 63.8,
+    "hip1": 59.0,
+    "headroom2": 39.6,
+    "legroom2": 39.0,
+    "shoulder2": 63.0,
+    "hip2": 64.8,
+    "cargo1": 140.5,
+    "towing": 3600,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Chrysler Voyager features & specs (LX 4dr Minivan); tire listed as P235/65R H, rim size taken from 17 x 7.0 in. wheels",
+    "equipment": {
+      "LX": {
+        "standard": [
+          "leatherette upholstery", "bucket front seats", "8-way power driver seat", "power driver lumbar", "heated front seats", "stow-and-go third row",
+          "blind spot warning", "lane departure warning", "rear cross traffic alert", "pre-collision system", "side airbags", "three-row head airbags", "stability control", "traction control", "child seat anchors", "4-wheel abs", "emergency braking assist", "tire pressure monitoring", "dusk sensing headlamps", "daytime running lights", "turn signal mirrors", "remote anti-theft alarm", "engine immobilizer",
+          "10.1-inch infotainment display", "wireless android auto/apple carplay", "usb connection", "satellite radio", "6 speakers", "one-touch power windows", "hands-free entry", "heated mirrors",
+          "keyless ignition", "tilt and telescopic steering wheel", "steering wheel audio and cruise controls", "rear view camera", "rear parking sensors", "adaptive cruise control", "heated steering wheel", "three zone air conditioning", "interior air filtration", "trip computer", "17-inch alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "engine block heater", "interior protection package", "roadside emergency kit", "inflatable spare tire kit", "paint protection film", "splash guards", "chrome wheel locks"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Dodge",
+    "model": "Charger",
+    "name": "Scat Pack",
+    "year": 2026,
+    "template": "coupe",
+    "bodyClass": "coupe",
+    "height": 59.0,
+    "length": 206.6,
+    "width": 79.8,
+    "wheelbase": 121.0,
+    "clearance": 5.5,
+    "weight": 4816,
+    "tire": "275/40R20",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 39.1,
+    "legroom1": 42.6,
+    "shoulder1": 59.5,
+    "hip1": 56.3,
+    "headroom2": 36.9,
+    "legroom2": 37.2,
+    "shoulder2": 57.6,
+    "hip2": 56.1,
+    "cargo1": 37.4,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Dodge Charger features & specs (Scat Pack 2dr Coupe AWD); tire listed as 275/40R R, rim size taken from 20 x 10.0 in. wheels",
+    "equipment": {
+      "Scat Pack": {
+        "standard": [
+          "leatherette/cloth upholstery", "bucket front seats", "8-way power driver seat", "power driver lumbar", "heated front seats", "split-folding rear seatback", "folding center armrest", "rear limited slip differential",
+          "blind spot warning", "lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision system", "post-collision system", "side airbags", "head airbags", "stability control", "traction control", "child seat anchors", "4-wheel abs", "ventilated disc brakes", "emergency braking assist", "tire pressure monitoring", "led headlamps", "dusk sensing headlamps", "daytime running lights", "remote anti-theft alarm", "engine immobilizer",
+          "12.3-inch infotainment display", "alpine premium audio", "9 speakers", "subwoofer", "wireless android auto/apple carplay", "usb connection", "satellite radio", "one-touch power windows", "hands-free entry", "heated mirrors",
+          "keyless ignition", "tilt and telescopic steering wheel", "steering wheel controls", "rear view camera", "front and rear parking sensors", "adaptive cruise control", "universal garage remote", "heated steering wheel", "dual zone climate control", "interior air filtration", "auto-dimming rearview mirror", "trip computer", "20-inch alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "all weather interior package", "20x11 wheel and tire package", "blacktop package", "satin black painted hood", "satin black center hood graphic", "fratzog dual stripes", "strobe stripe", "dual stripe", "charger stripe", "front license plate bracket"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Dodge",
+    "model": "Durango",
+    "name": "GT Plus HEMI V8",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 72.9,
+    "length": 200.8,
+    "width": 75.8,
+    "wheelbase": 119.8,
+    "tire": "265/50R20",
+    "seats": 7,
+    "rows": 3,
+    "headroom1": 39.9,
+    "legroom1": 40.3,
+    "shoulder1": 58.5,
+    "hip1": 57.0,
+    "headroom2": 39.8,
+    "legroom2": 38.6,
+    "shoulder2": 57.7,
+    "hip2": 55.5,
+    "cargo1": 85.1,
+    "cargo3": 17.2,
+    "approx": [],
+    "src": "Edmunds 2026 Dodge Durango features & specs (GT Plus HEMI V8 4dr SUV AWD)",
+    "equipment": {
+      "GT Plus HEMI V8": {
+        "standard": [
+          "leather upholstery", "bucket front seats", "8-way power driver seat", "8-way power passenger seat", "power lumbar front seats", "driver seat memory", "fold flat passenger seat", "heated front seats", "ventilated front seats", "heated rear seats", "split-folding rear seatback", "reclining rear seats", "folding split-bench third row", "on demand 4wd", "hi-lo gear selection", "cylinder deactivation",
+          "blind spot warning", "rear cross traffic alert", "pre-collision system", "post-collision system", "side airbags", "three-row head airbags", "stability control", "traction control", "child seat anchors", "4-wheel abs", "ventilated disc brakes", "emergency braking assist", "tire pressure monitoring", "led headlamps", "dusk sensing headlamps", "daytime running lights", "turn signal mirrors", "remote anti-theft alarm", "engine immobilizer",
+          "10.1-inch infotainment display", "alpine premium audio", "506 watt stereo", "9 speakers", "subwoofer", "android auto/apple carplay", "usb connection", "satellite radio with traffic", "one-touch power windows", "power glass moonroof", "hands-free entry", "heated mirrors",
+          "keyless ignition", "power tilt and telescopic steering wheel", "steering wheel controls", "rear view camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage remote", "overhead console storage", "leather steering wheel", "heated steering wheel", "three zone climate control", "interior air filtration", "auto-dimming rearview mirror", "cargo floor mats", "trip computer", "20-inch painted alloy wheels", "all season tires", "temporary spare tire"
+        ],
+        "optional": [
+          "tow n go package", "all weather package", "blacktop package", "blacktop leather srt performance seats", "2nd row fold/tumble captain chairs", "dual stripes", "black tubular side steps", "front license plate bracket"
+        ]
+      }
+    }
+  }
+]

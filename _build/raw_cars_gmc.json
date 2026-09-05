@@ -1,0 +1,106 @@
+[
+  {
+    "brand": "GMC",
+    "model": "Sierra 1500",
+    "trim": "Pro",
+    "year": 2026,
+    "msrp": 38300,
+    "mpgCity": 18,
+    "mpgHwy": 21,
+    "mpgCombined": 20,
+    "horsepower": 310,
+    "torque": 430,
+    "engine": "Turbocharged Gas I4",
+    "cargo1": 72,
+    "payload": 2412,
+    "towing": 9000,
+    "packages": [
+      "1SA Safety Plus Package",
+      "Convenience Package",
+      "Pro Value Package",
+      "Pro Preferred Equipment Group",
+      "Trailering Package"
+    ],
+    "src": "cars.com 2026 GMC Sierra 1500 specs (Pro)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Sierra 2500 HD",
+    "trim": "2WD Reg Cab 142\" Pro",
+    "year": 2026,
+    "msrp": 47000,
+    "horsepower": 401,
+    "torque": 464,
+    "engine": "Gas V8",
+    "cargo1": 84,
+    "payload": 3926,
+    "towing": 14500,
+    "packages": ["Pro Preferred Equipment Group"],
+    "src": "cars.com 2026 GMC Sierra 2500 specs (2WD Reg Cab 142\" Pro)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Canyon",
+    "trim": "2WD Crew Cab Elevation",
+    "year": 2026,
+    "msrp": 38900,
+    "packages": [],
+    "src": "cars.com 2026 GMC Canyon specs (2WD Crew Cab Elevation)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Hummer EV Pickup",
+    "trim": "4WD Crew Cab 2X w/1SC",
+    "year": 2026,
+    "msrp": 97200,
+    "engine": "Electric",
+    "packages": [],
+    "src": "cars.com 2026 GMC Hummer EV Pickup specs (4WD Crew Cab 2X w/1SC)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Terrain",
+    "trim": "FWD 4dr Elevation",
+    "year": 2026,
+    "msrp": 30200,
+    "packages": [],
+    "src": "cars.com 2026 GMC Terrain specs (FWD 4dr Elevation)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Acadia",
+    "trim": "FWD 4dr Elevation",
+    "year": 2026,
+    "msrp": 43800,
+    "packages": [],
+    "src": "cars.com 2026 GMC Acadia specs (FWD 4dr Elevation)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Yukon",
+    "trim": "2WD 4dr Elevation",
+    "year": 2026,
+    "msrp": 69600,
+    "packages": [],
+    "src": "cars.com 2026 GMC Yukon specs (2WD 4dr Elevation)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Yukon XL",
+    "trim": "2WD 4dr Elevation",
+    "year": 2026,
+    "msrp": 72600,
+    "packages": [],
+    "src": "cars.com 2026 GMC Yukon XL specs (2WD 4dr Elevation)"
+  },
+  {
+    "brand": "GMC",
+    "model": "Hummer EV SUV",
+    "trim": "e4WD 4dr 2X w/3YL",
+    "year": 2026,
+    "msrp": 97200,
+    "engine": "Electric",
+    "packages": [],
+    "src": "cars.com 2026 GMC Hummer EV SUV specs (e4WD 4dr 2X w/3YL)"
+  }
+]

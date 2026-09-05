@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ride Fit — will it fit, and how tall is it next to you?</title>
+<script>
+/* Error trap installed FIRST so a failure below still surfaces visibly. ES5 only.
+   RideFitReport(err, where) is the PRIMARY channel: it receives the real Error object from
+   try/catch (name, message, first stack line) even on file:// where WebKit sanitises
+   window.onerror to "Script error." at 0:0. window.onerror is only the fallback. */
+window.RideFitReport = function (err, where) {
+  try {
+    var b = document.getElementById('errbar');
+    if (!b) { b = document.createElement('div'); b.id = 'errbar'; if (document.body) { document.body.insertBefore(b, document.body.firstChild); } }
+    var msg;
+    if (err && typeof err === 'object') {
+      msg = (err.name || 'Error') + ': ' + (err.message || String(err));
+      if (err.stack) { var ln = String(err.stack).split('\n'); msg += ' @ ' + (ln[1] || ln[0] || '').replace(/^\s+/, '').slice(0, 140); }
+    } else { msg = String(err); }
+    var line = document.createElement('div');
+    line.appendChild(document.createTextNode((where ? '[' + where + '] ' : '') + msg));
+    b.appendChild(line);
+    b.style.display = 'block';
+  } catch (e) {}
+};
+window.onerror = function (msg, url, line, col, err) {
+  if (err) { window.RideFitReport(err, 'window'); return false; }
+  var s = String(msg);
+  if (/^Script error\.?$/.test(s)) { s = 'Script error (details hidden by the browser for file:// pages — open the page over https to see them; per-script checks below will say which block failed)'; }
+  window.RideFitReport(s + ' (line ' + line + ':' + col + ')', 'window');
+  return false;
+};
+</script>
+<style>
+{{CSS}}
+</style>
+</head>
+<body class="static">
+<div id="errbar"></div>
+
+<div class="app">
+
+<!-- ===== MAIN COLUMN: pinned scene, state chips, facts ===== -->
+<main class="main">
+  <section class="hero" id="hero">
+    <div class="herohead">
+      <span class="brand">Ride Fit</span>
+      <span class="legend" id="legend"><span class="namepill pillA"><span class="chip chipA">A</span> {{DEF_LEGEND}}</span></span>
+    </div>
+    <div id="scene">{{STATIC_SVG}}</div>
+  </section>
+
+  <nav class="statebar" id="statebar" aria-label="Current settings">
+    <button type="button" class="stchip on" data-seg="vehicle" data-live disabled>{{DEF_CHIP}}</button>
+    <button type="button" class="stchip" data-seg="crew" data-live disabled>You 6' 3"</button>
+    <button type="button" class="stchip" data-seg="crew" data-live disabled>+ crew</button>
+    <button type="button" class="stchip" data-seg="vehicle" data-live disabled>Stock</button>
+    <button type="button" class="stchip" data-seg="compare" data-live disabled>+ compare</button>
+    <button type="button" class="stchip" data-seg="find" data-live disabled>Find</button>
+    <button type="button" class="stchip" data-seg="rank" data-live disabled>Rankings</button>
+  </nav>
+
+  <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab, 6'3" person). Enable JavaScript for the controls.</p></noscript>
+
+  <section class="facts">
+    <div id="fitLine"></div>
+    <h2 id="vehTitle">{{DEF_TITLE}}</h2>
+    <p id="vehSub">{{DEF_SUB}}</p>
+    <div id="specs">{{STATIC_SPECS}}</div>
+    <h3 class="sec">How it lines up with you</h3>
+    <div id="comps">{{STATIC_COMPS}}</div>
+    <h3 class="sec">Back-seat room for your crew</h3>
+    <div id="room">{{STATIC_ROOM}}</div>
+    <div id="srcNote">{{STATIC_SRC}}</div>
+    <div id="cmpWrap" style="display:none">
+      <h3 class="sec" id="cmpTitle"></h3>
+      <div id="cmpBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== ATTRIBUTION BLOCK ===== -->
+  <footer>
+    <p>&copy; 2026 Vadim Yerokhin &#183; Ride Fit</p>
+    <p>Free for personal use. Not licensed for commercial use.</p>
+    <p>Data provenance: overall height, length, width, wheelbase, ground clearance, curb weight and tire size are taken from manufacturer-published specifications for the model year shown; figures marked &#8776; are derived (including anything under a lift or tire change), and hood/bed heights are shown only where a published source exists. Seat counts are the standard seating for the trim shown and are not from the dimension sources.</p>
+  </footer>
+  <!-- ===== END ATTRIBUTION BLOCK ===== -->
+</main>
+
+<!-- ===== SHEET: one layer, four question cards. Static (no JS) it is a plain stacked block. ===== -->
+<aside class="sheet" id="sheet" data-pos="peek" aria-label="Controls">
+  <div class="grab" id="grab"><span></span></div>
+  <div class="seg" id="seg">
+    <button type="button" class="segbtn on" data-seg="vehicle" data-live disabled>Vehicle</button>
+    <button type="button" class="segbtn" data-seg="crew" data-live disabled>Crew</button>
+    <button type="button" class="segbtn" data-seg="find" data-live disabled>Find</button>
+    <button type="button" class="segbtn" data-seg="compare" data-live disabled>Compare</button>
+    <button type="button" class="segbtn" data-seg="rank" data-live disabled>Rank</button>
+  </div>
+  <div class="sheetbody" id="sheetbody">
+
+    <!-- ---- Card: Which vehicle? ---- -->
+    <section class="card" data-pane="vehicle">
+      <h2 class="q">Which vehicle?</h2>
+      <div class="searchwrap">
+        <input type="text" id="search" data-live disabled placeholder="Search {{VEHICLE_COUNT}} vehicles — Tacoma, Cybertruck, crossover…" autocomplete="off" aria-label="Search vehicles">
+        <div class="vvy-results" id="results"></div>
+      </div>
+      <div class="triple">
+        <select id="brandSel" data-live disabled aria-label="Brand">{{BRAND_OPTIONS}}</select>
+        <select id="modelSel" data-live disabled aria-label="Model">{{MODEL_OPTIONS}}</select>
+      </div>
+      <select id="configSel" data-live disabled aria-label="Configuration">{{CONFIG_OPTIONS}}</select>
+      <label class="chk"><input type="checkbox" id="fitOnly" data-live disabled> Only show vehicles that fit my crew</label>
+
+      <details class="exp" id="modsExp">
+        <summary>Lift &amp; tires <span class="vvy-note" id="modsSummary">stock</span></summary>
+        <div class="hrow">
+          <label for="lift">Suspension / body lift</label>
+          <span class="out" id="liftOut">0 in</span>
+        </div>
+        <input type="range" id="lift" data-live disabled min="0" max="20" step="0.5" value="0">
+        <div class="hrow"><span class="hint">0 in</span><span class="hint">20 in</span></div>
+        <label>Tire diameter</label>
+        <div class="chips" id="tireChips">
+          <button type="button" class="chipbtn on" data-tire="stock" data-live disabled>Stock</button>
+          <button type="button" class="chipbtn" data-tire="33" data-live disabled>33"</button>
+          <button type="button" class="chipbtn" data-tire="35" data-live disabled>35"</button>
+          <button type="button" class="chipbtn" data-tire="37" data-live disabled>37"</button>
+          <button type="button" class="chipbtn" data-tire="40" data-live disabled>40"</button>
+          <button type="button" class="chipbtn" data-tire="custom" data-live disabled>Custom</button>
+        </div>
+        <div id="tireCustomWrap" style="display:none;margin-top:8px">
+          <label for="tireCustom">Custom overall tire diameter (inches)</label>
+          <input type="number" id="tireCustom" data-live disabled min="15" max="60" step="0.5" value="35">
+        </div>
+        <p class="hint" id="tireInfo"></p>
+        <p class="hint">Bigger tires raise the whole vehicle by half the diameter change; a lift raises the body by its full amount. Height, ground clearance, hood and bed heights are recalculated and marked &#8776;. Modifications apply to the main vehicle.</p>
+        <button type="button" id="resetMods" class="chipbtn" data-live disabled>Reset to stock</button>
+      </details>
+    </section>
+
+    <!-- ---- Card: Who's riding? ---- -->
+    <section class="card" data-pane="crew" style="display:none">
+      <h2 class="q">Who's riding?</h2>
+      <p class="hint" style="margin:0 0 8px">Everyone is drawn to scale. You are the reference figure; add riders and set each one's height with the &minus; / + or by tapping the number.</p>
+      <div class="people" id="people"><div class="prow you"><div class="who">You<small>reference figure &#183; adult</small></div><div class="hctl"><button type="button" class="hbtn" disabled>&#8722;</button><button type="button" class="hval" disabled>6' 3"</button><button type="button" class="hbtn" disabled>+</button><button type="button" class="rm" disabled>&#215;</button></div></div></div>
+      <div class="hrow" style="margin-top:8px">
+        <div class="chips">
+          <button type="button" class="chipbtn" id="addAdult" data-live disabled>+ adult</button>
+          <button type="button" class="chipbtn" id="addKid" data-live disabled>+ kid</button>
+        </div>
+        <button type="button" id="unitBtn" class="chipbtn" data-live disabled>Imperial (ft-in / lb)</button>
+      </div>
+      <div class="steppers pets">
+        <div class="stepper"><label>Dogs</label><div class="steprow"><button type="button" class="stepbtn" data-step="dogs" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="dogsVal">0</span><button type="button" class="stepbtn" data-step="dogs" data-d="1" data-live disabled>+</button></div></div>
+        <div class="stepper"><label>Cats</label><div class="steprow"><button type="button" class="stepbtn" data-step="cats" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="catsVal">0</span><button type="button" class="stepbtn" data-step="cats" data-d="1" data-live disabled>+</button></div></div>
+      </div>
+      <input type="range" id="hslider" data-live disabled min="48" max="84" step="1" value="75" style="display:none" aria-hidden="true">
+      <span id="heightOut" style="display:none"></span><span id="adultsVal" style="display:none"></span><span id="kidsVal" style="display:none"></span>
+      <div id="fitBox"></div>
+      <div id="roomBox"></div>
+      <p class="hint">One seat per rider. Dogs don't take a seat, but they usually need a rear row folded for space. Cats, as everyone knows, go wherever they please. Seat counts are the standard seating for the trim shown.</p>
+    </section>
+
+    <!-- ---- Card: Find (one filter state shared with search, fit, rankings, compare) ---- -->
+    <section class="card" data-pane="find" style="display:none">
+      <div class="fcount" id="fcount"><span><b id="fnum">220</b> match <small id="fof">of 220</small></span><span><button type="button" class="chipbtn" id="fclear" data-live disabled>Clear</button> <button type="button" class="chipbtn dark" id="fshow" data-live disabled>Show</button></span></div>
+      <div id="fpresets"></div>
+      <div class="ftype">
+        <input type="text" id="ftype" data-live disabled placeholder="Type a need — third row, tow, tall, crew cab, a brand…" autocomplete="off" autocorrect="off" autocapitalize="off" aria-label="Add a filter">
+        <button type="button" id="fbrowse" class="chipbtn" data-live disabled aria-expanded="false">Browse &#9662;</button>
+      </div>
+      <div id="fpanel" class="fpanel" style="display:none"></div>
+      <div id="ftokens" class="ftokens"><span class="ftok-empty">Filters load with the app.</span></div>
+      <p class="hint">Tap a token's must/nice to switch between must-have and nice-to-have; nice-to-haves only change the order. The same filters drive search, the fit checkbox and Rankings.</p>
+      <div id="findBody"></div>
+    </section>
+
+    <!-- ---- Card: Against what? ---- -->
+    <section class="card" data-pane="compare" style="display:none">
+      <h2 class="q">Against what?</h2>
+      <div class="cmpgrid">
+        <div class="cmpcol colA">
+          <div class="cmphead"><span class="chip chipA">A</span> Main vehicle</div>
+          <div class="searchwrap">
+            <input type="text" id="searchA2" data-live disabled placeholder="Search for vehicle A" autocomplete="off" aria-label="Search vehicle A">
+            <div class="vvy-results" id="resultsA2"></div>
+          </div>
+          <select id="brandSelA2" data-live disabled aria-label="Brand A"></select>
+          <select id="modelSelA2" data-live disabled aria-label="Model A"></select>
+          <select id="configSelA2" data-live disabled aria-label="Configuration A"></select>
+        </div>
+        <div class="cmpswap">
+          <button type="button" id="swapBtn" class="swapbig" data-live disabled title="Swap A and B"><span class="swapicon">&#8646;</span><span class="swaplbl">Swap</span></button>
+        </div>
+        <div class="cmpcol colB">
+          <div class="cmphead"><span class="chip chipB">B</span> Compare with <span id="cmpSel" class="vvy-note"></span></div>
+          <div class="searchwrap">
+            <input type="text" id="searchB" data-live disabled placeholder="Search for vehicle B" autocomplete="off" aria-label="Search vehicle B">
+            <div class="vvy-results" id="resultsB"></div>
+          </div>
+          <select id="brandSelB" data-live disabled aria-label="Brand B"><option value="">— none —</option></select>
+          <select id="modelSelB" data-live disabled aria-label="Model B"></select>
+          <select id="configSelB" data-live disabled aria-label="Configuration B"></select>
+        </div>
+      </div>
+      <div id="shortlist" class="shortlist"></div>
+      <div class="chips" id="layoutBtns" style="margin-top:10px">
+        <button type="button" class="chipbtn on" data-layout="overlay" data-live disabled>Overlay</button>
+        <button type="button" class="chipbtn" data-layout="side" data-live disabled>Side by side</button>
+        <button type="button" class="chipbtn" id="clearBtn" data-live disabled>Clear B</button>
+        <button type="button" class="chipbtn" id="rankBtn2" data-live disabled>Pick from rankings</button>
+      </div>
+      <p class="hint">Vehicle A is solid blue; vehicle B is translucent amber with a dashed outline. In overlay mode both share the same front bumper and ground line so the roof, hood and bed lines compare directly. The comparison table appears under the drawing.</p>
+    </section>
+
+    <!-- ---- Card: Rankings ---- -->
+    <section class="card" data-pane="rank" style="display:none">
+      <h2 class="q">Rankings <span class="vvy-note" id="rankCount"></span></h2>
+      <div class="rankctl">
+        <input type="text" id="rankFilter" data-live disabled placeholder="Filter by name or class" autocomplete="off" aria-label="Filter rankings">
+        <select id="rankClass" data-live disabled aria-label="Body class"></select>
+      </div>
+      <div class="rankctl pick">
+        <label class="chk small"><input type="checkbox" id="fitOnlyRank" data-live disabled> Only fits</label>
+        <span class="hint">Next tap sets:</span>
+        <span class="chips" id="pickBtns">
+          <button type="button" class="chipbtn on" data-pick="A" data-live disabled>Main (A)</button>
+          <button type="button" class="chipbtn" data-pick="B" data-live disabled>Compare (B)</button>
+        </span>
+      </div>
+      <div id="rankTable"></div>
+    </section>
+
+  </div>
+</aside>
+
+</div>
+
+<script>
+{{GEOM_JS}}
+window.__rf_geom = true;
+</script>
+<script>if (!window.__rf_geom) { window.RideFitReport(new Error('geom.js block failed to parse or run'), 'load'); }</script>
+<script>
+{{DATA_LAYER_JS}}
+window.__rf_data = true;
+</script>
+<script>if (!window.__rf_data) { window.RideFitReport(new Error('data-layer.js block failed to parse or run'), 'load'); }</script>
+<script>
+/* Inlined at build time from vehicles.json so the page works offline. With RideFitData.MODE set to
+   'endpoint' this block becomes unnecessary and the same document is fetched over HTTP instead. */
+var RIDEFIT_VEHICLES = {{DATA_JSON}};
+window.__rf_json = true;
+</script>
+<script>if (!window.__rf_json) { window.RideFitReport(new Error('inlined vehicles.json block failed to parse'), 'load'); }</script>
+<script>
+{{FILTERS_JS}}
+window.__rf_filters = true;
+</script>
+<script>if (!window.__rf_filters) { window.RideFitReport(new Error('filters.js block failed to parse or run'), 'load'); }</script>
+<script>
+{{APP_JS}}
+window.__rf_app = true;
+</script>
+<script>if (!window.__rf_app) { window.RideFitReport(new Error('app.js block failed to parse or run'), 'load'); }</script>
+</body>
+</html>

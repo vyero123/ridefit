@@ -1,0 +1,13 @@
+[
+  {"brand":"Lexus","model":"ES","ratingYear":2025,"vehicleId":20221,"description":"2025 Lexus ES 350 4 DR FWD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.105,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":4},
+  {"brand":"Lexus","model":"IS","ratingYear":2025,"vehicleId":20226,"description":"2025 Lexus IS 350 4 DR AWD","overall":5,"front":4,"side":5,"rollover":5,"rolloverProb":0.095,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":1},
+  {"brand":"Lexus","model":"LS","ratingYear":2025,"vehicleId":20215,"description":"2025 Lexus LS 500 4 DR AWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":1},
+  {"brand":"Lexus","model":"LC","ratingYear":2025,"vehicleId":20217,"description":"2025 Lexus LC 500 2 DR RWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":0},
+  {"brand":"Lexus","model":"UX","ratingYear":2025,"vehicleId":20030,"description":"2025 Lexus UX 300h 5HB AWD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.14,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":2},
+  {"brand":"Lexus","model":"NX","ratingYear":2025,"vehicleId":20033,"description":"2025 Lexus NX 350 SUV AWD","front":4,"side":5,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":5,"complaints":17},
+  {"brand":"Lexus","model":"RX","ratingYear":2025,"vehicleId":20234,"description":"2025 Lexus RX 350 SUV AWD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.155,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":4,"complaints":18},
+  {"brand":"Lexus","model":"TX","ratingYear":2025,"vehicleId":20244,"description":"2025 Lexus TX 350 SUV AWD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.174,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":4,"complaints":29},
+  {"brand":"Lexus","model":"GX","ratingYear":2025,"vehicleId":20239,"description":"2025 Lexus GX 550 SUV AWD","side":5,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":13},
+  {"brand":"Lexus","model":"LX","ratingYear":2025,"vehicleId":20240,"description":"2025 Lexus LX 600 SUV AWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":2},
+  {"brand":"Lexus","model":"RZ","ratingYear":2025,"vehicleId":20242,"description":"2025 Lexus RZ 450e SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.105,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":2}
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "brand": "Rivian",
+    "model": "R1T",
+    "trim": "Dual Motor Standard Pack",
+    "year": 2026,
+    "msrp": 72990,
+    "horsepower": 533,
+    "torque": 610,
+    "engine": "Electric",
+    "towing": 11000,
+    "packages": [],
+    "src": "cars.com 2026 Rivian R1T specs (Dual Motor Standard Pack)"
+  },
+  {
+    "brand": "Rivian",
+    "model": "R1S",
+    "trim": "Dual-Motor Standard Pack",
+    "year": 2026,
+    "msrp": 76990,
+    "horsepower": 533,
+    "torque": 610,
+    "engine": "Electric",
+    "cargo1": 105,
+    "cargo2": 47,
+    "cargo3": 18,
+    "towing": 7700,
+    "packages": [],
+    "src": "cars.com 2026 Rivian R1S specs (Dual-Motor Standard Pack)"
+  }
+]

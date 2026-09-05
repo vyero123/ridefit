@@ -1,0 +1,63 @@
+[
+  {
+    "brand": "Porsche",
+    "model": "911",
+    "ratingYear": 2025,
+    "vehicleId": 20653,
+    "description": "2025 Porsche 992 911 turbo 2 DR AWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Optional"
+  },
+  {
+    "brand": "Porsche",
+    "model": "Taycan",
+    "ratingYear": 2025,
+    "vehicleId": 20671,
+    "description": "2025 Porsche J1.2 Taycan 4 DR RWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "recalls": 4,
+    "complaints": 2
+  },
+  {
+    "brand": "Porsche",
+    "model": "Panamera",
+    "ratingYear": 2025,
+    "vehicleId": 20684,
+    "description": "2025 Porsche G3 Panamera 4 DR RWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "recalls": 2,
+    "complaints": 2
+  },
+  {
+    "brand": "Porsche",
+    "model": "Macan",
+    "ratingYear": 2025,
+    "vehicleId": 20695,
+    "description": "2025 Porsche H2 Macan SUV RWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "complaints": 1
+  },
+  {
+    "brand": "Porsche",
+    "model": "Cayenne",
+    "ratingYear": 2025,
+    "vehicleId": 20689,
+    "description": "2025 Porsche E3 Cayenne 4 DR RWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "complaints": 2
+  },
+  {
+    "brand": "Porsche",
+    "model": "Cayenne Coupe",
+    "vehicleId": 0
+  }
+]

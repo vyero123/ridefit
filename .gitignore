@@ -1,0 +1,6 @@
+.secrets/
+*.lock
+*token*
+.writetest
+__pycache__/
+*.tmp

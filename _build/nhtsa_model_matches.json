@@ -1,0 +1,134 @@
+{
+  "timestamp": "2025-09-04",
+  "brands": {
+    "lexus": {
+      "requested_models": [
+        "ES",
+        "IS",
+        "LS",
+        "LC",
+        "UX",
+        "NX",
+        "RX",
+        "TX",
+        "GX",
+        "LX",
+        "RZ"
+      ],
+      "nhtsa_available": [
+        "ES 250",
+        "ES 300H",
+        "ES 350",
+        "GX 550",
+        "IS 300",
+        "IS 350",
+        "IS 500",
+        "LC 500",
+        "LC 500 CONVERTIBLE",
+        "LC 500H",
+        "LS 500",
+        "LS 500H",
+        "LX 600",
+        "LX 700H",
+        "NX 250",
+        "NX 350",
+        "NX 350H",
+        "NX 450H+",
+        "RC 300",
+        "RC 350",
+        "RC F",
+        "RX 350",
+        "RX 350H",
+        "RX 450H+",
+        "RX 500H",
+        "RZ 300E",
+        "RZ 450E",
+        "TX 350",
+        "TX 350 LATER RELEASE",
+        "TX 500H",
+        "TX 550H+",
+        "UX 300H"
+      ],
+      "matched": {
+        "ES": "ES 250",
+        "GX": "GX 550",
+        "IS": "IS 300",
+        "LC": "LC 500",
+        "LS": "LS 500",
+        "LX": "LX 600",
+        "NX": "NX 250",
+        "RX": "RX 350",
+        "RZ": "RZ 300E",
+        "TX": "TX 350",
+        "UX": "UX 300H"
+      },
+      "match_count": 11
+    },
+    "bmw": {
+      "requested_models": [
+        "2 Series",
+        "3 Series",
+        "4 Series",
+        "5 Series",
+        "7 Series",
+        "8 Series",
+        "X1",
+        "X2",
+        "X3",
+        "X5",
+        "X7",
+        "iX",
+        "i4",
+        "i5",
+        "i7",
+        "Z4"
+      ],
+      "nhtsa_available": [
+        "2 SERIES GRAN COUPE",
+        "3 SERIES SEDAN",
+        "5 SERIES HYBRID SEDAN",
+        "7 SERIES HYBRID SEDAN",
+        "M5 HYBRID SEDAN",
+        "M5 HYBRID WAGON",
+        "X1",
+        "X3",
+        "X5"
+      ],
+      "matched": {
+        "2 Series": "2 SERIES GRAN COUPE",
+        "3 Series": "3 SERIES SEDAN",
+        "5 Series": "5 SERIES HYBRID SEDAN",
+        "7 Series": "7 SERIES HYBRID SEDAN",
+        "X1": "X1",
+        "X3": "X3",
+        "X5": "X5"
+      },
+      "match_count": 7
+    },
+    "mercedes-benz": {
+      "requested_models": [
+        "C-Class",
+        "E-Class",
+        "S-Class",
+        "G-Class",
+        "EQE",
+        "EQS",
+        "EQE SUV",
+        "EQS SUV"
+      ],
+      "nhtsa_available": [
+        "MERCEDES-BENZ ESPRINTER (HO)",
+        "MERCEDES-BENZ ESPRINTER (SO)",
+        "SPRINTER 2500 CARGO VAN (LWB)",
+        "SPRINTER 2500 CARGO VAN (SWB)",
+        "SPRINTER 2500 CREW VAN (LWB)",
+        "SPRINTER 2500 CREW VAN (SWB)",
+        "SPRINTER 2500 PASSENGER VAN (12-PASSENGER)",
+        "SPRINTER 2500 PASSENGER VAN (15-PASSENGER)",
+        "SPRINTER 3500 CARGO VAN"
+      ],
+      "matched": {},
+      "match_count": 0
+    }
+  }
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "brand": "Dodge",
+    "model": "Charger",
+    "trim": "Base",
+    "year": 2026,
+    "msrp": 49995,
+    "mpgCity": 17,
+    "mpgHwy": 26,
+    "mpgCombined": 20,
+    "horsepower": 420,
+    "torque": 469,
+    "engine": "Twin Turbo Regular Gasoline I-6",
+    "passengerVolume": 103,
+    "packages": [],
+    "src": "cars.com 2026 Dodge Charger specs (Base)"
+  },
+  {
+    "brand": "Dodge",
+    "model": "Durango",
+    "trim": "Base",
+    "year": 2026,
+    "msrp": 38995,
+    "mpgCity": 18,
+    "mpgHwy": 25,
+    "mpgCombined": 20,
+    "horsepower": 295,
+    "torque": 260,
+    "engine": "Regular Gasoline V-6",
+    "cargo1": 85,
+    "cargo2": 43,
+    "cargo3": 17,
+    "towing": 6200,
+    "packages": [],
+    "src": "cars.com 2026 Dodge Durango specs (Base)"
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "brand": "Dodge",
+    "model": "Charger",
+    "ratingYear": 2025,
+    "vehicleId": 20813,
+    "description": "2025 Dodge Charger 2 DR AWD",
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "recalls": 0,
+    "complaints": 0
+  },
+  {
+    "brand": "Dodge",
+    "model": "Durango",
+    "ratingYear": 2025,
+    "vehicleId": 20155,
+    "description": "2025 Dodge Durango SUV AWD",
+    "overall": 4,
+    "front": 4,
+    "side": 5,
+    "rollover": 3,
+    "rolloverProb": 0.212,
+    "esc": "Standard",
+    "fcw": "Optional",
+    "ldw": "Optional",
+    "recalls": 0,
+    "complaints": 7
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "brand": "Tesla",
+    "model": "Cybertruck",
+    "trim": "Dual Motor AWD",
+    "year": 2026,
+    "msrp": 74990,
+    "horsepower": 600,
+    "torque": 521,
+    "engine": "Electric",
+    "towing": 7500,
+    "packages": [],
+    "src": "cars.com 2026 Tesla Cybertruck specs (Dual Motor AWD)"
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model 3",
+    "trim": "RWD",
+    "year": 2026,
+    "msrp": 36990,
+    "horsepower": 271,
+    "torque": 310,
+    "engine": "Electric",
+    "passengerVolume": 97,
+    "packages": [],
+    "src": "cars.com 2026 Tesla Model 3 specs (RWD)"
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model Y",
+    "trim": "RWD",
+    "year": 2026,
+    "msrp": 39990,
+    "horsepower": 295,
+    "torque": 309,
+    "engine": "Electric",
+    "cargo1": 74,
+    "cargo2": 30,
+    "towing": 3500,
+    "packages": [],
+    "src": "cars.com 2026 Tesla Model Y specs (RWD)"
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model S",
+    "trim": "AWD",
+    "year": 2026,
+    "msrp": 109990,
+    "horsepower": 670,
+    "engine": "Electric",
+    "packages": ["Luxe Package"],
+    "src": "cars.com 2026 Tesla Model S specs (AWD)"
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model X",
+    "trim": "AWD",
+    "year": 2026,
+    "msrp": 114990,
+    "horsepower": 670,
+    "engine": "Electric",
+    "cargo1": 92,
+    "cargo2": 37,
+    "towing": 5000,
+    "packages": ["Luxe Package"],
+    "src": "cars.com 2026 Tesla Model X specs (AWD)"
+  }
+]

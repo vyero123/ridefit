@@ -1,0 +1,313 @@
+{
+"Ram": [
+"1500",
+"2500",
+"3500"
+],
+"Ford": [
+"F-150",
+"F-150 Lightning",
+"Super Duty F-250",
+"Super Duty F-350",
+"Ranger",
+"Maverick",
+"Mustang",
+"Mustang Mach-E",
+"Bronco Sport",
+"Bronco",
+"Escape",
+"Explorer",
+"Expedition",
+"Expedition MAX",
+"Transit Cargo Van",
+"E-Transit Cargo Van"
+],
+"Chevrolet": [
+"Silverado 1500",
+"Silverado 2500 HD",
+"Colorado",
+"Silverado EV",
+"Trax",
+"Trailblazer",
+"Equinox",
+"Equinox EV",
+"Blazer",
+"Blazer EV",
+"Traverse",
+"Tahoe",
+"Suburban",
+"Corvette"
+],
+"GMC": [
+"Sierra 1500",
+"Sierra 2500 HD",
+"Canyon",
+"Hummer EV Pickup",
+"Terrain",
+"Acadia",
+"Yukon",
+"Yukon XL",
+"Hummer EV SUV"
+],
+"Toyota": [
+"Tundra",
+"Tacoma",
+"Corolla",
+"Corolla Hatchback",
+"Camry",
+"Crown",
+"Prius",
+"GR86",
+"GR Corolla",
+"GR Supra",
+"Corolla Cross",
+"RAV4",
+"Highlander",
+"Grand Highlander",
+"4Runner",
+"Sequoia",
+"Land Cruiser",
+"Sienna",
+"bZ",
+"Crown Signia"
+],
+"Nissan": [
+"Frontier",
+"Sentra",
+"Altima",
+"Kicks",
+"Rogue",
+"Murano",
+"Pathfinder",
+"Armada",
+"Z",
+"Leaf"
+],
+"Honda": [
+"Ridgeline",
+"Civic Sedan",
+"Civic Hatchback",
+"Accord",
+"HR-V",
+"CR-V",
+"Passport",
+"Pilot",
+"Odyssey",
+"Prologue"
+],
+"Jeep": [
+"Gladiator",
+"Compass",
+"Cherokee",
+"Wrangler",
+"Grand Cherokee",
+"Grand Cherokee L",
+"Grand Wagoneer",
+"Recon"
+],
+"Hyundai": [
+"Santa Cruz",
+"Elantra",
+"Sonata",
+"Venue",
+"Kona",
+"Tucson",
+"Santa Fe",
+"Palisade",
+"Ioniq 5",
+"Ioniq 9"
+],
+"Rivian": [
+"R1T",
+"R1S"
+],
+"Tesla": [
+"Cybertruck",
+"Model 3",
+"Model Y",
+"Model S",
+"Model X"
+],
+"Acura": [
+"Integra",
+"ADX",
+"RDX",
+"MDX"
+],
+"Lincoln": [
+"Corsair",
+"Nautilus",
+"Aviator",
+"Navigator",
+"Navigator L"
+],
+"Kia": [
+"K4",
+"K5",
+"Sportage",
+"Seltos",
+"Sorento",
+"Carnival",
+"Niro",
+"EV6",
+"EV9"
+],
+"Subaru": [
+"Impreza",
+"Crosstrek",
+"Forester",
+"Outback",
+"Ascent",
+"Solterra",
+"BRZ",
+"WRX",
+"Trailseeker"
+],
+"Mazda": [
+"Mazda3",
+"CX-30",
+"CX-5",
+"CX-50",
+"CX-70",
+"CX-90",
+"MX-5 Miata"
+],
+"Volkswagen": [
+"Jetta",
+"Jetta GLI",
+"Golf GTI",
+"Golf R",
+"Taos",
+"Tiguan",
+"Atlas",
+"Atlas Cross Sport",
+"ID.4"
+],
+"Lexus": [
+"ES",
+"IS",
+"LS",
+"LC",
+"UX",
+"NX",
+"RX",
+"TX",
+"GX",
+"LX",
+"RZ"
+],
+"BMW": [
+"2 Series",
+"3 Series",
+"4 Series",
+"5 Series",
+"7 Series",
+"8 Series",
+"X1",
+"X2",
+"X3",
+"X5",
+"X7",
+"iX",
+"i4",
+"i5",
+"i7",
+"Z4"
+],
+"Mercedes-Benz": [
+"C-Class",
+"E-Class",
+"S-Class",
+"G-Class",
+"EQE",
+"EQS",
+"EQE SUV",
+"EQS SUV"
+],
+"Audi": [
+"A3",
+"A5",
+"A6",
+"A8",
+"Q3",
+"Q5",
+"Q7",
+"Q8",
+"Q4 e-tron"
+],
+"Buick": [
+"Envista",
+"Encore GX",
+"Envision",
+"Enclave"
+],
+"Cadillac": [
+"CT4",
+"CT5",
+"XT5",
+"Escalade",
+"Escalade ESV",
+"Lyriq",
+"Optiq",
+"Vistiq",
+"Escalade IQ"
+],
+"Chrysler": [
+"Pacifica",
+"Voyager"
+],
+"Dodge": [
+"Charger",
+"Durango"
+],
+"Genesis": [
+"G70",
+"G80",
+"G90",
+"GV60",
+"GV70",
+"GV80",
+"Electrified GV70"
+],
+"Volvo": [
+"V60 Cross Country",
+"V90 Cross Country",
+"XC40",
+"XC60",
+"XC90",
+"EX30",
+"EX40",
+"EX90"
+],
+"Mitsubishi": [
+"Outlander Sport",
+"Eclipse Cross",
+"Outlander",
+"Outlander PHEV"
+],
+"Infiniti": [
+"QX60",
+"QX80"
+],
+"Porsche": [
+"911",
+"Taycan",
+"Panamera",
+"Macan",
+"Cayenne",
+"Cayenne Coupe"
+],
+"Land Rover": [
+"Defender",
+"Discovery",
+"Discovery Sport",
+"Range Rover",
+"Range Rover Sport",
+"Range Rover Velar",
+"Range Rover Evoque"
+],
+"Mini": [
+"Countryman",
+"Cooper"
+]
+}

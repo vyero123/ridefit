@@ -1,0 +1,6 @@
+[
+  {"brand":"Acura","model":"Integra","trim":"CVT","year":2026,"msrp":33400,"mpgCity":29,"mpgHwy":37,"mpgCombined":32,"horsepower":200,"torque":192,"engine":"Intercooled Turbo Premium Gasoline I-4","cargo1":24,"passengerVolume":96,"packages":["Function Package"],"src":"cars.com 2026 Acura Integra specs (CVT)"},
+  {"brand":"Acura","model":"ADX","trim":"FWD","year":2026,"msrp":35000,"mpgCity":27,"mpgHwy":32,"mpgCombined":29,"horsepower":190,"torque":179,"engine":"Intercooled Turbo Premium Gasoline I-4","cargo1":55,"cargo2":24,"passengerVolume":97,"packages":[],"src":"cars.com 2026 Acura ADX specs (FWD)"},
+  {"brand":"Acura","model":"RDX","trim":"SH-AWD","year":2026,"msrp":45100,"mpgCity":21,"mpgHwy":27,"mpgCombined":23,"horsepower":272,"torque":280,"engine":"Intercooled Turbo Premium Unleaded I-4","cargo2":30,"passengerVolume":104,"towing":1500,"packages":[],"src":"cars.com 2026 Acura RDX specs (SH-AWD)"},
+  {"brand":"Acura","model":"MDX","trim":"FWD","year":2026,"msrp":51800,"mpgCity":19,"mpgHwy":26,"mpgCombined":22,"horsepower":290,"torque":267,"engine":"Premium Gasoline V-6","cargo1":95,"cargo2":48,"cargo3":18,"passengerVolume":139,"towing":3500,"packages":["Function Package"],"src":"cars.com 2026 Acura MDX specs (FWD)"}
+]

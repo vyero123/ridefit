@@ -1,0 +1,36 @@
+[
+  {
+    "brand": "Chrysler",
+    "model": "Pacifica",
+    "ratingYear": 2025,
+    "vehicleId": 20150,
+    "description": "2025 Chrysler Pacifica PV FWD",
+    "overall": 5,
+    "front": 5,
+    "side": 5,
+    "rollover": 4,
+    "rolloverProb": 0.116,
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Standard",
+    "recalls": 10,
+    "complaints": 26
+  },
+  {
+    "brand": "Chrysler",
+    "model": "Voyager",
+    "ratingYear": 2025,
+    "vehicleId": 20153,
+    "description": "2025 Chrysler Voyager PV FWD",
+    "overall": 5,
+    "front": 5,
+    "side": 5,
+    "rollover": 4,
+    "rolloverProb": 0.116,
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Optional",
+    "recalls": 6,
+    "complaints": 0
+  }
+]

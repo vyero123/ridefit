@@ -1,0 +1,20 @@
+Mechanical data pull from cars.com. Follow the contract exactly. Never guess; omit any field you cannot read off the page; if a page does not load or has no "Specifications" section, emit {"brand":"{BRAND}","model":"<model>","status":"no-page"}.
+
+For EACH model in the list below, fetch EXACTLY ONE page: https://www.cars.com/research/{MAKE}-{SLUG}-2026/specs/ where {SLUG} is the model name lower-cased with spaces and dots replaced by underscores (e.g. "silverado_1500", "grand_cherokee_l", "id_4", "mustang_mach_e", "f_150", "cx_5", "mx_5_miata"). The page shows the FIRST trim by default; use that trim, and record its name from the "Change trim" list (the one marked as showing). Read ONLY these rows:
+- "Starting MSRP" (the price under the trim, number only) -> msrp
+- "MPG" line "NN City / NN Hwy" -> mpgCity, mpgHwy (numbers only; skip for EVs where absent). "NN combined MPG" in Key specs -> mpgCombined
+- "SAE Net Horsepower @ RPM" -> horsepower (first number); "SAE Net Torque @ RPM" -> torque (first number)
+- "Cargo Volume to Seat 1" -> cargo1, "Cargo Volume to Seat 2" -> cargo2, "Cargo Volume to Seat 3" -> cargo3 (numbers only; N/A -> omit)
+- "Passenger Volume" -> passengerVolume (N/A -> omit)
+- "Maximum Payload Capacity" -> payload (N/A -> omit)
+- "Maximum Trailering Capacity" -> towing (N/A -> omit)
+- Package names under "Packages" (names only, no prices, max 12) -> packages (array)
+- Under "Highlights"/"Engine": "Engine Type" text -> engine
+Do NOT read any length/width/height/wheelbase/headroom/legroom rows — those are ignored on purpose.
+Emit: {"brand":"{BRAND}","model":"<model exactly as given>","trim":"<trim name>","year":2026,"msrp":..,"mpgCity":..,"mpgHwy":..,"mpgCombined":..,"horsepower":..,"torque":..,"engine":"..","cargo1":..,"cargo2":..,"cargo3":..,"passengerVolume":..,"payload":..,"towing":..,"packages":[..],"src":"cars.com 2026 <Make> <Model> specs (<trim>)"}
+
+Model list for {BRAND} (make slug "{MAKE}"): {MODELS}
+
+WRITE the JSON array (valid JSON, nothing else in the file) to:
+C:\Users\yevad\AppData\Roaming\Claude\local-agent-mode-sessions\f9c7e9d0-e544-4596-a232-7cd3fa56ef3e\4ec5cc5e-b6cf-4c82-bcac-609bf2f14fb0\local_3da3ce9b-029c-4d48-b7c3-6326c93addc7\outputs\_build\raw_cars_{FILE}.json
+Then reply with ONLY: "done: N pages parsed, M no-page" and nothing else.

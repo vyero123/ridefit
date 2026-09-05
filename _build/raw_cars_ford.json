@@ -1,0 +1,119 @@
+[
+ {
+  "brand": "Ford",
+  "model": "F-150",
+  "mpgCity": 19,
+  "mpgHwy": 25,
+  "mpgCombined": 21,
+  "cargo1": 77,
+  "payload": 1824,
+  "towing": 1825
+ },
+ {
+  "brand": "Ford",
+  "model": "F-150 Lightning",
+  "cargo1": 53,
+  "engine": "Electric",
+  "payload": 2189
+ },
+ {
+  "brand": "Ford",
+  "model": "Super Duty F-250",
+  "cargo1": 79,
+  "payload": 4303,
+  "towing": 3650
+ },
+ {
+  "brand": "Ford",
+  "model": "Super Duty F-350",
+  "cargo1": 79,
+  "payload": 4696,
+  "towing": 3625
+ },
+ {
+  "brand": "Ford",
+  "model": "Ranger",
+  "mpgCity": 21,
+  "mpgCombined": 23,
+  "mpgHwy": 25,
+  "payload": 6500,
+  "towing": 3500
+ },
+ {
+  "brand": "Ford",
+  "model": "Maverick",
+  "mpgCity": 40,
+  "mpgCombined": 37,
+  "mpgHwy": 34
+ },
+ {
+  "brand": "Ford",
+  "model": "Mustang",
+  "mpgCity": 22,
+  "mpgCombined": 26,
+  "mpgHwy": 33
+ },
+ {
+  "brand": "Ford",
+  "model": "Mustang Mach-E",
+  "mpgCombined": 0
+ },
+ {
+  "brand": "Ford",
+  "model": "Bronco Sport",
+  "mpgCity": 25,
+  "mpgCombined": 27,
+  "mpgHwy": 30,
+  "towing": 3467
+ },
+ {
+  "brand": "Ford",
+  "model": "Bronco",
+  "cargo1": 22,
+  "mpgCity": 18,
+  "mpgCombined": 20,
+  "mpgHwy": 22,
+  "payload": 0,
+  "towing": 4286
+ },
+ {
+  "brand": "Ford",
+  "model": "Escape",
+  "mpgCity": 27,
+  "mpgCombined": 30,
+  "mpgHwy": 34,
+  "payload": 2000
+ },
+ {
+  "brand": "Ford",
+  "model": "Explorer",
+  "mpgCity": 20,
+  "mpgCombined": 24,
+  "mpgHwy": 29,
+  "towing": 500
+ },
+ {
+  "brand": "Ford",
+  "model": "Expedition",
+  "mpgCity": 15,
+  "mpgCombined": 18,
+  "mpgHwy": 22
+ },
+ {
+  "brand": "Ford",
+  "model": "Expedition MAX",
+  "mpgCity": 15,
+  "mpgCombined": 18,
+  "mpgHwy": 22
+ },
+ {
+  "brand": "Ford",
+  "model": "Transit Cargo Van",
+  "status": "no-page"
+ },
+ {
+  "brand": "Ford",
+  "model": "E-Transit Cargo Van",
+  "status": "no-page"
+ }
+]

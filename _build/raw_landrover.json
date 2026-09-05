@@ -1,0 +1,303 @@
+[
+  {
+    "brand": "Land Rover",
+    "model": "Defender",
+    "name": "110 P400 X-Dynamic SE",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 77.4,
+    "length": 197.5,
+    "wheelbase": 119.0,
+    "clearance": 8.9,
+    "tire": "255/65R20",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 40.6,
+    "legroom1": 39.1,
+    "headroom2": 40.4,
+    "legroom2": 38.4,
+    "cargo2": 34.0,
+    "towing": 8200,
+    "approx": [],
+    "src": "Edmunds 2026 Land Rover Defender features & specs (110 P400 X-Dynamic SE 4dr SUV AWD)",
+    "equipment": {
+      "110 P400 X-Dynamic SE": {
+        "standard": [
+          "full time 4wd", "electronic hi-lo gear selection", "descent control", "four-wheel independent suspension", "front and rear stabilizer bar",
+          "leatherette seats", "10-way power driver seat", "10-way power passenger seat", "driver seat memory", "heated front seats", "cooled front seats",
+          "split-folding rear seatback", "folding center armrest", "blind spot and lane departure warning", "lane keep assist", "rear cross traffic alert",
+          "driver attention alert", "pre-collision safety system", "front and rear head airbags", "stability control", "traction control", "tire pressure monitoring",
+          "led headlamps", "self-leveling headlights", "front fog lights", "remote anti-theft alarm", "meridian premium audio", "15 speakers", "surround audio",
+          "android auto/apple carplay", "usb connection", "satellite radio", "power windows", "power glass extended moonroof", "fixed rear glass moonroof",
+          "hands-free entry", "heated mirrors", "keyless ignition", "tilt and telescopic steering wheel", "360-degree camera", "front and rear parking sensors",
+          "wireless charging", "adaptive cruise control", "universal garage remote", "heated steering wheel", "dual zone climate control", "auto-dimming rearview mirror",
+          "20 in. alloy wheels", "all season tires", "full-size spare tire"
+        ],
+        "optional": [
+          "air suspension pack", "off-road pack", "family comfort pack", "cold climate package", "advanced off-road capability package", "winch pack", "towing pack",
+          "explorer pack", "urban pack", "roof pack", "head-up display", "3-zone climate control", "refrigerated center console", "clearsight rear view mirror",
+          "trailer hitch", "deployable side steps", "22 in. wheels", "all terrain tires"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Discovery",
+    "name": "P360 Tempest Edition",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 74.3,
+    "length": 195.1,
+    "wheelbase": 115.1,
+    "clearance": 8.2,
+    "weight": 5145,
+    "tire": "R22",
+    "seats": 7,
+    "rows": 3,
+    "headroom1": 39.4,
+    "legroom1": 39.1,
+    "headroom2": 39.0,
+    "legroom2": 37.4,
+    "cargo1": 70.5,
+    "towing": 8200,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Land Rover Discovery features & specs (P360 Tempest Edition 4dr SUV 4WD); tire line shows only rim size R22 (22 in. wheels), width/aspect missing",
+    "equipment": {
+      "P360 Tempest Edition": {
+        "standard": [
+          "full time 4wd", "descent control", "four-wheel independent suspension", "front and rear stabilizer bar", "premium leather seats", "16-way power front seats",
+          "driver seat memory", "passenger seat memory", "heated front seats", "cooled front seats", "reclining rear seats", "heated rear seats", "power folding third row",
+          "blind spot and lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert", "pre-collision safety system",
+          "post-collision safety system", "front and rear head airbags", "stability control", "traction control", "tire pressure monitoring", "led headlamps",
+          "front fog lights", "turn signal mirrors", "remote anti-theft alarm", "11.4 in. infotainment display", "meridian premium audio", "14 speakers", "surround audio",
+          "wireless android auto/apple carplay", "satellite radio", "power glass moonroof", "fixed rear glass moonroof", "hands-free entry", "heated mirrors",
+          "keyless ignition", "power tilt and telescopic steering wheel", "360-degree camera", "front and rear parking sensors", "parking assist", "wireless charging",
+          "adaptive cruise control", "heated steering wheel", "four zone climate control", "cooled storage compartment", "22 in. alloy wheels", "all terrain tires"
+        ],
+        "optional": [
+          "advanced off road capability package", "towing pack", "cold climate package", "20-way massaging front seats", "wi-fi with data plan", "fixed side steps",
+          "deployable side steps", "22 in. dark grey wheels", "rear seat convenience pack", "interior protection pack", "exterior protection pack"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Discovery Sport",
+    "name": "P250 Landmark",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 67.9,
+    "length": 180.9,
+    "wheelbase": 107.9,
+    "weight": 4035,
+    "tire": "R19",
+    "seats": 5,
+    "rows": 2,
+    "cargo2": 32.4,
+    "towing": 4409,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Land Rover Discovery Sport features & specs (P250 Landmark 4dr SUV AWD); tire line shows only rim size R19 (19 in. wheels), width/aspect missing",
+    "equipment": {
+      "P250 Landmark": {
+        "standard": [
+          "descent control", "four-wheel independent suspension", "leather/sueded microfiber seats", "10-way power driver seat", "8-way power passenger seat",
+          "driver seat memory", "heated front seats", "split-folding rear seatback", "reclining rear seats", "folding center armrest", "blind spot warning",
+          "lane keep assist", "rear cross traffic alert", "driver attention alert", "post-collision safety system", "front and rear head airbags", "stability control",
+          "traction control", "tire pressure monitoring", "led headlamps", "self-leveling headlights", "front fog lights", "remote anti-theft alarm",
+          "11.4 in. infotainment display", "meridian premium audio", "11 speakers", "subwoofer", "android auto/apple carplay", "usb connection", "satellite radio",
+          "power windows", "fixed glass extended moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel",
+          "360-degree camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control", "universal garage remote", "heated steering wheel",
+          "dual zone climate control", "interior air filtration", "auto-dimming rearview mirror", "19 in. alloy wheels"
+        ],
+        "optional": [
+          "cold climate pack", "technology pack", "comfort pack", "third row pack", "dynamic handling pack", "towing package", "meridian surround sound system",
+          "wi-fi with data plan", "fixed side steps", "black roof rails", "tow hitch receiver", "20 in. wheels", "21 in. wheels", "black brake calipers"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover",
+    "name": "P400 SE SWB",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 73.6,
+    "length": 198.9,
+    "wheelbase": 118.0,
+    "clearance": 8.6,
+    "weight": 5240,
+    "tire": "275/50R21",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 39.3,
+    "legroom1": 39.9,
+    "headroom2": 39.2,
+    "legroom2": 40.4,
+    "cargo1": 83.5,
+    "cargo2": 40.7,
+    "towing": 7715,
+    "approx": [],
+    "src": "Edmunds 2026 Land Rover Range Rover features & specs (P400 SE 4dr SUV 4WD w/Standard Wheelbase)",
+    "equipment": {
+      "P400 SE SWB": {
+        "standard": [
+          "full time 4wd", "electronic hi-lo gear selection", "center and rear locking differential", "descent control", "four-wheel independent suspension",
+          "front and rear stabilizer bar", "leather seats", "10-way power front seats", "driver seat memory", "passenger seat memory", "heated front seats",
+          "ventilated front seats", "reclining rear seats", "heated rear seats", "ventilated rear seats", "blind spot and lane departure warning", "lane keep assist",
+          "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "post-collision safety system", "front and rear head airbags",
+          "stability control", "traction control", "tire pressure monitoring", "led headlamps", "self-leveling headlights", "headlamp washers", "front fog lights",
+          "remote anti-theft alarm", "13.1 in. infotainment display", "meridian premium audio", "13 speakers", "surround audio", "wireless android auto/apple carplay",
+          "satellite radio", "power glass moonroof", "fixed rear glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition",
+          "power tilt and telescopic steering wheel", "360-degree camera", "front and rear parking sensors", "parking assist", "wireless charging",
+          "adaptive cruise control", "heated steering wheel", "three zone climate control", "21 in. alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "shadow exterior pack", "towing pack", "tailgate event suite", "premium upgrade interior pack", "advanced off-road pack", "comfort pack", "cold climate pack",
+          "convenience pack", "clearsight rear view mirror", "meridian 3d surround sound", "head-up display", "rear seat entertainment", "24-way massage front seats",
+          "22 in. wheels", "23 in. wheels", "pixel led headlights", "deployable side steps"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Sport",
+    "name": "P360 SE",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 71.7,
+    "length": 194.7,
+    "width": 79.0,
+    "wheelbase": 118.0,
+    "clearance": 8.5,
+    "weight": 4990,
+    "tire": "275/50R21",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 38.8,
+    "legroom1": 40.3,
+    "headroom2": 39.0,
+    "legroom2": 37.8,
+    "cargo2": 31.9,
+    "towing": 7716,
+    "approx": [],
+    "src": "Edmunds 2026 Land Rover Range Rover Sport features & specs (P360 SE 4dr SUV 4WD)",
+    "equipment": {
+      "P360 SE": {
+        "standard": [
+          "full time 4wd", "descent control", "center locking differential", "four-wheel independent suspension", "front and rear stabilizer bar", "premium leather seats",
+          "16-way power front seats", "driver seat memory", "passenger seat memory", "heated front seats", "ventilated front seats", "reclining rear seats",
+          "heated rear seats", "blind spot and lane departure warning", "lane keep assist", "rear cross traffic alert", "driver attention alert",
+          "pre-collision safety system", "post-collision safety system", "front and rear head airbags", "stability control", "traction control",
+          "tire pressure monitoring", "led headlamps", "self-leveling headlights", "headlamp washers", "front fog lights", "remote anti-theft alarm",
+          "13.1 in. infotainment display", "meridian premium audio", "15 speakers", "wireless android auto/apple carplay", "satellite radio", "power glass moonroof",
+          "fixed rear glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "tilt and telescopic steering wheel", "360-degree camera",
+          "front and rear parking sensors", "wireless charging", "adaptive cruise control", "heated steering wheel", "dual zone climate control",
+          "21 in. alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "configurable programs", "twin-speed transfer box", "black brake calipers", "comfort pack", "black exterior pack", "technology pack",
+          "premium upgrade interior pack", "cold climate pack", "towing pack", "adaptive off-road cruise control", "meridian 3d surround sound", "wi-fi with data plan",
+          "20-way power front seats", "soft door close", "22 in. wheels", "23 in. wheels", "deployable side steps", "pixel led headlights"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Velar",
+    "name": "P250 Dynamic SE",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 66.3,
+    "length": 188.9,
+    "wheelbase": 113.0,
+    "clearance": 8.4,
+    "weight": 4130,
+    "tire": "R20",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 38.2,
+    "legroom1": 40.3,
+    "headroom2": 38.0,
+    "legroom2": 37.2,
+    "cargo1": 62.7,
+    "cargo2": 30.9,
+    "towing": 5291,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Land Rover Range Rover Velar features & specs (P250 Dynamic SE 4dr SUV AWD, page default trim, marked discontinued); tire line shows only rim size R20 (20 in. wheels), width/aspect missing",
+    "equipment": {
+      "P250 Dynamic SE": {
+        "standard": [
+          "descent control", "four-wheel independent suspension", "front and rear stabilizer bar", "leather seats", "8-way power front seats", "driver seat memory",
+          "heated front seats", "split-folding rear seatback", "folding center armrest", "blind spot warning", "lane keep assist", "rear cross traffic alert",
+          "driver attention alert", "pre-collision safety system", "post-collision safety system", "front and rear head airbags", "stability control",
+          "traction control", "tire pressure monitoring", "led headlamps", "front fog lights", "remote anti-theft alarm", "11.4 in. infotainment display",
+          "meridian premium audio", "11 speakers", "subwoofer", "wireless android auto/apple carplay", "satellite radio with real time traffic", "power windows",
+          "power glass extended moonroof", "fixed rear glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition", "power tilt and telescopic steering wheel",
+          "360-degree camera", "front and rear parking sensors", "parking assist", "wireless charging", "adaptive cruise control", "universal garage remote",
+          "heated steering wheel", "dual zone climate control", "interior air filtration", "auto-dimming rearview mirror", "20 in. alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "terrain response 2 with dynamic program", "black exterior style pack", "dynamic handling pack", "cold climate pack", "comfort pack", "technology pack",
+          "heated and cooled front seats", "meridian 3d surround sound", "wi-fi with data plan", "21 in. wheels", "22 in. wheels", "black roof rails",
+          "carbon fiber roof spoiler", "powered gesture tailgate", "tow hitch receiver"
+        ]
+      }
+    }
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Evoque",
+    "name": "P250 S",
+    "year": 2026,
+    "template": "suv",
+    "bodyClass": "crossover",
+    "height": 64.9,
+    "length": 172.1,
+    "wheelbase": 105.6,
+    "clearance": 8.3,
+    "weight": 3935,
+    "tire": "R18",
+    "seats": 5,
+    "rows": 2,
+    "headroom1": 37.4,
+    "legroom1": 40.0,
+    "shoulder1": 56.6,
+    "headroom2": 38.1,
+    "legroom2": 34.0,
+    "shoulder2": 55.4,
+    "cargo2": 21.4,
+    "towing": 3968,
+    "approx": ["tire"],
+    "src": "Edmunds 2026 Land Rover Range Rover Evoque features & specs (P250 S 4dr SUV AWD); tire line shows only rim size R18 (18 x 8.0 in. wheels), width/aspect missing",
+    "equipment": {
+      "P250 S": {
+        "standard": [
+          "descent control", "four-wheel independent suspension", "front and rear stabilizer bar", "leather seats", "8-way power driver seat", "6-way power passenger seat",
+          "driver seat memory", "heated front seats", "split-folding rear seatback", "folding center armrest", "blind spot warning", "lane keep assist",
+          "rear cross traffic alert", "driver attention alert", "pre-collision safety system", "front and rear head airbags", "stability control", "traction control",
+          "tire pressure monitoring", "led headlamps", "self-leveling headlights", "front fog lights", "turn signal mirrors", "remote anti-theft alarm",
+          "11.4 in. infotainment display", "meridian premium audio", "12 speakers", "subwoofer", "wireless android auto/apple carplay", "satellite radio",
+          "power windows", "power glass moonroof", "fixed rear glass moonroof", "hands-free entry", "heated mirrors", "keyless ignition",
+          "power tilt and telescopic steering wheel", "360-degree camera", "front and rear parking sensors", "wireless charging", "adaptive cruise control",
+          "universal garage remote", "heated steering wheel", "dual zone climate control", "interior air filtration", "auto-dimming rearview mirror",
+          "18 in. alloy wheels", "all season tires"
+        ],
+        "optional": [
+          "dynamic handling pack", "comfort pack", "technology pack", "black exterior pack", "cold climate pack", "rear seat convenience pack",
+          "wi-fi with data plan", "19 in. wheels", "20 in. wheels", "21 in. wheels"
+        ]
+      }
+    }
+  }
+]

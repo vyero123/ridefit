@@ -1,0 +1,38 @@
+[
+ {
+  "brand": "Ram",
+  "model": "1500",
+  "msrp": 42025,
+  "mpgCity": 18,
+  "mpgHwy": 21,
+  "mpgCombined": 20,
+  "horsepower": 305,
+  "torque": 269,
+  "cargo1": 72,
+  "payload": 2412,
+  "towing": 7660
+ },
+ {
+  "brand": "Ram",
+  "model": "2500",
+  "msrp": 45000,
+  "horsepower": 405,
+  "torque": 429,
+  "cargo1": 75,
+  "payload": 3935,
+  "packages": [
+   "Towing Technology",
+   "Quick Order"
+  ]
+ },
+ {
+  "brand": "Ram",
+  "model": "3500",
+  "mpgCity": 18,
+  "mpgHwy": 21,
+  "mpgCombined": 20,
+  "cargo1": 72,
+  "payload": 14000,
+  "towing": 2250
+ }
+]

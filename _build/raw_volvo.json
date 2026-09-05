@@ -1,0 +1,106 @@
+[
+  {
+    "brand": "Volvo", "model": "V60 Cross Country", "name": "B5 Plus AWD", "year": 2026, "template": "wagon", "bodyClass": "wagon",
+    "height": 59.2, "length": 188.5, "width": 75.4, "wheelbase": 113.2, "clearance": 8.1, "weight": 4040, "tire": "215/55R18",
+    "seats": 5, "rows": 2,
+    "headroom1": 37.4, "legroom1": 42.3, "shoulder1": 56.1, "hip1": 55.3,
+    "headroom2": 38.1, "legroom2": 35.2, "shoulder2": 54.5, "hip2": 53.4,
+    "towing": 2000, "approx": [],
+    "src": "Edmunds 2026 Volvo V60 Cross Country features & specs (B5 Plus 4dr Wagon AWD)",
+    "equipment": {"B5 Plus AWD": {
+      "standard": ["leather seats","8-way power driver seat","8-way power passenger seat","power lumbar support","2 memorized driver seat settings","heated front seats","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","adaptive headlights","daytime running lights","remote anti-theft alarm","9.0-inch infotainment display","apple carplay","usb connection","satellite radio","one-touch power windows","power glass moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","adaptive cruise control","universal garage remote","leather steering wheel","dual zone climate control","interior air filtration","electrochromatic rearview mirror","painted alloy wheels","all season tires","temporary spare tire","descent control","four-wheel independent suspension"],
+      "optional": ["climate package","protection package","protection package premier","luggage cover","harman kardon premium sound","digital rearview mirror w/homelink","19-inch alloy wheels","20-inch wheel kit w/all-season tires","rear camera washer","retractable trailer hitch","stainless steel bumper cover","load bars"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "V90 Cross Country", "name": "B6 Ultra AWD", "year": 2026, "template": "wagon", "bodyClass": "wagon",
+    "height": 60.7, "length": 195.2, "width": 73.9, "wheelbase": 115.8, "clearance": 7.9, "weight": 4105, "tire": "235/50R19",
+    "seats": 5, "rows": 2,
+    "headroom1": 38.7, "legroom1": 42.2, "shoulder1": 57.5, "hip1": 56.4,
+    "headroom2": 38.0, "legroom2": 35.9, "shoulder2": 55.9, "hip2": 55.7,
+    "cargo1": 69.0, "towing": 3500, "approx": [],
+    "src": "Edmunds 2026 Volvo V90 Cross Country features & specs (B6 Ultra 4dr Wagon AWD)",
+    "equipment": {"B6 Ultra AWD": {
+      "standard": ["premium leather seats","10-way power driver seat","10-way power passenger seat","power lumbar support","thigh extension","memorized seat settings","heated front seats","ventilated front seats","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","adaptive headlights","cornering lights","front fog lights","remote anti-theft alarm","9.0-inch infotainment display","harman kardon premium speakers","subwoofer","surround audio","apple carplay","usb connection","satellite radio","one-touch power windows","power glass extended moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","adaptive cruise control","universal garage remote","four zone climate control","interior air filtration","electrochromatic rearview mirror","painted alloy wheels","all season tires","temporary spare tire","descent control"],
+      "optional": ["active chassis w/rear air suspension","protection package premier","climate package pro","climate package","protection package","luggage cover","bowers & wilkins premium sound","massage front seats","integrated booster cushions","digital rearview mirror w/homelink","rear camera washer","stainless steel bumper cover","20-inch alloy wheels","21-inch alloy wheels","mud flaps","side scuff plate","load bars"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "XC40", "name": "B5 Plus AWD", "year": 2026, "template": "suv", "bodyClass": "crossover",
+    "height": 65.2, "length": 174.8, "width": 76.3, "wheelbase": 106.4, "clearance": 8.3, "weight": 3907, "tire": "235/50R19",
+    "seats": 5, "rows": 2,
+    "headroom1": 37.6, "legroom1": 40.9, "shoulder1": 56.7, "hip1": 54.7,
+    "headroom2": 38.3, "legroom2": 36.1, "shoulder2": 56.3, "hip2": 54.6,
+    "cargo1": 57.5, "cargo2": 20.4, "towing": 3500, "approx": [],
+    "src": "Edmunds 2026 Volvo XC40 features & specs (B5 Plus 4dr SUV AWD)",
+    "equipment": {"B5 Plus AWD": {
+      "standard": ["leather seats","8-way power driver seat","8-way power passenger seat","power lumbar support","thigh extension","2 memorized driver seat settings","heated front seats","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","daytime running lights","front fog lights","remote anti-theft alarm","12.3-inch infotainment display","android auto","apple carplay","usb connection","satellite radio","one-touch power windows","power glass moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","wireless charging","adaptive cruise control","universal garage remote","dual zone climate control","interior air filtration","electrochromatic rearview mirror","painted alloy wheels","all season tires","temporary spare tire","descent control"],
+      "optional": ["protection package premier","protection package","climate package","harman kardon premium sound","digital rearview mirror w/homelink","pixel headlights","trunk spoiler","21-inch alloy wheels","20-inch alloy wheels","load bars","mud flaps","trailer hitch","running boards"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "XC60", "name": "B5 Plus AWD", "year": 2026, "template": "suv", "bodyClass": "crossover",
+    "height": 65.2, "length": 185.4, "wheelbase": 112.8, "clearance": 8.5, "weight": 4131, "tire": "235/55R19",
+    "seats": 5, "rows": 2,
+    "headroom1": 38.0, "legroom1": 41.5, "shoulder1": 58.2, "hip1": 56.4,
+    "headroom2": 38.0, "legroom2": 38.0, "shoulder2": 56.3, "hip2": 55.4,
+    "cargo1": 63.3, "towing": 3500, "approx": [],
+    "src": "Edmunds 2026 Volvo XC60 features & specs (B5 Plus 4dr SUV AWD)",
+    "equipment": {"B5 Plus AWD": {
+      "standard": ["leatherette seats","8-way power driver seat","8-way power passenger seat","power lumbar support","2 memorized driver seat settings","heated front seats","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","adaptive headlights","cornering lights","front fog lights","remote anti-theft alarm","11.2-inch infotainment display","apple carplay","usb connection","satellite radio","one-touch power windows","power glass moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","wireless charging","adaptive cruise control","universal garage remote","dual zone climate control","interior air filtration","electrochromatic rearview mirror","painted alloy wheels","all season tires","temporary spare tire","descent control"],
+      "optional": ["climate package pro","climate package","protection package","protection package premier","harman kardon premium sound","integrated booster seats","digital rearview mirror w/homelink","luggage cover","running boards","load bars","20-inch alloy wheels","mud flaps","stainless steel bumper cover","retractable trailer hitch","rear camera washer"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "XC90", "name": "B6 Plus AWD", "year": 2026, "template": "suv", "bodyClass": "crossover",
+    "height": 69.9, "length": 195.0, "wheelbase": 117.5, "clearance": 8.8, "weight": 4656, "tire": "275/40R21",
+    "seats": 7, "rows": 3,
+    "headroom1": 38.9, "legroom1": 40.9, "shoulder1": 57.7, "hip1": 56.0,
+    "headroom2": 38.5, "legroom2": 37.0, "shoulder2": 56.5, "hip2": 56.5,
+    "cargo1": 85.7, "towing": 5000, "approx": [],
+    "src": "Edmunds 2026 Volvo XC90 features & specs (B6 Plus 4dr SUV AWD)",
+    "equipment": {"B6 Plus AWD": {
+      "standard": ["leatherette seats","8-way power driver seat","8-way power passenger seat","power lumbar support","3 memorized driver seat settings","heated front seats","heated rear seats","split-folding rear seatback","reclining rear seats","folding third row seats","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","third row head airbags","stability control","child seat anchors","tire pressure monitoring","led headlamps","adaptive headlights","cornering lights","headlamp washers","remote anti-theft alarm","11.2-inch infotainment display","apple carplay","usb connection","satellite radio","one-touch power windows","power glass moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","wireless charging","adaptive cruise control","universal garage remote","heated steering wheel","four zone climate control","interior air filtration","electrochromatic rearview mirror","painted alloy wheels","all season tires","temporary spare tire"],
+      "optional": ["protection package","protection package premier","harman kardon premium sound","digital rearview mirror w/homelink","luggage cover","running boards","22-inch wheels w/summer tires","load bars","mud flaps","retractable trailer hitch","22-inch alloy wheels","stainless steel bumper cover","rear camera washer"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "EX30", "name": "Twin Motor Performance Ultra AWD", "year": 2026, "template": "hatchback", "bodyClass": "crossover",
+    "height": 61.2, "length": 166.7, "width": 72.4, "wheelbase": 104.3, "clearance": 7.0, "weight": 4151, "tire": "245/45R19",
+    "seats": 5, "rows": 2,
+    "headroom1": 41.7, "legroom1": 41.9, "shoulder1": 55.1, "hip1": 54.3,
+    "headroom2": 38.3, "legroom2": 32.3, "shoulder2": 53.0, "hip2": 46.3,
+    "cargo1": 27.8, "cargo2": 12.4, "towing": 2000, "approx": [],
+    "src": "Edmunds 2026 Volvo EX30 features & specs (Twin Motor Performance Ultra 4dr Hatchback AWD)",
+    "equipment": {"Twin Motor Performance Ultra AWD": {
+      "standard": ["leatherette/cloth seats","8-way power driver seat","8-way power passenger seat","power lumbar support","6 memorized driver seat settings","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","front and rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","daytime running lights","remote anti-theft alarm","12.3-inch infotainment display","harman kardon premium speakers","subwoofer","surround audio","wireless apple carplay","usb connection","satellite radio","one-touch power windows","fixed glass extended moonroof","remote keyless entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","automatic parking assist","wireless charging","adaptive cruise control","leatherette steering wheel","dual zone climate control","interior air filtration","extended cabin heating/cooling","electrochromatic rearview mirror","alloy wheels","all season tires","descent control"],
+      "optional": ["protection package premier","climate package","protection package","panoramic roof sunshade","retractable trailer hitch","load bars","bumper cover","mud flaps"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "EX40", "name": "Twin Motor Plus AWD", "year": 2026, "template": "suv", "bodyClass": "crossover",
+    "height": 65.0, "length": 174.8, "width": 73.7, "wheelbase": 106.4, "clearance": 7.1, "weight": 4623, "tire": "255/45R19",
+    "seats": 5, "rows": 2,
+    "headroom1": 37.6, "legroom1": 40.9, "shoulder1": 56.7, "hip1": 54.7,
+    "headroom2": 38.3, "legroom2": 36.1, "shoulder2": 56.3, "hip2": 54.6,
+    "cargo1": 49.4, "cargo2": 18.9, "towing": 2000, "approx": [],
+    "src": "Edmunds 2026 Volvo EX40 features & specs (Twin Motor Plus 4dr SUV AWD)",
+    "equipment": {"Twin Motor Plus AWD": {
+      "standard": ["vinyl/sueded microfiber seats","8-way power driver seat","8-way power passenger seat","power lumbar support","thigh extension","2 memorized driver seat settings","heated front seats","split-folding rear seatback","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","stability control","child seat anchors","tire pressure monitoring","led headlamps","daytime running lights","front fog lights","remote anti-theft alarm","9.0-inch infotainment display","harman kardon premium speakers","subwoofer","android auto","apple carplay","usb connection","satellite radio","one-touch power windows","power glass moonroof","hands-free entry","heated mirrors","keyless ignition","tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","wireless charging","cruise control","universal garage remote","leatherette steering wheel","dual zone climate control","interior air filtration","extended cabin heating/cooling","electrochromatic rearview mirror","painted alloy wheels","all season tires","descent control"],
+      "optional": ["climate package","protection package","protection package premier","digital rearview mirror w/homelink","pixel technology headlights","20-inch alloy wheels","load bars","running boards","mud flaps","trailer hitch","trunk spoiler"]
+    }}
+  },
+  {
+    "brand": "Volvo", "model": "EX90", "name": "Twin Motor Performance Ultra AWD 7-seat", "year": 2026, "template": "suv", "bodyClass": "crossover",
+    "height": 68.7, "length": 198.3, "width": 77.3, "wheelbase": 117.5, "clearance": 8.5, "weight": 5930, "tire": "295/40R21",
+    "seats": 7, "rows": 3,
+    "headroom1": 42.3, "legroom1": 40.9, "shoulder1": 58.1, "hip1": 56.0,
+    "headroom2": 41.6, "legroom2": 36.5, "shoulder2": 57.8, "hip2": 56.5,
+    "cargo1": 75.4, "cargo3": 11.0, "towing": 4850, "approx": [],
+    "src": "Edmunds 2026 Volvo EX90 features & specs (Twin Motor Performance Ultra 4dr SUV AWD w/7 Seats)",
+    "equipment": {"Twin Motor Performance Ultra AWD 7-seat": {
+      "standard": ["premium leather seats","10-way power driver seat","10-way power passenger seat","power lumbar support","thigh extension","heated front seats","ventilated front seats","massaging front seats","heated rear seats","split-folding rear seatback","power folding third row seats","blind spot warning","lane departure warning","lane keep assist","rear cross traffic alert","driver attention alert","pre-collision safety system","rear side airbags","third row head airbags","stability control","child seat anchors","tire pressure monitoring","led headlamps","cornering lights","headlamp washers","remote anti-theft alarm","14.5-inch infotainment display","bose premium speakers","subwoofer","surround audio","wireless apple carplay","usb connection","satellite radio","fixed glass extended moonroof","hands-free entry","heated mirrors","keyless ignition","power tilt and telescopic steering wheel","surround view camera","front and rear parking sensors","wireless charging","adaptive cruise control","universal garage remote","heated steering wheel","four zone climate control","interior air filtration","extended cabin heating/cooling","electrochromatic rearview mirror","painted alloy wheels","all season tires","descent control"],
+      "optional": ["protection package premier","protection package","digital rearview mirror w/homelink","luggage cover","bowers & wilkins premium sound","panoramic roof sunshade","spare tire","22-inch forged wheels","retractable trailer hitch","load bars","stainless steel bumper cover","running boards","mud flaps","22-inch aero wheels"]
+    }}
+  }
+]

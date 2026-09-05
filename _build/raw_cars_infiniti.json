@@ -1,0 +1,4 @@
+[
+  {"brand":"Infiniti","model":"QX60","trim":"PURE FWD","year":2026,"msrp":51590,"mpgCity":22,"mpgHwy":28,"mpgCombined":24,"horsepower":268,"torque":286,"engine":"Intercooled Turbo Premium Gasoline I-4","cargo1":75,"cargo2":42,"cargo3":15,"passengerVolume":141,"towing":6000,"packages":["[M94] Family Package","[M92] Cargo Package"],"src":"cars.com 2026 Infiniti QX60 specs (PURE FWD)"},
+  {"brand":"Infiniti","model":"QX80","trim":"PURE RWD","year":2026,"msrp":83750,"mpgCity":16,"mpgHwy":20,"mpgCombined":18,"horsepower":450,"torque":516,"engine":"Twin Turbo Premium Gasoline V-6","cargo1":97,"cargo2":56,"cargo3":20,"towing":8500,"packages":["[N93] Silver Interior Lighting Package","[M92] Cargo Package"],"src":"cars.com 2026 Infiniti QX80 specs (PURE RWD)"}
+]

@@ -1,0 +1,11 @@
+[
+  {"brand":"Cadillac","model":"CT4","ratingYear":2025,"vehicleId":20395,"description":"2025 Cadillac CT4 4 DR AWD","esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":0,"complaints":2},
+  {"brand":"Cadillac","model":"CT5","ratingYear":2025,"vehicleId":20400,"description":"2025 Cadillac CT5 4 DR AWD","overall":5,"front":5,"side":5,"rollover":5,"rolloverProb":0.095,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":8},
+  {"brand":"Cadillac","model":"XT5","ratingYear":2025,"vehicleId":20424,"description":"2025 Cadillac XT5 SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.151,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":1,"complaints":4},
+  {"brand":"Cadillac","model":"Escalade","ratingYear":2025,"vehicleId":20438,"description":"2025 Cadillac Escalade SUV 4WD","overall":5,"front":5,"side":5,"rollover":3,"rolloverProb":0.219,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":15},
+  {"brand":"Cadillac","model":"Escalade ESV","ratingYear":2025,"vehicleId":20444,"description":"2025 Cadillac Escalade ESV SUV 4WD","overall":5,"front":5,"side":5,"rollover":3,"rolloverProb":0.219,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":1,"complaints":13},
+  {"brand":"Cadillac","model":"Lyriq","ratingYear":2025,"vehicleId":20432,"description":"2025 Cadillac LYRIQ SUV AWD","overall":5,"front":5,"side":5,"rollover":5,"rolloverProb":0.089,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":3,"complaints":18},
+  {"brand":"Cadillac","model":"Optiq","ratingYear":2025,"vehicleId":20544,"description":"2025 Cadillac OPTIQ SUV","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":2,"complaints":12},
+  {"brand":"Cadillac","model":"Vistiq","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"Cadillac","model":"Escalade IQ","vehicleId":0,"note":"no NHTSA model name matched"}
+]

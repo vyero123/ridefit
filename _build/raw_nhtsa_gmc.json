@@ -1,0 +1,11 @@
+[
+  {"brand":"GMC","model":"Sierra 1500","ratingYear":2025,"vehicleId":20529,"description":"2025 GMC Sierra 1500 PU/CC 4WD","overall":5,"front":4,"side":5,"rollover":4,"rolloverProb":0.198,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":1,"complaints":109},
+  {"brand":"GMC","model":"Sierra 2500 HD","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"GMC","model":"Canyon","ratingYear":2025,"vehicleId":20504,"description":"2025 GMC Canyon PU/CC 4WD","overall":4,"front":4,"side":5,"rollover":3,"rolloverProb":0.0,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":2,"complaints":8},
+  {"brand":"GMC","model":"Hummer EV Pickup","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"GMC","model":"Terrain","ratingYear":2025,"vehicleId":20415,"description":"2025 GMC Terrain SUV AWD","side":5,"rollover":4,"rolloverProb":0.174,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":13},
+  {"brand":"GMC","model":"Acadia","ratingYear":2025,"vehicleId":20422,"description":"2025 GMC Acadia SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.185,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":0,"complaints":62},
+  {"brand":"GMC","model":"Yukon","ratingYear":2025,"vehicleId":20436,"description":"2025 GMC Yukon SUV 4WD","overall":5,"front":5,"side":5,"rollover":3,"rolloverProb":0.219,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":2,"complaints":52},
+  {"brand":"GMC","model":"Yukon XL","ratingYear":2025,"vehicleId":20442,"description":"2025 GMC Yukon XL SUV 4WD","overall":5,"front":5,"side":5,"rollover":3,"rolloverProb":0.219,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":1,"complaints":25},
+  {"brand":"GMC","model":"Hummer EV SUV","vehicleId":0,"note":"no NHTSA model name matched"}
+]

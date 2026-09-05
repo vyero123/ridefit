@@ -1,0 +1,42 @@
+[
+  {
+    "brand": "Chrysler",
+    "model": "Pacifica",
+    "trim": "Base",
+    "year": 2026,
+    "msrp": 44445,
+    "mpgCity": 19,
+    "mpgHwy": 28,
+    "mpgCombined": 22,
+    "horsepower": 287,
+    "torque": 262,
+    "engine": "Regular Gasoline V-6",
+    "cargo1": 141,
+    "cargo2": 88,
+    "cargo3": 32,
+    "passengerVolume": 165,
+    "towing": 3600,
+    "packages": [],
+    "src": "cars.com 2026 Chrysler Pacifica specs (Base)"
+  },
+  {
+    "brand": "Chrysler",
+    "model": "Voyager",
+    "trim": "Base",
+    "year": 2026,
+    "msrp": 41395,
+    "mpgCity": 19,
+    "mpgHwy": 28,
+    "mpgCombined": 22,
+    "horsepower": 287,
+    "torque": 262,
+    "engine": "Regular Gasoline V-6",
+    "cargo1": 141,
+    "cargo2": 88,
+    "cargo3": 32,
+    "passengerVolume": 165,
+    "towing": 3600,
+    "packages": [],
+    "src": "cars.com 2026 Chrysler Voyager specs (Base)"
+  }
+]

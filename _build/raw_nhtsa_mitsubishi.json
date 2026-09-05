@@ -1,0 +1,55 @@
+[
+  {
+    "brand": "Mitsubishi",
+    "model": "Outlander Sport",
+    "vehicleId": 0,
+    "note": "no NHTSA ratings available"
+  },
+  {
+    "brand": "Mitsubishi",
+    "model": "Eclipse Cross",
+    "ratingYear": 2025,
+    "vehicleId": 20258,
+    "description": "2025 Mitsubishi Eclipse Cross SUV AWD",
+    "overall": 4,
+    "front": 4,
+    "side": 4,
+    "rollover": 4,
+    "rolloverProb": 0.191,
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Optional",
+    "complaints": 3
+  },
+  {
+    "brand": "Mitsubishi",
+    "model": "Outlander",
+    "ratingYear": 2025,
+    "vehicleId": 20259,
+    "description": "2025 Mitsubishi Outlander SUV AWD",
+    "overall": 4,
+    "front": 4,
+    "side": 4,
+    "rollover": 4,
+    "rolloverProb": 0.187,
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Optional",
+    "complaints": 11
+  },
+  {
+    "brand": "Mitsubishi",
+    "model": "Outlander PHEV",
+    "ratingYear": 2025,
+    "vehicleId": 20260,
+    "description": "2025 Mitsubishi Outlander PHEV SUV AWD",
+    "overall": 4,
+    "front": 4,
+    "side": 4,
+    "rollover": 4,
+    "rolloverProb": 0.187,
+    "esc": "Standard",
+    "fcw": "Standard",
+    "ldw": "Optional"
+  }
+]

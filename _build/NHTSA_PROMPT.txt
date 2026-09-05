@@ -1,0 +1,16 @@
+Mechanical data pull, NHTSA SafetyRatings API. Follow the contract exactly; no judgment calls beyond the matching rule.
+
+Step 0 (once per year): fetch https://api.nhtsa.gov/SafetyRatings/modelyear/2025/make/{MAKE}?format=json — this lists NHTSA's model NAMES for the make (VehicleId is always 0 in this listing; ignore that). NHTSA names are upper-case and often longer than ours, e.g. "RAM 1500 CREW CAB", "F150", "SILVERADO 2500 HD", "MUSTANG MACH-E", "EXPEDITION MAX", "TRANSIT". 2026 ratings are not published yet, so use modelyear 2025 throughout and set ratingYear=2025.
+
+For EACH model in the list below:
+1. MATCH: normalise both strings by lower-casing and deleting every non-alphanumeric character. An NHTSA name matches if it CONTAINS our normalised model (after also stripping a leading brand word such as "ram"). If several match, prefer, in order: a name WITHOUT "hev"/"phev"/"bev"/"hybrid" unless our model is an EV/hybrid; a name containing "crew cab" for pickups; the shortest remaining name. If nothing matches, emit {"brand":"{BRAND}","model":"<model>","vehicleId":0,"note":"no NHTSA model name matched"}.
+2. Fetch https://api.nhtsa.gov/SafetyRatings/modelyear/2025/make/{MAKE}/model/<matched NHTSA name, URL-encoded>?format=json. This returns VehicleDescription + VehicleId per drivetrain. Pick ONE: prefer a description containing "AWD" or "4WD"; else the first. If Results is empty, emit vehicleId 0 as above.
+3. Fetch https://api.nhtsa.gov/SafetyRatings/VehicleId/{ID}?format=json.
+4. Emit one object: {"brand":"{BRAND}","model":"<model exactly as given in the list>","ratingYear":2026|2025,"vehicleId":<int>,"description":"<VehicleDescription>","overall":<int or omit if "Not Rated">,"front":<OverallFrontCrashRating int or omit>,"side":<OverallSideCrashRating int or omit>,"rollover":<RolloverRating int or omit>,"rolloverProb":<RolloverPossibility number or omit>,"esc":"<NHTSAElectronicStabilityControl>","fcw":"<NHTSAForwardCollisionWarning>","ldw":"<NHTSALaneDepartureWarning>","recalls":<RecallsCount>,"complaints":<ComplaintsCount>}
+5. If step 2 gave no VehicleId > 0, emit {"brand":"{BRAND}","model":"<model>","vehicleId":0}. Never invent values. Do not look anywhere except these two endpoints. If the model name on NHTSA differs slightly (e.g. our "Silverado 1500" vs NHTSA "SILVERADO 1500"), matching is case-insensitive on the model string; if NHTSA lists the model under a different token (e.g. "F-150" vs "F150"), try that ONE variant and stop.
+
+Model list for {BRAND} (NHTSA make = "{MAKE}"): {MODELS}
+
+WRITE the JSON array (valid JSON, nothing else in the file) to:
+C:\Users\yevad\AppData\Roaming\Claude\local-agent-mode-sessions\f9c7e9d0-e544-4596-a232-7cd3fa56ef3e\4ec5cc5e-b6cf-4c82-bcac-609bf2f14fb0\local_3da3ce9b-029c-4d48-b7c3-6326c93addc7\outputs\_build\raw_nhtsa_{FILE}.json
+Then reply with ONLY: "done: N rated, M unrated" and nothing else.

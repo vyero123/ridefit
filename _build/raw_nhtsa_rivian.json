@@ -1,0 +1,4 @@
+[
+  {"brand":"Rivian","model":"R1T","ratingYear":2025,"vehicleId":20771,"description":"2025 Rivian R1T PU/CC AWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":9,"complaints":10},
+  {"brand":"Rivian","model":"R1S","ratingYear":2025,"vehicleId":20772,"description":"2025 Rivian R1S SUV AWD","esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":10,"complaints":51}
+]

@@ -1,0 +1,6 @@
+[
+  {"brand":"Buick","model":"Envista","ratingYear":2025,"vehicleId":20863,"description":"2025 BUICK ENVISTA SUV FWD","front":4,"rollover":4,"rolloverProb":0.155,"esc":"Standard","fcw":"No","ldw":"No","recalls":0,"complaints":1},
+  {"brand":"Buick","model":"Encore GX","ratingYear":2025,"vehicleId":20407,"description":"2025 Buick Encore GX SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.179,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":15},
+  {"brand":"Buick","model":"Envision","ratingYear":2025,"vehicleId":20416,"description":"2025 Buick Envision SUV AWD","overall":5,"front":5,"side":5,"rollover":4,"rolloverProb":0.147,"esc":"Standard","fcw":"Standard","ldw":"Standard","recalls":0,"complaints":8},
+  {"brand":"Buick","model":"Enclave","ratingYear":2025,"vehicleId":20420,"description":"2025 Buick Enclave SUV AWD","side":5,"rollover":4,"rolloverProb":0.185,"esc":"Standard","fcw":"Standard & Optional","ldw":"Standard & Optional","recalls":0,"complaints":36}
+]

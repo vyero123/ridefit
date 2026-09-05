@@ -1,0 +1,18 @@
+[
+  {"brand":"BMW","model":"2 Series","ratingYear":2025,"vehicleId":20804,"description":"2025 BMW 2 Series Gran Coupe 4 DR AWD","esc":"Standard","fcw":"No","ldw":"No","recalls":1,"complaints":1},
+  {"brand":"BMW","model":"3 Series","ratingYear":2025,"vehicleId":20086,"description":"2025 BMW 3 Series Sedan 4 DR AWD","overall":5,"front":5,"side":5,"rollover":5,"rolloverProb":0.092,"esc":"Standard","fcw":"No","ldw":"No","recalls":1,"complaints":4},
+  {"brand":"BMW","model":"4 Series","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"5 Series","ratingYear":2025,"vehicleId":20805,"description":"2025 BMW 5 Series Hybrid Sedan 4 DR AWD","esc":"Standard","fcw":"No","ldw":"No","recalls":6,"complaints":2},
+  {"brand":"BMW","model":"7 Series","ratingYear":2025,"vehicleId":20808,"description":"2025 BMW 7 Series Hybrid Sedan 4 DR AWD","esc":"Standard","fcw":"No","ldw":"No","recalls":5,"complaints":2},
+  {"brand":"BMW","model":"8 Series","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"X1","ratingYear":2025,"vehicleId":20087,"description":"2025 BMW X1 SUV AWD","overall":4,"front":4,"side":5,"rollover":4,"rolloverProb":0.174,"esc":"Standard","fcw":"No","ldw":"No","recalls":3,"complaints":14},
+  {"brand":"BMW","model":"X2","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"X3","ratingYear":2025,"vehicleId":20809,"description":"2025 BMW X3 SUV AWD","overall":4,"front":4,"side":5,"rollover":4,"rolloverProb":0.169,"esc":"Standard","fcw":"No","ldw":"No","recalls":9,"complaints":34},
+  {"brand":"BMW","model":"X5","ratingYear":2025,"vehicleId":20089,"description":"2025 BMW X5 SUV AWD","overall":4,"front":4,"side":5,"rollover":4,"rolloverProb":0.159,"esc":"Standard","fcw":"No","ldw":"No","recalls":5,"complaints":61},
+  {"brand":"BMW","model":"X7","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"iX","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"i4","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"i5","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"i7","vehicleId":0,"note":"no NHTSA model name matched"},
+  {"brand":"BMW","model":"Z4","vehicleId":0,"note":"no NHTSA model name matched"}
+]
