@@ -27,6 +27,7 @@ var VVY = (function () {
     B: { body: '#f1b93f', stroke: '#9a6a12', glass: '#f8e6b8', wheel: '#5c4a1e', hub: '#e9d7a8', guide: '#b7791f', op: 1 }
   };
 
+  var FONT = 'system-ui,Segoe UI,Helvetica,Arial,sans-serif';
   function r1(n) { return Math.round(n * 10) / 10; }
   function r2(n) { return Math.round(n * 100) / 100; }
   function r0(n) { return Math.round(n); }
@@ -128,6 +129,13 @@ var VVY = (function () {
     return this.add(key, '<clipPath id="' + id + '">' + markup + '</clipPath>');
   };
   Defs.prototype.html = function () { return this.out.length ? '<defs>' + this.out.join('') + '</defs>' : ''; };
+  /* haloed label: a white-stroked copy under the filled text, so it reads over any artwork
+     (drawn twice rather than relying on paint-order, which some renderers ignore) */
+  function haloText(attrs, content, w) {
+    var under = attrs.replace(/ fill="[^"]*"/, '');
+    return '<text' + under + ' fill="#fff" stroke="#fff" stroke-width="' + (w || 1.5) + '" stroke-linejoin="round" stroke-opacity="0.9">' + content + '</text>' +
+      '<text' + attrs + '>' + content + '</text>';
+  }
   /* contact shadow: two stacked ellipses fake a soft penumbra without a filter */
   function groundShadow(cx, cy, rx, ry, op) {
     op = op || 0.16;
@@ -619,7 +627,9 @@ var VVY = (function () {
     var side = !!B;
     var pw = personIn * 0.31;
     var gap = 16;
-    var mL = 30, mR = 42, mT = 14 + ((opts.party && opts.party.cats) ? 14 : 0), mB = 16;   /* extra headroom for a cat's speech bubble on the roof */
+    /* minimum buffers: labels are drawn INLINE over the artwork (haloed), not in reserved margins */
+    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = 13;   /* mT: roof label / a cat's speech bubble */
+    /* label size scales with the scene width so it lands at ~9-10 px on a 375 px phone */
     /* family: adults and kids drawn between the reference person and the vehicle.
        Adults 66 in (US average adult), kids 45 in; the reference person stays the tallest anchor. */
     var party = opts.party || {}, fam = [], i;
@@ -647,6 +657,7 @@ var VVY = (function () {
     var qW = (inter && !B) ? Math.max(28, A.height * 0.42) + gap : 0;   /* ghost "?" placeholder for the comparison vehicle */
     var W = mL + pw + famW + gap + vehSpan + qW + mR;
     var SH = mT + topH + mB;
+    var GF = r1(Math.max(5.2, Math.min(8, W / 48)));   /* guide/label font in scene units */
     function Y(y) { return r1(SH - mB - y); }
     var px = mL + pw / 2;
     var vxA = mL + pw + famW + gap;
@@ -672,14 +683,18 @@ var VVY = (function () {
     if (inter && !B) { o.push(qmarkSvg(vxA + LA + gap, 0, A.height, Y)); }
     if (B) { o.push(vehicleSvg(B, vxB, Y, 'B', !!opts.animate, null, dx)); }
 
+    /* dimension lines run edge to edge; the label sits on the line at the right edge, haloed so it
+       reads over the body, the ghost "?" or the sky alike; alternating above/below avoids stacking */
+    var gx1 = r1(W - 2);
     function guide(yIn, label, color, below) {
-      var ty = below ? (Y(yIn) + 4.6) : (Y(yIn) - 1.2);
-      o.push('<line x1="' + r1(mL * 0.35) + '" y1="' + Y(yIn) + '" x2="' + r1(W - mR * 0.55) + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2"/>');
-      o.push('<text x="' + r1(W - 1.5) + '" y="' + r1(ty) + '" text-anchor="end" font-size="3.9" fill="' + color + '" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">' + esc(label) + '</text>');
+      var ty = below ? (Y(yIn) + 4.4) : (Y(yIn) - 1.1);
+      o.push('<line x1="2" y1="' + Y(yIn) + '" x2="' + gx1 + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/>');
+      o.push(haloText(' x="' + gx1 + '" y="' + r1(ty) + '" text-anchor="end" font-size="' + GF + '" font-weight="700" fill="' + color + '" font-family="' + FONT + '"', esc(label), 1.6));
     }
     guide(A.height, shortDim(A.height, metric) + ' roof' + (B ? ' A' : ''), PAL.A.guide, false);
-    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood' + (B ? ' A' : ''), '#7b5ea7', false); }
-    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed' + (B ? ' A' : ''), '#0b7285', false); }
+    /* hood / bed labels go below their lines so they never sit on the roof label when heights are close */
+    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood' + (B ? ' A' : ''), '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7); }
+    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed' + (B ? ' A' : ''), '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true); }
     if (B) {
       guide(B.height, shortDim(B.height, metric) + ' roof B', PAL.B.guide, true);
       if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed B', PAL.B.guide, true); }
@@ -722,16 +737,18 @@ var VVY = (function () {
       if (nA) { parts.push(nA + ' more adult' + (nA === 1 ? '' : 's')); }
       if (nK) { parts.push(nK + ' kid' + (nK === 1 ? '' : 's')); }
       if (nD) { parts.push(nD + ' dog' + (nD === 1 ? '' : 's') + ' (22 in at the shoulder)'); }
-      o.push('<text x="' + r1(mL + pw + 4 + famW / 2) + '" y="' + r1(Y(0) + 6.2) + '" text-anchor="middle" font-size="3.6" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">' + esc(parts.join(' \u00b7 ')) + '</text>');
+      /* second line under the ground so it never collides with the "You" label */
+      o.push(haloText(' x="' + r1(mL + pw + 4 + famW / 2) + '" y="' + r1(Y(0) + 11) + '" text-anchor="middle" font-size="' + r1(GF * 0.8) + '" fill="#52606d" font-family="' + FONT + '"', esc(parts.join(' \u00b7 ')), 1.2));
     }
 
-    var bx = r1(mL * 0.30);
+    /* height ruler hugs the reference figure */
+    var bx = 3;
     o.push('<line x1="' + bx + '" y1="' + Y(0) + '" x2="' + bx + '" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<line x1="' + r1(mL * 0.30 - 2) + '" y1="' + Y(personIn) + '" x2="' + r1(mL * 0.30 + 2) + '" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<line x1="' + r1(mL * 0.30 - 2) + '" y1="' + Y(0) + '" x2="' + r1(mL * 0.30 + 2) + '" y2="' + Y(0) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<text x="' + r1(px) + '" y="' + r1(Y(0) + 6.2) + '" text-anchor="middle" font-size="4.4" font-weight="600" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; ' + esc(personLabel(personIn, metric)) + '</text>');
+    o.push('<line x1="1" y1="' + Y(personIn) + '" x2="5" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
+    o.push('<line x1="1" y1="' + Y(0) + '" x2="5" y2="' + Y(0) + '" stroke="#1f2933" stroke-width="0.5"/>');
+    o.push(haloText(' x="' + r1(Math.max(px, 16)) + '" y="' + r1(Y(0) + 5.8) + '" text-anchor="middle" font-size="' + GF + '" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', 'You &#183; ' + esc(personLabel(personIn, metric)), 1.6));
 
-    if (inter) { var bf = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vxA + LA - 24 * bf, Y(0) + 9, false, bf)); }
+    if (inter) { var bf = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vxA + LA - 24 * bf, Y(0) + 6.5, false, bf)); }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1151,7 +1168,6 @@ var VVY = (function () {
      exterior outline (ghosted); inside it, floor, seats, headliner and legroom are laid out from the
      published figures, and each rider is drawn at seated size from their standing height (SEAT
      ratios). Head through the headliner / knees into the seat ahead are drawn as they would be. */
-  var FONT = 'system-ui,Segoe UI,Helvetica,Arial,sans-serif';
   function roofAt(body, xf) {
     /* highest outline y at x-fraction xf (outline is a closed polyline) */
     var pts = body.pts, i, a, b, best = null, t, y;
@@ -1420,7 +1436,7 @@ var VVY = (function () {
     /* ---- measured callouts: THE point of this view. One per seated rider: inches above the head
        to the headliner and inches of knee clearance to the seat ahead (front row: legroom margin),
        colour-coded fine / tight / cramped; "not on file" when the row has no published figure. ---- */
-    var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx, halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"';
+    var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx;
     function bandColor(bnd) { return bnd === 'cramped' ? '#b3261e' : (bnd === 'tight' ? '#9a6a12' : (bnd === 'unknown' ? '#7b8794' : '#0b5b32')); }
     function sgn(v) { var x = metric ? v * 2.54 : v; return (x >= 0 ? '+' : '\u2212') + (Math.round(Math.abs(x) * 10) / 10); }
     for (ci = 0; ci < callouts.length; ci++) {
@@ -1447,7 +1463,7 @@ var VVY = (function () {
       var who = co.p.you ? 'You' : (co.p.kind === 'kid' ? 'Kid' : 'Adult'), rowName = co.row.n === 1 ? 'front' : (co.row.n === 2 ? '2nd row' : '3rd row');
       ty = 6 + ci * (CAL + 1.2);
       lab.push('<circle cx="' + r1(mL - 7) + '" cy="' + r1(ty - 2.6) + '" r="3.4" fill="' + colr + '"/><text x="' + r1(mL - 7) + '" y="' + r1(ty - 1) + '" text-anchor="middle" font-size="4.6" font-weight="700" fill="#fff" font-family="' + FONT + '">' + (ci + 1) + '</text>');
-      lab.push('<text x="' + r1(mL) + '" y="' + r1(ty) + '" font-size="' + CAL + '" font-weight="700" fill="' + colr + '" font-family="' + FONT + '"' + halo + '>' + esc(who + ' ' + personLabel(co.p.h, metric) + ', ' + rowName + ': ') + esc(headTxt) + ' \u00b7 ' + esc(kneeTxt) + '</text>');
+      lab.push(haloText(' x="' + r1(mL) + '" y="' + r1(ty) + '" font-size="' + CAL + '" font-weight="700" fill="' + colr + '" font-family="' + FONT + '"', esc(who + ' ' + personLabel(co.p.h, metric) + ', ' + rowName + ': ') + esc(headTxt) + ' \u00b7 ' + esc(kneeTxt), 1.6));
     }
     o.push(lab.join(''));
     o.push('<text x="2" y="' + r1(Y(0) + 6) + '" font-size="3.3" fill="#7b8794" font-family="' + FONT + '">' + (metric ? 'cm' : 'inches') + ' of room above the head and in front of the knee · guidance, not a verdict: seated ≈ 0.52 × standing; published figures are indicative — seat position varies</text>');
@@ -1663,16 +1679,15 @@ var VVY = (function () {
       o.push('<text x="' + ns[0] + '" y="' + r1(ns[1] + 6) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no seat</text>');
     }
     /* ---- row labels (left) + fit chips (right) ---- */
-    var halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"';
     for (k = 0; k < chips.length; k++) {
       var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, Wd, 0), rp = P(rl.u - 6, 0, 0);
       var name = rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row');
       var kind = rl.seats === 0 ? 'no seats' : (rl.bench ? 'bench · ' + rl.seats : (rl.seats === 1 ? '1 seat' : (rl.n === 1 ? '2 buckets' : (rl.seats === 2 ? "2 captain's chairs" : rl.seats + ' seats'))));
-      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"' + halo + '>' + esc(name) + '</text>');
-      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"' + halo + '>' + esc(kind) + '</text>');
+      o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', esc(name), 1.4));
+      o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"', esc(kind), 1.2));
       var ctext = ch.band === 'empty' ? 'empty' : (ch.band === 'unknown' ? 'room n/a' : (ch.band === 'cramped' ? 'cramped' : (ch.band === 'tight' ? 'tight' : 'fine')));
       var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
-      o.push('<text x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"' + halo + '>' + esc(ctext) + '</text>');
+      o.push(haloText(' x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"', esc(ctext), 1.4));
     }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());

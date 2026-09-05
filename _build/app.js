@@ -13,7 +13,7 @@
        Comparing: one control flips BOTH panes — profile = A and B side by side at one scale in a
        single pane; cutaway / overhead = A in pane A, B in pane B, drawn at a shared scale. */
     view: 'profile',
-    fold: false,   /* the seats fold under the profile pane (alone only) */
+    fold: true,    /* the seats fold under the profile pane (alone only) — open on load */
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
@@ -41,8 +41,25 @@
     };
   }
   /* breadcrumb: the last user action, appended to any window.onerror report so a sanitised
-     "Script error." on file:// still says what was being done */
-  function crumb(s) { try { window.RideFitCrumb = s; } catch (e0) {} }
+     "Script error." on file:// still says what was being done; RideFitCrumbAt lets the reporter say
+     how long AFTER our handler finished the error arrived */
+  function crumb(s) { try { window.RideFitCrumb = s; window.RideFitCrumbAt = new Date().getTime(); } catch (e0) {} }
+  /* reveal(): every path that shows a previously hidden panel (the fold, a sheet segment, a compare
+     view) runs through here: the panel name goes in the breadcrumb, the work runs inside its own
+     try/catch and reports with the REAL message, and a marker is set while our code is running so the
+     global handler can tell "thrown inside the app" from "thrown by something else afterwards" */
+  function reveal(name, fn) {
+    crumb('reveal: ' + name);
+    try { window.RideFitInReveal = name; } catch (e0) {}
+    try { fn(); }
+    catch (err) { try { window.RideFitReport(err, 'reveal ' + name); } catch (e2) {} }
+    finally { try { window.RideFitInReveal = ''; window.RideFitRevealDone = new Date().getTime(); } catch (e3) {} }
+  }
+  function setBodyFlag(flag, on) {
+    var b = document.body, re = new RegExp('(^|\\s)' + flag + '(\\s|$)', 'g');
+    var cls = b.className.replace(re, ' ').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
+    b.className = on ? cls + ' ' + flag : cls;
+  }
   /* timers run outside every handler's try/catch: route them through the same reporter */
   function safeTimer(fn, ms) { return setTimeout(function () { try { fn(); } catch (err) { try { window.RideFitReport(err, 'timer'); } catch (e2) {} } }, ms); }
   var supportsPassive = false;
@@ -235,6 +252,7 @@
     /* alone: primary profile pane + collapsible seats fold; comparing in an inside view: A | B split */
     var split = !!(eB && state.view !== 'profile');
     scene.className = 'scene' + (split ? ' two' : (state.fold ? ' open' : ''));
+    setBodyFlag('foldopen', !split && state.fold);
     paneA.innerHTML = htmlA;
     paneB.innerHTML = htmlB;
     paneB.style.display = (split || !eB) ? '' : 'none';
@@ -394,9 +412,10 @@
   function setView(v) {
     state.view = (v === 'cutaway' || v === 'overhead') ? v : 'profile';
     if (!state.b && state.view === 'overhead') { state.view = 'profile'; }   /* alone, the overhead pane is always there */
-    crumb('view: ' + state.view);
-    render();
-    if (!reduceMotion) { var pa = byId('paneA'); pa.className = 'pane a'; void pa.offsetWidth; pa.className = 'pane a vvy-anim'; }
+    reveal('view ' + state.view, function () {
+      render();
+      if (!reduceMotion) { var pa = byId('paneA'); pa.className = 'pane a'; void pa.offsetWidth; pa.className = 'pane a vvy-anim'; }
+    });
   }
   window.RideFitView = { set: function (v) { setView(v); }, get: function () { return state.view; } };
   function setA(k) { state.a = k; fillSelects(); render(); }
@@ -469,7 +488,7 @@
       for (i = 0; i < panes.length; i++) { panes[i].style.display = panes[i].getAttribute('data-pane') === name ? '' : 'none'; }
       try { body.scrollTop = 0; } catch (e0) {}
     }
-    function open(name, p) { setSeg(name); setPos(p || (name === 'rank' ? 'full' : 'half')); }
+    function open(name, p) { reveal('sheet ' + name, function () { setSeg(name); setPos(p || (name === 'rank' ? 'full' : 'half')); }); }
     function toggle() { setPos(pos === 'peek' ? 'half' : (pos === 'half' ? 'full' : 'peek')); }
     /* touch drag on the grab handle / segment bar */
     var startY = 0, startT = 0, dragging = false, vh = 0;
@@ -847,7 +866,14 @@
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
     byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
-    byId('foldBtn').onclick = safe(function () { state.fold = !state.fold; crumb('fold: ' + state.fold); byId('scene').className = 'scene' + (state.fold ? ' open' : ''); byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false'); });
+    byId('foldBtn').onclick = safe(function () {
+      state.fold = !state.fold;
+      reveal('seats fold ' + (state.fold ? 'open' : 'closed'), function () {
+        byId('scene').className = 'scene' + (state.fold ? ' open' : '');
+        setBodyFlag('foldopen', state.fold);
+        byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
+      });
+    });
     byId('viewCtl').onclick = safe(onViewCtl);
     byId('viewCtl2').onclick = safe(onViewCtl);
     byId('clearBtn').onclick = safe(clearB);

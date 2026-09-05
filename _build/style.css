@@ -14,14 +14,15 @@ body {
 }
 .noscript { background: #fff4d6; color: #5a3d00; border: 1px solid #f0d28a; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin: 10px 12px 0; }
 
-/* ---------- scene: FIXED, RESERVED boxes — zero layout shift ----------
-   The profile pane is the primary and has a reserved height; the 45° seats view is a fold below
-   it, collapsed by default (height 0) and a fixed height when open. Sizes never follow content:
-   each SVG scales inside its box. Only the user's own fold tap changes the total height. */
+/* ---------- scene: reserved boxes + ONE vertical budget ----------
+   Live layout (see the media blocks below): hero (profile pane + fold + seats pane) + state chips
+   + scroll area + sheet peek = exactly 100dvh. The profile pane has a reserved height; the seats
+   pane takes ALL remaining height when the fold is open (and the facts are hidden), or collapses to
+   0 so the facts get that space and scroll inside it. Nothing here follows content size. */
 .scene { display: block; contain: layout; }
 .pane { position: relative; overflow: hidden; min-width: 0; background: #fbfcfd; border-radius: 10px; }
 .pane svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
-.pane.a { height: 40vh; min-height: 200px; max-height: 360px; background: linear-gradient(#fff, #f6f8fa); }
+.pane.a { height: 34vh; min-height: 170px; max-height: 320px; background: linear-gradient(#fff, #f6f8fa); }
 .pane.b { height: 0; }
 .scene.open .pane.b { height: 240px; margin-top: 4px; }
 .fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; color: #1f4e79; background: #f3f5f8; border: 1px solid #e4e7eb; border-radius: 8px; padding: 6px 10px; text-align: left; cursor: pointer; height: 30px; }
@@ -33,17 +34,35 @@ body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the
 /* comparison split (peek inside / seats for A and B): two equal panes, fold hidden */
 .scene.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .scene.two .fold { display: none; }
-.scene.two .pane.a, .scene.two .pane.b { height: 40vh; min-height: 200px; max-height: 360px; margin-top: 0; }
+.scene.two .pane.a, .scene.two .pane.b { height: 34vh; min-height: 170px; max-height: 320px; margin-top: 0; }
 .viewctl { margin-left: auto; display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
 .vbtn { font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 9px; border: 0; border-radius: 99px; background: transparent; color: #52606d; cursor: pointer; white-space: nowrap; }
 .vbtn.on { background: #1f2933; color: #fff; }
 @media (max-width: 599px) {
-  .pane.a { height: 30vh; min-height: 150px; max-height: 240px; }
-  .scene.open .pane.b { height: 230px; }
+  .pane.a { height: 26vh; min-height: 130px; max-height: 220px; }
   .scene.two { grid-template-columns: 1fr; }
-  .scene.two .pane.a, .scene.two .pane.b { height: 26vh; min-height: 140px; max-height: 220px; }
+  .scene.two .pane.a, .scene.two .pane.b { height: 24vh; min-height: 120px; max-height: 200px; }
   .vbtn { font-size: 11px; padding: 5px 7px; }
 }
+
+/* ---------- LIVE: the vertical budget (phone and desktop share it) ----------
+   html/body are pinned to the dynamic viewport so browser chrome coming and going cannot leave a
+   gap or an overflow; the only scrolling region is .scrollarea. */
+body.live { height: 100vh; height: 100dvh; overflow: hidden; }
+body.live .app { height: 100%; }
+body.live .main { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 0; }
+body.live .hero { flex: none; display: flex; flex-direction: column; min-height: 0; }
+body.live .statebar { flex: none; }
+body.live .scrollarea { flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+/* fold OPEN: the seats pane takes every remaining pixel, the facts are out of the budget */
+body.live .scene.open { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body.live .scene.open .pane.a { flex: none; }
+body.live .scene.open .fold { flex: none; }
+body.live .scene.open .pane.b { flex: 1 1 auto; height: auto; min-height: 120px; }
+body.live .scene.open .pane.b svg { position: absolute; }
+body.live.foldopen .scrollarea { display: none; }
+body.live.foldopen .hero { flex: 1 1 auto; }
+body.live.foldopen .scene.two { flex: none; display: grid; }
 
 /* ---------- main column ---------- */
 .app { max-width: 1180px; margin: 0 auto; }
@@ -328,18 +347,18 @@ table.rank td.fitc.none i { font-size: 10px; }
 
 /* ---------- LIVE, phone: pinned scene + fixed bottom sheet ---------- */
 @media (max-width: 899px) {
-  body.live .hero { position: sticky; top: 0; z-index: 10; box-shadow: 0 6px 16px -12px rgba(16,24,40,.35); }
-  body.live .main { padding-bottom: 118px; }   /* room for the peeking sheet */
+  body.live .hero { z-index: 10; box-shadow: 0 6px 16px -12px rgba(16,24,40,.35); }
+  body.live .main { padding-bottom: 100px; }   /* EXACTLY the sheet's peek height: no gap, no overflow */
   body.live .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-    height: 88vh; border-radius: 20px 20px 0 0; border-top: 0;
+    height: 88vh; height: 88dvh; border-radius: 20px 20px 0 0; border-top: 0;
     box-shadow: 0 -10px 30px rgba(16,24,40,.22);
     display: flex; flex-direction: column;
-    transform: translateY(calc(88vh - 100px));
+    transform: translateY(calc(88vh - 100px)); transform: translateY(calc(88dvh - 100px));
     transition: transform .3s cubic-bezier(.2,.8,.2,1);
   }
   body.live .sheet.dragging { transition: none; }
-  body.live .sheet[data-pos="half"] { transform: translateY(calc(88vh - 52vh)); }
+  body.live .sheet[data-pos="half"] { transform: translateY(calc(88vh - 52vh)); transform: translateY(calc(88dvh - 52dvh)); }
   body.live .sheet[data-pos="full"] { transform: translateY(0); }
   body.live .grab { display: block; }
   body.live .sheetbody { overflow: auto; flex: 1; -webkit-overflow-scrolling: touch; padding-bottom: 40px; }
@@ -348,13 +367,13 @@ table.rank td.fitc.none i { font-size: 10px; }
 
 /* ---------- LIVE, desktop: sheet becomes a left rail ---------- */
 @media (min-width: 900px) {
-  body.live .app { display: grid; grid-template-columns: 360px 1fr; gap: 0; align-items: start; }
-  body.live .sheet { order: -1; position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; border-top: 0; border-right: 1px solid #e4e7eb; }
+  body.live .app { display: grid; grid-template-columns: 360px 1fr; gap: 0; align-items: stretch; height: 100vh; height: 100dvh; }
+  body.live .sheet { order: -1; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; border-top: 0; border-right: 1px solid #e4e7eb; }
   body.live .sheetbody { overflow: auto; flex: 1; }
   body.live .grab { display: none; }
-  body.live .main { padding: 0 20px 24px; }
-  body.live .hero { position: sticky; top: 0; z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
-  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 44vh; max-height: 400px; }
+  body.live .main { padding: 0 20px 0; height: 100vh; height: 100dvh; }
+  body.live .hero { z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
+  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 36vh; max-height: 340px; }
   .facts { padding: 14px 4px; }
   .vvy-specs { grid-template-columns: 1fr 1fr 1fr; }
   .cmpgrid { grid-template-columns: 1fr; }

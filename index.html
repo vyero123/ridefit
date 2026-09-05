@@ -24,21 +24,60 @@ window.RideFitReport = function (err, where) {
     b.style.display = 'block';
   } catch (e) {}
 };
+/* Evidence gathering for errors that reach the GLOBAL handlers. Every handler and timer in the app
+   runs inside try/catch and reports through RideFitReport with the real message, so anything that
+   arrives here escaped all of that. The report says: how long after the app's last handler finished,
+   whether the app was mid-reveal, the script URL/line if the browser gives one, whether it was a
+   resource error, and which known injected globals exist (Firefox iOS: window.__firefox__). */
+function rfEnv() {
+  var e = [];
+  try { if (window.__firefox__) { e.push('window.__firefox__ present (Firefox iOS injected scripts)'); } } catch (x1) {}
+  try { if (window.__gCrWeb) { e.push('window.__gCrWeb present (Chrome iOS injected scripts)'); } } catch (x2) {}
+  try { if (window.webkit && window.webkit.messageHandlers) { var mh = [], k; for (k in window.webkit.messageHandlers) { mh.push(k); } e.push('webkit.messageHandlers: ' + (mh.length ? mh.slice(0, 6).join(',') : 'present')); } } catch (x3) {}
+  try { var sc = document.scripts, n = 0, i; for (i = 0; i < sc.length; i++) { if (sc[i].src) { n++; } } if (n) { e.push(n + ' external <script> tag(s) not from this page'); } } catch (x4) {}
+  return e.length ? ' · environment: ' + e.join('; ') : ' · environment: no injected globals detected';
+}
+function rfTiming() {
+  var now = new Date().getTime(), t = '';
+  try {
+    if (window.RideFitInReveal) { t = ' · thrown WHILE the app was revealing "' + window.RideFitInReveal + '"'; }
+    else if (window.RideFitRevealDone) { t = ' · ' + (now - window.RideFitRevealDone) + ' ms AFTER the app finished its last reveal'; }
+    else if (window.RideFitCrumbAt) { t = ' · ' + (now - window.RideFitCrumbAt) + ' ms after the last action'; }
+  } catch (x) {}
+  return t;
+}
 window.onerror = function (msg, url, line, col, err) {
-  if (err) { window.RideFitReport(err, 'window'); return false; }
-  var s = String(msg);
   var crumb = ''; try { if (window.RideFitCrumb) { crumb = ' — last action: ' + window.RideFitCrumb; } } catch (e) {}
-  if (/^Script error\.?$/.test(s)) {
-    /* No Error object and a sanitised message = the throwing script is CROSS-ORIGIN to this page.
-       Over https this page's own scripts are same-origin and always report a real message, so this
-       almost certainly comes from a browser extension, content blocker or injected userscript. */
-    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'probably outside this page (extension / content blocker / injected script), not the app';
-    window.RideFitReport('Script error with no detail — ' + where + crumb, 'browser');
+  if (err) { window.RideFitReport(err, 'window' + (window.RideFitInReveal ? ' during reveal ' + window.RideFitInReveal : '')); return false; }
+  var s = String(msg);
+  if (/^Script error\.?$/.test(s) && !url) {
+    /* No Error object, no URL, sanitised message: the throwing script is not same-origin with this
+       page. Over https this page's own inline scripts always report a real message, so the evidence
+       below is what decides it — read the timing and environment lines rather than this label. */
+    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'not from this page\'s own scripts (they always report in full over https)';
+    window.RideFitReport('Script error with no detail — ' + where + crumb + rfTiming() + rfEnv(), 'browser');
     return false;
   }
-  window.RideFitReport(s + ' (line ' + line + ':' + col + ')' + crumb, 'window');
+  window.RideFitReport(s + ' (' + (url || 'no url') + ' ' + line + ':' + col + ')' + crumb + rfTiming(), 'window');
   return false;
 };
+/* capture-phase error listener: also sees resource load failures and gives filename/lineno/error */
+try {
+  window.addEventListener('error', function (ev) {
+    try {
+      if (!ev) { return; }
+      var tgt = ev.target;
+      if (tgt && tgt !== window && tgt.tagName) {
+        window.RideFitReport('resource failed to load: <' + tgt.tagName.toLowerCase() + '> ' + (tgt.src || tgt.href || '') + rfTiming(), 'resource');
+        return;
+      }
+      /* script errors are reported by window.onerror above (same event); only resources are handled here */
+    } catch (x) {}
+  }, true);
+  window.addEventListener('unhandledrejection', function (ev) {
+    try { var r = ev && ev.reason; window.RideFitReport('unhandled promise rejection: ' + (r && r.message ? r.name + ': ' + r.message : String(r)) + rfTiming() + rfEnv(), 'promise'); } catch (x) {}
+  });
+} catch (e9) {}
 </script>
 <style>
 /* Ride Fit — layout: pinned scene + chip state bar + facts, and ONE sheet with four cards.
@@ -57,14 +96,15 @@ body {
 }
 .noscript { background: #fff4d6; color: #5a3d00; border: 1px solid #f0d28a; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin: 10px 12px 0; }
 
-/* ---------- scene: FIXED, RESERVED boxes — zero layout shift ----------
-   The profile pane is the primary and has a reserved height; the 45° seats view is a fold below
-   it, collapsed by default (height 0) and a fixed height when open. Sizes never follow content:
-   each SVG scales inside its box. Only the user's own fold tap changes the total height. */
+/* ---------- scene: reserved boxes + ONE vertical budget ----------
+   Live layout (see the media blocks below): hero (profile pane + fold + seats pane) + state chips
+   + scroll area + sheet peek = exactly 100dvh. The profile pane has a reserved height; the seats
+   pane takes ALL remaining height when the fold is open (and the facts are hidden), or collapses to
+   0 so the facts get that space and scroll inside it. Nothing here follows content size. */
 .scene { display: block; contain: layout; }
 .pane { position: relative; overflow: hidden; min-width: 0; background: #fbfcfd; border-radius: 10px; }
 .pane svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
-.pane.a { height: 40vh; min-height: 200px; max-height: 360px; background: linear-gradient(#fff, #f6f8fa); }
+.pane.a { height: 34vh; min-height: 170px; max-height: 320px; background: linear-gradient(#fff, #f6f8fa); }
 .pane.b { height: 0; }
 .scene.open .pane.b { height: 240px; margin-top: 4px; }
 .fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; color: #1f4e79; background: #f3f5f8; border: 1px solid #e4e7eb; border-radius: 8px; padding: 6px 10px; text-align: left; cursor: pointer; height: 30px; }
@@ -76,17 +116,35 @@ body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the
 /* comparison split (peek inside / seats for A and B): two equal panes, fold hidden */
 .scene.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .scene.two .fold { display: none; }
-.scene.two .pane.a, .scene.two .pane.b { height: 40vh; min-height: 200px; max-height: 360px; margin-top: 0; }
+.scene.two .pane.a, .scene.two .pane.b { height: 34vh; min-height: 170px; max-height: 320px; margin-top: 0; }
 .viewctl { margin-left: auto; display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
 .vbtn { font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 9px; border: 0; border-radius: 99px; background: transparent; color: #52606d; cursor: pointer; white-space: nowrap; }
 .vbtn.on { background: #1f2933; color: #fff; }
 @media (max-width: 599px) {
-  .pane.a { height: 30vh; min-height: 150px; max-height: 240px; }
-  .scene.open .pane.b { height: 230px; }
+  .pane.a { height: 26vh; min-height: 130px; max-height: 220px; }
   .scene.two { grid-template-columns: 1fr; }
-  .scene.two .pane.a, .scene.two .pane.b { height: 26vh; min-height: 140px; max-height: 220px; }
+  .scene.two .pane.a, .scene.two .pane.b { height: 24vh; min-height: 120px; max-height: 200px; }
   .vbtn { font-size: 11px; padding: 5px 7px; }
 }
+
+/* ---------- LIVE: the vertical budget (phone and desktop share it) ----------
+   html/body are pinned to the dynamic viewport so browser chrome coming and going cannot leave a
+   gap or an overflow; the only scrolling region is .scrollarea. */
+body.live { height: 100vh; height: 100dvh; overflow: hidden; }
+body.live .app { height: 100%; }
+body.live .main { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 0; }
+body.live .hero { flex: none; display: flex; flex-direction: column; min-height: 0; }
+body.live .statebar { flex: none; }
+body.live .scrollarea { flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+/* fold OPEN: the seats pane takes every remaining pixel, the facts are out of the budget */
+body.live .scene.open { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body.live .scene.open .pane.a { flex: none; }
+body.live .scene.open .fold { flex: none; }
+body.live .scene.open .pane.b { flex: 1 1 auto; height: auto; min-height: 120px; }
+body.live .scene.open .pane.b svg { position: absolute; }
+body.live.foldopen .scrollarea { display: none; }
+body.live.foldopen .hero { flex: 1 1 auto; }
+body.live.foldopen .scene.two { flex: none; display: grid; }
 
 /* ---------- main column ---------- */
 .app { max-width: 1180px; margin: 0 auto; }
@@ -371,18 +429,18 @@ table.rank td.fitc.none i { font-size: 10px; }
 
 /* ---------- LIVE, phone: pinned scene + fixed bottom sheet ---------- */
 @media (max-width: 899px) {
-  body.live .hero { position: sticky; top: 0; z-index: 10; box-shadow: 0 6px 16px -12px rgba(16,24,40,.35); }
-  body.live .main { padding-bottom: 118px; }   /* room for the peeking sheet */
+  body.live .hero { z-index: 10; box-shadow: 0 6px 16px -12px rgba(16,24,40,.35); }
+  body.live .main { padding-bottom: 100px; }   /* EXACTLY the sheet's peek height: no gap, no overflow */
   body.live .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-    height: 88vh; border-radius: 20px 20px 0 0; border-top: 0;
+    height: 88vh; height: 88dvh; border-radius: 20px 20px 0 0; border-top: 0;
     box-shadow: 0 -10px 30px rgba(16,24,40,.22);
     display: flex; flex-direction: column;
-    transform: translateY(calc(88vh - 100px));
+    transform: translateY(calc(88vh - 100px)); transform: translateY(calc(88dvh - 100px));
     transition: transform .3s cubic-bezier(.2,.8,.2,1);
   }
   body.live .sheet.dragging { transition: none; }
-  body.live .sheet[data-pos="half"] { transform: translateY(calc(88vh - 52vh)); }
+  body.live .sheet[data-pos="half"] { transform: translateY(calc(88vh - 52vh)); transform: translateY(calc(88dvh - 52dvh)); }
   body.live .sheet[data-pos="full"] { transform: translateY(0); }
   body.live .grab { display: block; }
   body.live .sheetbody { overflow: auto; flex: 1; -webkit-overflow-scrolling: touch; padding-bottom: 40px; }
@@ -391,13 +449,13 @@ table.rank td.fitc.none i { font-size: 10px; }
 
 /* ---------- LIVE, desktop: sheet becomes a left rail ---------- */
 @media (min-width: 900px) {
-  body.live .app { display: grid; grid-template-columns: 360px 1fr; gap: 0; align-items: start; }
-  body.live .sheet { order: -1; position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; border-top: 0; border-right: 1px solid #e4e7eb; }
+  body.live .app { display: grid; grid-template-columns: 360px 1fr; gap: 0; align-items: stretch; height: 100vh; height: 100dvh; }
+  body.live .sheet { order: -1; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; border-top: 0; border-right: 1px solid #e4e7eb; }
   body.live .sheetbody { overflow: auto; flex: 1; }
   body.live .grab { display: none; }
-  body.live .main { padding: 0 20px 24px; }
-  body.live .hero { position: sticky; top: 0; z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
-  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 44vh; max-height: 400px; }
+  body.live .main { padding: 0 20px 0; height: 100vh; height: 100dvh; }
+  body.live .hero { z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
+  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 36vh; max-height: 340px; }
   .facts { padding: 14px 4px; }
   .vvy-specs { grid-template-columns: 1fr 1fr 1fr; }
   .cmpgrid { grid-template-columns: 1fr; }
@@ -431,10 +489,10 @@ table.rank td.fitc.none i { font-size: 10px; }
          changes: both panes scale their SVG inside a fixed box. Pane A = profile (exterior, or the
          "peek inside" cutaway); pane B = 45° overhead cabin view. In a comparison the same two panes
          hold A and B and the view control flips both. -->
-    <div id="scene" class="scene">
-      <div class="pane a" id="paneA"><svg class="vvy-svg" viewBox="0 0 442.3 107.4" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scaled comparison of a person against Ram 1500 — Crew Cab 5'7&quot; Bed 4x2"><defs><linearGradient id="vvy-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6d9dd"/><stop offset="0.45" stop-color="#e4e7eb"/><stop offset="1" stop-color="#edeff2"/></linearGradient><linearGradient id="vvy-bodyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7991aa"/><stop offset="0.45" stop-color="#436587"/><stop offset="1" stop-color="#2f4962"/></linearGradient><linearGradient id="vvy-glassA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6d5e2"/><stop offset="0.45" stop-color="#aec4d6"/><stop offset="1" stop-color="#98adbe"/></linearGradient><clipPath id="vvy-cbA0"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z"/></clipPath><clipPath id="vvy-cgA1"><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46"/></clipPath><clipPath id="vvy-ctA2"><rect x="163.2" y="12" width="241.7" height="29"/></clipPath><radialGradient id="vvy-tireA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#2b3238"/><stop offset="0.62" stop-color="#20272e"/><stop offset="0.86" stop-color="#484e54"/><stop offset="1" stop-color="#15191e"/></radialGradient><radialGradient id="vvy-rimA" cx="0.5" cy="0.5" r="0.5" fx="0.42" fy="0.4"><stop offset="0" stop-color="#777f88"/><stop offset="0.55" stop-color="#98a3ae"/><stop offset="1" stop-color="#bcc3ca"/></radialGradient><radialGradient id="vvy-dishA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="0.7" stop-color="#000" stop-opacity="0.05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="vvy-p3" gradientUnits="userSpaceOnUse" x1="30.4" y1="0" x2="51.4" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="vvy-p4" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="75.5" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="vvy-p5" gradientUnits="userSpaceOnUse" x1="80.1" y1="0" x2="95.1" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-p6" gradientUnits="userSpaceOnUse" x1="99.6" y1="0" x2="112.5" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient></defs><rect x="0" y="91.4" width="442.3" height="16" fill="url(#vvy-ground)" opacity="0.7"/><line x1="0" y1="91.4" x2="442.3" y2="91.4" stroke="#9aa5b1" stroke-width="0.6"/><line x1="0" y1="79.4" x2="442.3" y2="79.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="67.4" x2="442.3" y2="67.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="55.4" x2="442.3" y2="55.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="43.4" x2="442.3" y2="43.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="31.4" x2="442.3" y2="31.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="19.4" x2="442.3" y2="19.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><g class="vvy-shadow"><ellipse cx="284.1" cy="92.2" rx="122.3" ry="3" fill="#1f2933" opacity="0.07"/><ellipse cx="284.1" cy="92.2" rx="109.2" ry="2" fill="#1f2933" opacity="0.2"/></g><g class="vvy-veh vvy-veh-A"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="url(#vvy-bodyA)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><g clip-path="url(#vvy-cbA0)"><rect x="165.6" y="72" width="237" height="13.8" fill="#000" opacity="0.16"/><ellipse cx="206.5" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><ellipse cx="351.1" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><g clip-path="url(#vvy-ctA2)"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.28" stroke-linejoin="round"/></g><rect x="165.6" y="45.8" width="237" height="3.5" fill="#fff" opacity="0.07"/></g><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46" fill="url(#vvy-glassA)" opacity="0.85"/><g clip-path="url(#vvy-cgA1)"><polygon points="260.1,15.2 272.4,15.2 262.9,47 253.4,47" fill="#fff" opacity="0.28"/><polygon points="276.4,15.2 279.8,15.2 270.3,47 267.6,47" fill="#fff" opacity="0.16"/><rect x="250" y="39.4" width="71.9" height="8.9" fill="#000" opacity="0.14"/></g><g transform="translate(206.5 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g><g transform="translate(351.1 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g></g><line x1="10.5" y1="14" x2="419.2" y2="14" stroke="#1f4e79" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="12.8" text-anchor="end" font-size="3.9" fill="#1f4e79" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">77.4 in roof</text><line x1="10.5" y1="56.6" x2="419.2" y2="56.6" stroke="#0b7285" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="55.4" text-anchor="end" font-size="3.9" fill="#0b7285" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">34.8 in bed</text><g class="vvy-shadow"><ellipse cx="40.9" cy="92" rx="12.5" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="40.9" cy="92" rx="11.2" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-person" fill="url(#vvy-p3)"><polygon points="33,34.1 30.2,36.2 29.2,48 28.4,57.9 30.6,58.1 32.6,48 34.1,36.9" fill="#161d24"/><polygon points="40,59.2 33.7,58.6 34,68.3 35.3,81.6 35.5,91.4 39,91.4 39.2,81.6 40.3,70.4" fill="#182028"/><polygon points="41.7,59.2 48,58.6 47.7,68.3 46.5,81.6 46.2,91.4 42.7,91.4 42.5,81.6 41.4,70.4"/><polygon points="38.8,29.9 43,29.9 44.7,32.3 48.7,34 48.3,38.2 46.6,46.6 46.2,49.4 47.7,54.3 47.9,58.5 41.8,59.6 39.9,59.6 33.9,58.5 34,54.3 35.5,49.4 35.1,46.6 33.4,38.2 33,34 37,32.3"/><polygon points="48.7,34.1 51.5,36.2 52.5,48 53.3,57.9 51.1,58.1 49.1,48 47.6,36.9"/><ellipse cx="40.9" cy="26" rx="3" ry="4.6"/><ellipse cx="39.6" cy="23.9" rx="1" ry="1.4" fill="#fff" opacity="0.2"/><ellipse cx="40.9" cy="30.4" rx="2.1" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="39.8" cy="25.1" r="0.4"/><circle cx="41.9" cy="25.1" r="0.4"/><path d="M39.5 26.8 Q40.9 28.1 42.3 26.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="65.8" cy="92" rx="11.6" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="65.8" cy="92" rx="10.4" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-adult" fill="url(#vvy-p4)"><polygon points="58.5,38.2 55.9,40.2 55,51.1 54.2,60.3 56.3,60.5 58.1,51.1 59.5,40.8" fill="#2b3743"/><polygon points="65,61.5 59.1,61 59.4,70 60.6,82.3 60.8,91.4 64.1,91.4 64.2,82.3 65.3,71.9" fill="#303e4b"/><polygon points="66.6,61.5 72.4,61 72.1,70 71,82.3 70.7,91.4 67.5,91.4 67.3,82.3 66.3,71.9"/><polygon points="63.8,34.3 67.7,34.3 69.4,36.5 73.1,38.1 72.7,42 71.1,49.8 70.7,52.4 72.1,57 72.3,60.9 66.7,61.8 64.9,61.8 59.3,60.9 59.4,57 60.8,52.4 60.4,49.8 58.9,42 58.5,38.1 62.2,36.5"/><polygon points="73.1,38.2 75.7,40.2 76.6,51.1 77.3,60.3 75.3,60.5 73.4,51.1 72,40.8"/><ellipse cx="65.8" cy="30.7" rx="2.8" ry="4.3"/><ellipse cx="64.6" cy="28.7" rx="0.9" ry="1.3" fill="#fff" opacity="0.2"/><ellipse cx="65.8" cy="34.7" rx="2" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="64.8" cy="29.9" r="0.4"/><circle cx="66.8" cy="29.9" r="0.4"/><path d="M64.5 31.4 Q65.8 32.6 67.1 31.4" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="87.6" cy="92" rx="9" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="87.6" cy="92" rx="8" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p5)"><polygon points="82,50.5 80,52 79.3,60.4 78.7,67.5 80.3,67.6 81.7,60.4 82.8,52.5" fill="#435868"/><polygon points="87,68.4 82.5,68 82.7,74.9 83.6,84.4 83.8,91.4 86.3,91.4 86.4,84.4 87.2,76.4" fill="#4a6274"/><polygon points="88.2,68.4 92.7,68 92.5,74.9 91.6,84.4 91.4,91.4 88.9,91.4 88.8,84.4 88,76.4"/><polygon points="86.1,47.5 89.1,47.5 90.4,49.2 93.2,50.4 92.9,53.4 91.7,59.4 91.4,61.4 92.5,64.9 92.6,67.9 88.3,68.7 86.9,68.7 82.6,67.9 82.7,64.9 83.8,61.4 83.5,59.4 82.3,53.4 82,50.4 84.9,49.2"/><polygon points="93.2,50.5 95.2,52 95.9,60.4 96.5,67.5 94.9,67.6 93.5,60.4 92.4,52.5"/><ellipse cx="87.6" cy="44.7" rx="2.2" ry="3.3"/><ellipse cx="86.7" cy="43.2" rx="0.7" ry="1" fill="#fff" opacity="0.2"/><ellipse cx="87.6" cy="47.8" rx="1.5" ry="0.6" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="86.9" cy="44.1" r="0.4"/><circle cx="88.4" cy="44.1" r="0.4"/><path d="M86.6 45.3 Q87.6 46.2 88.6 45.3" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="106" cy="92" rx="7.7" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="106" cy="92" rx="6.9" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p6)"><polygon points="101.2,56.2 99.5,57.5 98.9,64.7 98.4,70.8 99.7,70.9 100.9,64.7 101.9,57.9" fill="#435868"/><polygon points="105.5,71.6 101.6,71.3 101.8,77.2 102.6,85.4 102.7,91.4 104.9,91.4 105,85.4 105.7,78.5" fill="#4a6274"/><polygon points="106.5,71.6 110.4,71.3 110.2,77.2 109.5,85.4 109.3,91.4 107.1,91.4 107,85.4 106.4,78.5"/><polygon points="104.7,53.6 107.3,53.6 108.4,55.1 110.8,56.1 110.6,58.7 109.5,63.9 109.3,65.6 110.2,68.6 110.3,71.2 106.6,71.8 105.4,71.8 101.7,71.2 101.8,68.6 102.7,65.6 102.5,63.9 101.5,58.7 101.2,56.1 103.7,55.1"/><polygon points="110.8,56.2 112.6,57.5 113.2,64.7 113.7,70.8 112.3,70.9 111.1,64.7 110.1,57.9"/><ellipse cx="106" cy="51.2" rx="1.9" ry="2.8"/><ellipse cx="105.2" cy="49.9" rx="0.6" ry="0.9" fill="#fff" opacity="0.2"/><ellipse cx="106" cy="53.9" rx="1.3" ry="0.5" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="105.4" cy="50.7" r="0.4"/><circle cx="106.7" cy="50.7" r="0.4"/><path d="M105.2 51.7 Q106 52.5 106.9 51.7" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g pointer-events="none"><g class="vvy-shadow"><ellipse cx="132.3" cy="92" rx="17.9" ry="2" fill="#1f2933" opacity="0.06"/><ellipse cx="132.3" cy="92" rx="16" ry="1.3" fill="#1f2933" opacity="0.18"/></g><g class="vvy-dog" fill="url(#vvy-dog)"><rect x="122.3" y="79.4" width="3" height="12" fill="#4d392a"/><rect x="135.3" y="79.4" width="3" height="12" fill="#4d392a"/><path d="M120.3 72.4 L140.3 70.4 L142.3 77.4 L122.3 79.4 Z"/><path d="M140.3 70.4 L143.3 64.4 L150.3 66.4 L149.3 71.4 L144.3 73.4 Z"/><path d="M143.3 64.4 L141.3 60.4 L145.3 63.4 Z"/><g class="vvy-tail"><path d="M120.3 72.4 L115.3 65.4 L117.3 64.4 L122.3 71.4 Z"/></g><rect x="128.3" y="79.4" width="3" height="12"/><rect x="139.3" y="79.4" width="3" height="12"/><path d="M122.3 73 L139.3 71.1" stroke="#fff" stroke-width="0.9" stroke-linecap="round" opacity="0.18" fill="none"/><circle cx="146.8" cy="67.4" r="0.7" fill="#1f2933"/><path d="M145.8 70.2 Q148.1 71.8 149.9 70.4" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/><ellipse cx="148.3" cy="71.8" rx="0.9" ry="1.3" fill="#e8848f"/></g></g><text x="105.8" y="97.6" text-anchor="middle" font-size="3.6" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">1 more adult · 2 kids · 1 dog (22 in at the shoulder)</text><line x1="9" y1="91.4" x2="9" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="21.4" x2="11" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="91.4" x2="11" y2="91.4" stroke="#1f2933" stroke-width="0.5"/><text x="40.9" y="97.6" text-anchor="middle" font-size="4.4" font-weight="600" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; 5' 10&quot;</text></svg></div>
-      <button type="button" class="fold" id="foldBtn" aria-expanded="false" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
-      <div class="pane b" id="paneB"><svg class="vvy-svg vvy-inside" viewBox="0 0 154.1 117.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the Ram 1500: who sits where. Headroom is judged in the profile view."><defs><linearGradient id="pboA-bodyo" gradientUnits="userSpaceOnUse" x1="34.5" y1="0" x2="126.9" y2="0"><stop offset="0" stop-color="#6985a0"/><stop offset="0.55" stop-color="#3f6285"/><stop offset="1" stop-color="#2d4760"/></linearGradient><linearGradient id="pboA-seato" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a59a91"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#645b52"/></linearGradient><linearGradient id="pboA-backo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b0a79f"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#7a6f64"/></linearGradient><linearGradient id="pboA-r0" gradientUnits="userSpaceOnUse" x1="54.3" y1="0" x2="68.3" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-r1" gradientUnits="userSpaceOnUse" x1="94.2" y1="0" x2="106.2" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-dogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient><linearGradient id="pboA-r2" gradientUnits="userSpaceOnUse" x1="50.5" y1="0" x2="70.1" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="pboA-r3" gradientUnits="userSpaceOnUse" x1="92.1" y1="0" x2="110.3" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="pboA-glasso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7d6e2"/><stop offset="0.45" stop-color="#b2c6d7"/><stop offset="1" stop-color="#a1b6c8"/></linearGradient></defs><ellipse cx="80.7" cy="69.8" rx="47" ry="47.6" fill="#1f2933" opacity="0.08"/><polygon points="124.3,104.9 115.6,104.9 114.5,98.1 122.9,98.1" fill="#20272e" rx="2"/><polygon points="45.8,104.9 37.1,104.9 38.5,98.1 47,98.1" fill="#20272e" rx="2"/><polygon points="116.5,49.2 109.3,49.2 108.2,37 115.1,37" fill="#20272e" rx="2"/><polygon points="52.1,49.2 44.9,49.2 46.4,37 53.2,37" fill="#20272e" rx="2"/><g class="vvy-veh vvy-veh-A"><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 49.8,26.6 56.5,20 104.9,20 111.7,26.6 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.5" stroke-linejoin="round"/><polygon points="111.4,54.2 50,54.2 53.2,21.4 108.2,21.4" fill="#203143"/><polyline points="110.9,48.8 50.6,48.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="110.3,43.3 51.1,43.3" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.8,37.8 51.6,37.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.3,32.4 52.2,32.4" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="108.8,26.9 52.7,26.9" fill="none" stroke="#182533" stroke-width="0.5"/><polygon points="114.9,89.7 46.6,89.7 49.9,55.2 111.5,55.2" fill="#f3eee4"/><polygon points="118.5,89.7 114,89.7 110.7,55.2 114.7,55.2" fill="#294056"/><polygon points="47.5,89.7 43,89.7 46.7,55.2 50.7,55.2" fill="#324e6a"/><polygon points="111.9,67.8 49.5,67.8 50.4,58.4 111,58.4" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.1,67.8 90.8,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="70.3,67.8 70.6,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="111,58.4 50.4,58.4 50.6,41.4 110.9,41.4" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="104.1,41.1 96,41.1 95.9,36.8 104.1,36.8" fill="#7d7167" rx="1"/><polygon points="65.5,41.1 57.3,41.1 57.4,36.8 65.5,36.8" fill="#7d7167" rx="1"/><polygon points="84.8,41.1 76.6,41.1 76.6,36.8 84.8,36.8" fill="#7d7167" rx="1"/><g class="vvy-seated-top"><polygon points="103.9,58.5 96.5,58.5 97.2,62.9 103.9,62.9" fill="#516a7f"/><polygon points="104.3,59.2 96.1,59.2 95,47.6 105.3,47.6" fill="url(#pboA-r0)"/><polygon points="105.3,48.3 106.8,49.3 106.1,58.2 104.9,58.2" fill="#4c6477"/><polygon points="95,48.3 93.6,49.3 94.5,58.2 95.8,58.2" fill="#4c6477"/><circle cx="100.2" cy="45" r="2.5" fill="url(#pboA-r0)"/><circle cx="99.4" cy="44.1" r="0.7" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="99.4" cy="44.9" r="0.4"/><circle cx="101" cy="44.9" r="0.4"/><path d="M99.2 45.8 Q100.2 46.9 101.2 45.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="64.4,58.5 58.1,58.5 58.1,62.1 63.8,62.1" fill="#516a7f"/><polygon points="64.8,59.2 57.7,59.2 56.8,49.4 65.7,49.4" fill="url(#pboA-r1)"/><polygon points="65.7,49.9 66.9,50.8 66.1,58.4 65,58.4" fill="#4c6477"/><polygon points="56.8,49.9 55.6,50.8 56.2,58.4 57.2,58.4" fill="#4c6477"/><circle cx="61.3" cy="47.1" r="2.2" fill="url(#pboA-r1)"/><circle cx="60.6" cy="46.3" r="0.6" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="60.6" cy="47" r="0.4"/><circle cx="62" cy="47" r="0.4"/><path d="M60.4 47.8 Q61.3 48.7 62.2 47.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-dog vvy-dog-top"><ellipse cx="80.7" cy="57.7" rx="5.5" ry="7.2" fill="url(#pboA-dogo)"/><circle cx="80.7" cy="49.8" r="5" fill="#6b4f3a"/><ellipse cx="76" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><ellipse cx="85.4" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><g fill="#fff" opacity="0.92"><circle cx="79" cy="49.1" r="0.6"/><circle cx="82.4" cy="49.1" r="0.6"/><circle cx="80.7" cy="51" r="0.8" fill="#1f2933"/><path d="M78.7 52 Q80.7 54 82.7 52" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round"/></g><ellipse cx="80.7" cy="53.7" rx="1" ry="1.5" fill="#e8848f"/></g><polygon points="113.4,83.7 48,83.7 48.9,74.3 112.5,74.3" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.6,83.7 91.3,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="69.8,83.7 70.1,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="112.5,74.3 48.9,74.3 49.1,56.5 112.4,56.5" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="105.3,56.3 96.7,56.3 96.7,51.7 105.3,51.7" fill="#7d7167" rx="1"/><polygon points="64.7,56.3 56.1,56.3 56.2,51.7 64.7,51.7" fill="#7d7167" rx="1"/><polygon points="85,56.3 76.4,56.3 76.4,51.7 85,51.7" fill="#7d7167" rx="1"/><g class="vvy-seated-top vvy-you"><polygon points="106.6,74.4 95.7,74.4 96.7,81 106.6,81" fill="#1a232b"/><polygon points="107.2,75.1 95.1,75.1 93.6,57.9 108.7,57.9" fill="url(#pboA-r2)"/><polygon points="108.7,58.8 110.8,60.3 109.9,73.2 108.1,73.2" fill="#192129"/><polygon points="93.6,58.8 91.5,60.3 92.8,73.2 94.6,73.2" fill="#192129"/><circle cx="101.2" cy="54" r="3.7" fill="url(#pboA-r2)"/><circle cx="100.1" cy="52.7" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="100" cy="53.8" r="0.4"/><circle cx="102.4" cy="53.8" r="0.4"/><path d="M99.7 55.1 Q101.2 56.8 102.7 55.1" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="65.3,74.4 55.2,74.4 55.2,80.4 64.4,80.4" fill="#344352"/><polygon points="65.9,75.1 54.7,75.1 53.3,59.1 67.3,59.1" fill="url(#pboA-r3)"/><polygon points="67.3,60 69.3,61.4 68,73.4 66.3,73.4" fill="#313f4d"/><polygon points="53.3,60 51.3,61.4 52.2,73.4 53.9,73.4" fill="#313f4d"/><circle cx="60.3" cy="55.6" r="3.5" fill="url(#pboA-r3)"/><circle cx="59.3" cy="54.4" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="59.2" cy="55.4" r="0.4"/><circle cx="61.4" cy="55.4" r="0.4"/><path d="M58.9 56.6 Q60.3 58.2 61.7 56.6" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><polygon points="114.9,89.7 46.6,89.7 46.9,76.7 114.5,76.7" fill="#1c2c3c"/><ellipse cx="101.5" cy="70.2" rx="6.5" ry="3.5" fill="none" stroke="#16222f" stroke-width="1.4"/><polygon points="115.8,89.7 45.7,89.7 49.1,63.1 112.3,63.1" fill="url(#pboA-glasso)" opacity="0.18" stroke="#24405c" stroke-width="0.4" stroke-opacity="0.5"/><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 43,89.7 118.5,89.7 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><polyline points="108.3,103.9 53.2,103.9" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.22"/></g><text x="42.9" y="62.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">2nd row</text><text x="42.9" y="68.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="118.6" y="63.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text><text x="41.2" y="78.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">Front</text><text x="41.2" y="84.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="120.3" y="79.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text></svg></div>
+    <div id="scene" class="scene open">
+      <div class="pane a" id="paneA"><svg class="vvy-svg" viewBox="0 0 383.3 99.4" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scaled comparison of a person against Ram 1500 — Crew Cab 5'7&quot; Bed 4x2"><defs><linearGradient id="vvy-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6d9dd"/><stop offset="0.45" stop-color="#e4e7eb"/><stop offset="1" stop-color="#edeff2"/></linearGradient><linearGradient id="vvy-bodyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7991aa"/><stop offset="0.45" stop-color="#436587"/><stop offset="1" stop-color="#2f4962"/></linearGradient><linearGradient id="vvy-glassA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6d5e2"/><stop offset="0.45" stop-color="#aec4d6"/><stop offset="1" stop-color="#98adbe"/></linearGradient><clipPath id="vvy-cbA0"><path d="M146.9 73.8 L146.9 48.5 L153.9 44.2 L191.4 43 L227.8 41.9 L245.9 9 L301.7 9 L304.4 37.1 L306.8 38.8 L377.9 38.8 L379.3 42.3 L379.3 69.6 L376 72.4 L366.3 73.8 L363 78.1 L163.1 78.1 Z"/></clipPath><clipPath id="vvy-cgA1"><polygon points="231,41 248.7,11.2 298.9,11.2 298.9,41"/></clipPath><clipPath id="vvy-ctA2"><rect x="142.2" y="7" width="241.7" height="29"/></clipPath><radialGradient id="vvy-tireA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#2b3238"/><stop offset="0.62" stop-color="#20272e"/><stop offset="0.86" stop-color="#484e54"/><stop offset="1" stop-color="#15191e"/></radialGradient><radialGradient id="vvy-rimA" cx="0.5" cy="0.5" r="0.5" fx="0.42" fy="0.4"><stop offset="0" stop-color="#777f88"/><stop offset="0.55" stop-color="#98a3ae"/><stop offset="1" stop-color="#bcc3ca"/></radialGradient><radialGradient id="vvy-dishA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="0.7" stop-color="#000" stop-opacity="0.05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="vvy-p3" gradientUnits="userSpaceOnUse" x1="9.4" y1="0" x2="30.4" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="vvy-p4" gradientUnits="userSpaceOnUse" x1="35" y1="0" x2="54.5" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="vvy-p5" gradientUnits="userSpaceOnUse" x1="59.1" y1="0" x2="74.1" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-p6" gradientUnits="userSpaceOnUse" x1="78.6" y1="0" x2="91.5" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient></defs><rect x="0" y="86.4" width="383.3" height="13" fill="url(#vvy-ground)" opacity="0.7"/><line x1="0" y1="86.4" x2="383.3" y2="86.4" stroke="#9aa5b1" stroke-width="0.6"/><line x1="0" y1="74.4" x2="383.3" y2="74.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="62.4" x2="383.3" y2="62.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="50.4" x2="383.3" y2="50.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="38.4" x2="383.3" y2="38.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="26.4" x2="383.3" y2="26.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="14.4" x2="383.3" y2="14.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><g class="vvy-shadow"><ellipse cx="263.1" cy="87.2" rx="122.3" ry="3" fill="#1f2933" opacity="0.07"/><ellipse cx="263.1" cy="87.2" rx="109.2" ry="2" fill="#1f2933" opacity="0.2"/></g><g class="vvy-veh vvy-veh-A"><path d="M146.9 73.8 L146.9 48.5 L153.9 44.2 L191.4 43 L227.8 41.9 L245.9 9 L301.7 9 L304.4 37.1 L306.8 38.8 L377.9 38.8 L379.3 42.3 L379.3 69.6 L376 72.4 L366.3 73.8 L363 78.1 L163.1 78.1 Z" fill="url(#vvy-bodyA)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><g clip-path="url(#vvy-cbA0)"><rect x="144.6" y="67" width="237" height="13.8" fill="#000" opacity="0.16"/><ellipse cx="185.5" cy="69.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><ellipse cx="330.1" cy="69.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><g clip-path="url(#vvy-ctA2)"><path d="M146.9 73.8 L146.9 48.5 L153.9 44.2 L191.4 43 L227.8 41.9 L245.9 9 L301.7 9 L304.4 37.1 L306.8 38.8 L377.9 38.8 L379.3 42.3 L379.3 69.6 L376 72.4 L366.3 73.8 L363 78.1 L163.1 78.1 Z" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.28" stroke-linejoin="round"/></g><rect x="144.6" y="40.8" width="237" height="3.5" fill="#fff" opacity="0.07"/></g><polygon points="231,41 248.7,11.2 298.9,11.2 298.9,41" fill="url(#vvy-glassA)" opacity="0.85"/><g clip-path="url(#vvy-cgA1)"><polygon points="239.1,10.2 251.4,10.2 241.9,42 232.4,42" fill="#fff" opacity="0.28"/><polygon points="255.4,10.2 258.8,10.2 249.3,42 246.6,42" fill="#fff" opacity="0.16"/><rect x="229" y="34.4" width="71.9" height="8.9" fill="#000" opacity="0.14"/></g><g transform="translate(185.5 69.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g><g transform="translate(330.1 69.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g></g><line x1="2" y1="9" x2="381.3" y2="9" stroke="#1f4e79" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/><text x="381.3" y="7.9" text-anchor="end" font-size="8" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" stroke-opacity="0.9">77.4 in roof</text><text x="381.3" y="7.9" text-anchor="end" font-size="8" font-weight="700" fill="#1f4e79" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">77.4 in roof</text><line x1="2" y1="51.6" x2="381.3" y2="51.6" stroke="#0b7285" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/><text x="381.3" y="56" text-anchor="end" font-size="8" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" stroke-opacity="0.9">34.8 in bed</text><text x="381.3" y="56" text-anchor="end" font-size="8" font-weight="700" fill="#0b7285" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">34.8 in bed</text><g class="vvy-shadow"><ellipse cx="19.9" cy="87" rx="12.5" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="19.9" cy="87" rx="11.2" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-person" fill="url(#vvy-p3)"><polygon points="12,29.1 9.2,31.2 8.2,43 7.4,52.9 9.6,53.1 11.6,43 13.1,31.9" fill="#161d24"/><polygon points="19,54.2 12.7,53.6 13,63.3 14.3,76.6 14.5,86.4 18,86.4 18.2,76.6 19.3,65.4" fill="#182028"/><polygon points="20.7,54.2 27,53.6 26.7,63.3 25.5,76.6 25.2,86.4 21.7,86.4 21.5,76.6 20.4,65.4"/><polygon points="17.8,24.9 22,24.9 23.7,27.3 27.7,29 27.3,33.2 25.6,41.6 25.2,44.4 26.7,49.3 26.9,53.5 20.8,54.6 18.9,54.6 12.9,53.5 13,49.3 14.5,44.4 14.1,41.6 12.4,33.2 12,29 16,27.3"/><polygon points="27.7,29.1 30.5,31.2 31.5,43 32.3,52.9 30.1,53.1 28.1,43 26.6,31.9"/><ellipse cx="19.9" cy="21" rx="3" ry="4.6"/><ellipse cx="18.6" cy="18.9" rx="1" ry="1.4" fill="#fff" opacity="0.2"/><ellipse cx="19.9" cy="25.4" rx="2.1" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="18.8" cy="20.1" r="0.4"/><circle cx="20.9" cy="20.1" r="0.4"/><path d="M18.5 21.8 Q19.9 23.1 21.3 21.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="44.8" cy="87" rx="11.6" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="44.8" cy="87" rx="10.4" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-adult" fill="url(#vvy-p4)"><polygon points="37.5,33.2 34.9,35.2 34,46.1 33.2,55.3 35.3,55.5 37.1,46.1 38.5,35.8" fill="#2b3743"/><polygon points="44,56.5 38.1,56 38.4,65 39.6,77.3 39.8,86.4 43.1,86.4 43.2,77.3 44.3,66.9" fill="#303e4b"/><polygon points="45.6,56.5 51.4,56 51.1,65 50,77.3 49.7,86.4 46.5,86.4 46.3,77.3 45.3,66.9"/><polygon points="42.8,29.3 46.7,29.3 48.4,31.5 52.1,33.1 51.7,37 50.1,44.8 49.7,47.4 51.1,52 51.3,55.9 45.7,56.8 43.9,56.8 38.3,55.9 38.4,52 39.8,47.4 39.4,44.8 37.9,37 37.5,33.1 41.2,31.5"/><polygon points="52.1,33.2 54.7,35.2 55.6,46.1 56.3,55.3 54.3,55.5 52.4,46.1 51,35.8"/><ellipse cx="44.8" cy="25.7" rx="2.8" ry="4.3"/><ellipse cx="43.6" cy="23.7" rx="0.9" ry="1.3" fill="#fff" opacity="0.2"/><ellipse cx="44.8" cy="29.7" rx="2" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="43.8" cy="24.9" r="0.4"/><circle cx="45.8" cy="24.9" r="0.4"/><path d="M43.5 26.4 Q44.8 27.6 46.1 26.4" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="66.6" cy="87" rx="9" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="66.6" cy="87" rx="8" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p5)"><polygon points="61,45.5 59,47 58.3,55.4 57.7,62.5 59.3,62.6 60.7,55.4 61.8,47.5" fill="#435868"/><polygon points="66,63.4 61.5,63 61.7,69.9 62.6,79.4 62.8,86.4 65.3,86.4 65.4,79.4 66.2,71.4" fill="#4a6274"/><polygon points="67.2,63.4 71.7,63 71.5,69.9 70.6,79.4 70.4,86.4 67.9,86.4 67.8,79.4 67,71.4"/><polygon points="65.1,42.5 68.1,42.5 69.4,44.2 72.2,45.4 71.9,48.4 70.7,54.4 70.4,56.4 71.5,59.9 71.6,62.9 67.3,63.7 65.9,63.7 61.6,62.9 61.7,59.9 62.8,56.4 62.5,54.4 61.3,48.4 61,45.4 63.9,44.2"/><polygon points="72.2,45.5 74.2,47 74.9,55.4 75.5,62.5 73.9,62.6 72.5,55.4 71.4,47.5"/><ellipse cx="66.6" cy="39.7" rx="2.2" ry="3.3"/><ellipse cx="65.7" cy="38.2" rx="0.7" ry="1" fill="#fff" opacity="0.2"/><ellipse cx="66.6" cy="42.8" rx="1.5" ry="0.6" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="65.9" cy="39.1" r="0.4"/><circle cx="67.4" cy="39.1" r="0.4"/><path d="M65.6 40.3 Q66.6 41.2 67.6 40.3" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="85" cy="87" rx="7.7" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="85" cy="87" rx="6.9" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p6)"><polygon points="80.2,51.2 78.5,52.5 77.9,59.7 77.4,65.8 78.7,65.9 79.9,59.7 80.9,52.9" fill="#435868"/><polygon points="84.5,66.6 80.6,66.3 80.8,72.2 81.6,80.4 81.7,86.4 83.9,86.4 84,80.4 84.7,73.5" fill="#4a6274"/><polygon points="85.5,66.6 89.4,66.3 89.2,72.2 88.5,80.4 88.3,86.4 86.1,86.4 86,80.4 85.4,73.5"/><polygon points="83.7,48.6 86.3,48.6 87.4,50.1 89.8,51.1 89.6,53.7 88.5,58.9 88.3,60.6 89.2,63.6 89.3,66.2 85.6,66.8 84.4,66.8 80.7,66.2 80.8,63.6 81.7,60.6 81.5,58.9 80.5,53.7 80.2,51.1 82.7,50.1"/><polygon points="89.8,51.2 91.6,52.5 92.2,59.7 92.7,65.8 91.3,65.9 90.1,59.7 89.1,52.9"/><ellipse cx="85" cy="46.2" rx="1.9" ry="2.8"/><ellipse cx="84.2" cy="44.9" rx="0.6" ry="0.9" fill="#fff" opacity="0.2"/><ellipse cx="85" cy="48.9" rx="1.3" ry="0.5" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="84.4" cy="45.7" r="0.4"/><circle cx="85.7" cy="45.7" r="0.4"/><path d="M84.2 46.7 Q85 47.5 85.9 46.7" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g pointer-events="none"><g class="vvy-shadow"><ellipse cx="111.3" cy="87" rx="17.9" ry="2" fill="#1f2933" opacity="0.06"/><ellipse cx="111.3" cy="87" rx="16" ry="1.3" fill="#1f2933" opacity="0.18"/></g><g class="vvy-dog" fill="url(#vvy-dog)"><rect x="101.3" y="74.4" width="3" height="12" fill="#4d392a"/><rect x="114.3" y="74.4" width="3" height="12" fill="#4d392a"/><path d="M99.3 67.4 L119.3 65.4 L121.3 72.4 L101.3 74.4 Z"/><path d="M119.3 65.4 L122.3 59.4 L129.3 61.4 L128.3 66.4 L123.3 68.4 Z"/><path d="M122.3 59.4 L120.3 55.4 L124.3 58.4 Z"/><g class="vvy-tail"><path d="M99.3 67.4 L94.3 60.4 L96.3 59.4 L101.3 66.4 Z"/></g><rect x="107.3" y="74.4" width="3" height="12"/><rect x="118.3" y="74.4" width="3" height="12"/><path d="M101.3 68 L118.3 66.1" stroke="#fff" stroke-width="0.9" stroke-linecap="round" opacity="0.18" fill="none"/><circle cx="125.8" cy="62.4" r="0.7" fill="#1f2933"/><path d="M124.8 65.2 Q127.1 66.8 128.9 65.4" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/><ellipse cx="127.3" cy="66.8" rx="0.9" ry="1.3" fill="#e8848f"/></g></g><text x="84.8" y="97.4" text-anchor="middle" font-size="6.4" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round" stroke-opacity="0.9">1 more adult · 2 kids · 1 dog (22 in at the shoulder)</text><text x="84.8" y="97.4" text-anchor="middle" font-size="6.4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">1 more adult · 2 kids · 1 dog (22 in at the shoulder)</text><line x1="3" y1="86.4" x2="3" y2="16.4" stroke="#1f2933" stroke-width="0.5"/><line x1="1" y1="16.4" x2="5" y2="16.4" stroke="#1f2933" stroke-width="0.5"/><line x1="1" y1="86.4" x2="5" y2="86.4" stroke="#1f2933" stroke-width="0.5"/><text x="19.9" y="92.2" text-anchor="middle" font-size="8" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" stroke-opacity="0.9">You &#183; 5' 10&quot;</text><text x="19.9" y="92.2" text-anchor="middle" font-size="8" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; 5' 10&quot;</text></svg></div>
+      <button type="button" class="fold" id="foldBtn" aria-expanded="true" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
+      <div class="pane b" id="paneB"><svg class="vvy-svg vvy-inside" viewBox="0 0 154.1 117.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the Ram 1500: who sits where. Headroom is judged in the profile view."><defs><linearGradient id="pboA-bodyo" gradientUnits="userSpaceOnUse" x1="34.5" y1="0" x2="126.9" y2="0"><stop offset="0" stop-color="#6985a0"/><stop offset="0.55" stop-color="#3f6285"/><stop offset="1" stop-color="#2d4760"/></linearGradient><linearGradient id="pboA-seato" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a59a91"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#645b52"/></linearGradient><linearGradient id="pboA-backo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b0a79f"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#7a6f64"/></linearGradient><linearGradient id="pboA-r0" gradientUnits="userSpaceOnUse" x1="54.3" y1="0" x2="68.3" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-r1" gradientUnits="userSpaceOnUse" x1="94.2" y1="0" x2="106.2" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-dogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient><linearGradient id="pboA-r2" gradientUnits="userSpaceOnUse" x1="50.5" y1="0" x2="70.1" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="pboA-r3" gradientUnits="userSpaceOnUse" x1="92.1" y1="0" x2="110.3" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="pboA-glasso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7d6e2"/><stop offset="0.45" stop-color="#b2c6d7"/><stop offset="1" stop-color="#a1b6c8"/></linearGradient></defs><ellipse cx="80.7" cy="69.8" rx="47" ry="47.6" fill="#1f2933" opacity="0.08"/><polygon points="124.3,104.9 115.6,104.9 114.5,98.1 122.9,98.1" fill="#20272e" rx="2"/><polygon points="45.8,104.9 37.1,104.9 38.5,98.1 47,98.1" fill="#20272e" rx="2"/><polygon points="116.5,49.2 109.3,49.2 108.2,37 115.1,37" fill="#20272e" rx="2"/><polygon points="52.1,49.2 44.9,49.2 46.4,37 53.2,37" fill="#20272e" rx="2"/><g class="vvy-veh vvy-veh-A"><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 49.8,26.6 56.5,20 104.9,20 111.7,26.6 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.5" stroke-linejoin="round"/><polygon points="111.4,54.2 50,54.2 53.2,21.4 108.2,21.4" fill="#203143"/><polyline points="110.9,48.8 50.6,48.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="110.3,43.3 51.1,43.3" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.8,37.8 51.6,37.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.3,32.4 52.2,32.4" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="108.8,26.9 52.7,26.9" fill="none" stroke="#182533" stroke-width="0.5"/><polygon points="114.9,89.7 46.6,89.7 49.9,55.2 111.5,55.2" fill="#f3eee4"/><polygon points="118.5,89.7 114,89.7 110.7,55.2 114.7,55.2" fill="#294056"/><polygon points="47.5,89.7 43,89.7 46.7,55.2 50.7,55.2" fill="#324e6a"/><polygon points="111.9,67.8 49.5,67.8 50.4,58.4 111,58.4" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.1,67.8 90.8,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="70.3,67.8 70.6,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="111,58.4 50.4,58.4 50.6,41.4 110.9,41.4" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="104.1,41.1 96,41.1 95.9,36.8 104.1,36.8" fill="#7d7167" rx="1"/><polygon points="65.5,41.1 57.3,41.1 57.4,36.8 65.5,36.8" fill="#7d7167" rx="1"/><polygon points="84.8,41.1 76.6,41.1 76.6,36.8 84.8,36.8" fill="#7d7167" rx="1"/><g class="vvy-seated-top"><polygon points="103.9,58.5 96.5,58.5 97.2,62.9 103.9,62.9" fill="#516a7f"/><polygon points="104.3,59.2 96.1,59.2 95,47.6 105.3,47.6" fill="url(#pboA-r0)"/><polygon points="105.3,48.3 106.8,49.3 106.1,58.2 104.9,58.2" fill="#4c6477"/><polygon points="95,48.3 93.6,49.3 94.5,58.2 95.8,58.2" fill="#4c6477"/><circle cx="100.2" cy="45" r="2.5" fill="url(#pboA-r0)"/><circle cx="99.4" cy="44.1" r="0.7" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="99.4" cy="44.9" r="0.4"/><circle cx="101" cy="44.9" r="0.4"/><path d="M99.2 45.8 Q100.2 46.9 101.2 45.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="64.4,58.5 58.1,58.5 58.1,62.1 63.8,62.1" fill="#516a7f"/><polygon points="64.8,59.2 57.7,59.2 56.8,49.4 65.7,49.4" fill="url(#pboA-r1)"/><polygon points="65.7,49.9 66.9,50.8 66.1,58.4 65,58.4" fill="#4c6477"/><polygon points="56.8,49.9 55.6,50.8 56.2,58.4 57.2,58.4" fill="#4c6477"/><circle cx="61.3" cy="47.1" r="2.2" fill="url(#pboA-r1)"/><circle cx="60.6" cy="46.3" r="0.6" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="60.6" cy="47" r="0.4"/><circle cx="62" cy="47" r="0.4"/><path d="M60.4 47.8 Q61.3 48.7 62.2 47.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-dog vvy-dog-top"><ellipse cx="80.7" cy="57.7" rx="5.5" ry="7.2" fill="url(#pboA-dogo)"/><circle cx="80.7" cy="49.8" r="5" fill="#6b4f3a"/><ellipse cx="76" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><ellipse cx="85.4" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><g fill="#fff" opacity="0.92"><circle cx="79" cy="49.1" r="0.6"/><circle cx="82.4" cy="49.1" r="0.6"/><circle cx="80.7" cy="51" r="0.8" fill="#1f2933"/><path d="M78.7 52 Q80.7 54 82.7 52" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round"/></g><ellipse cx="80.7" cy="53.7" rx="1" ry="1.5" fill="#e8848f"/></g><polygon points="113.4,83.7 48,83.7 48.9,74.3 112.5,74.3" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.6,83.7 91.3,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="69.8,83.7 70.1,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="112.5,74.3 48.9,74.3 49.1,56.5 112.4,56.5" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="105.3,56.3 96.7,56.3 96.7,51.7 105.3,51.7" fill="#7d7167" rx="1"/><polygon points="64.7,56.3 56.1,56.3 56.2,51.7 64.7,51.7" fill="#7d7167" rx="1"/><polygon points="85,56.3 76.4,56.3 76.4,51.7 85,51.7" fill="#7d7167" rx="1"/><g class="vvy-seated-top vvy-you"><polygon points="106.6,74.4 95.7,74.4 96.7,81 106.6,81" fill="#1a232b"/><polygon points="107.2,75.1 95.1,75.1 93.6,57.9 108.7,57.9" fill="url(#pboA-r2)"/><polygon points="108.7,58.8 110.8,60.3 109.9,73.2 108.1,73.2" fill="#192129"/><polygon points="93.6,58.8 91.5,60.3 92.8,73.2 94.6,73.2" fill="#192129"/><circle cx="101.2" cy="54" r="3.7" fill="url(#pboA-r2)"/><circle cx="100.1" cy="52.7" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="100" cy="53.8" r="0.4"/><circle cx="102.4" cy="53.8" r="0.4"/><path d="M99.7 55.1 Q101.2 56.8 102.7 55.1" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="65.3,74.4 55.2,74.4 55.2,80.4 64.4,80.4" fill="#344352"/><polygon points="65.9,75.1 54.7,75.1 53.3,59.1 67.3,59.1" fill="url(#pboA-r3)"/><polygon points="67.3,60 69.3,61.4 68,73.4 66.3,73.4" fill="#313f4d"/><polygon points="53.3,60 51.3,61.4 52.2,73.4 53.9,73.4" fill="#313f4d"/><circle cx="60.3" cy="55.6" r="3.5" fill="url(#pboA-r3)"/><circle cx="59.3" cy="54.4" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="59.2" cy="55.4" r="0.4"/><circle cx="61.4" cy="55.4" r="0.4"/><path d="M58.9 56.6 Q60.3 58.2 61.7 56.6" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><polygon points="114.9,89.7 46.6,89.7 46.9,76.7 114.5,76.7" fill="#1c2c3c"/><ellipse cx="101.5" cy="70.2" rx="6.5" ry="3.5" fill="none" stroke="#16222f" stroke-width="1.4"/><polygon points="115.8,89.7 45.7,89.7 49.1,63.1 112.3,63.1" fill="url(#pboA-glasso)" opacity="0.18" stroke="#24405c" stroke-width="0.4" stroke-opacity="0.5"/><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 43,89.7 118.5,89.7 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><polyline points="108.3,103.9 53.2,103.9" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.22"/></g><text x="42.9" y="62.6" text-anchor="end" font-size="5" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-opacity="0.9">2nd row</text><text x="42.9" y="62.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">2nd row</text><text x="42.9" y="68.1" text-anchor="end" font-size="4" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round" stroke-opacity="0.9">bench · 3</text><text x="42.9" y="68.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">bench · 3</text><text x="118.6" y="63.6" font-size="5" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-opacity="0.9">fine</text><text x="118.6" y="63.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">fine</text><text x="41.2" y="78.6" text-anchor="end" font-size="5" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-opacity="0.9">Front</text><text x="41.2" y="78.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">Front</text><text x="41.2" y="84.1" text-anchor="end" font-size="4" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round" stroke-opacity="0.9">bench · 3</text><text x="41.2" y="84.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">bench · 3</text><text x="120.3" y="79.6" font-size="5" font-weight="700" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" fill="#fff" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-opacity="0.9">fine</text><text x="120.3" y="79.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">fine</text></svg></div>
     </div>
   </section>
 
@@ -450,6 +508,7 @@ table.rank td.fitc.none i { font-size: 10px; }
 
   <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab; a 5'10" driver, a 5'5" adult, two kids and a dog). Enable JavaScript for the controls.</p></noscript>
 
+  <div class="scrollarea" id="scrollarea">
   <section class="facts">
     <div id="fitLine"><div class="vvy-fit ok">Fits: 5 of 6 seats used (1 by a dog), 1 spare.</div></div>
     <h2 id="vehTitle">2026 Ram 1500</h2>
@@ -473,6 +532,7 @@ table.rank td.fitc.none i { font-size: 10px; }
     <p>Data provenance: overall height, length, width, wheelbase, ground clearance, curb weight and tire size are taken from manufacturer-published specifications for the model year shown; figures marked &#8776; are derived (including anything under a lift or tire change), and hood/bed heights are shown only where a published source exists. Seat counts are the standard seating for the trim shown and are not from the dimension sources.</p>
   </footer>
   <!-- ===== END ATTRIBUTION BLOCK ===== -->
+  </div>
 </main>
 
 <!-- ===== SHEET: one layer, four question cards. Static (no JS) it is a plain stacked block. ===== -->
@@ -659,6 +719,7 @@ var VVY = (function () {
     B: { body: '#f1b93f', stroke: '#9a6a12', glass: '#f8e6b8', wheel: '#5c4a1e', hub: '#e9d7a8', guide: '#b7791f', op: 1 }
   };
 
+  var FONT = 'system-ui,Segoe UI,Helvetica,Arial,sans-serif';
   function r1(n) { return Math.round(n * 10) / 10; }
   function r2(n) { return Math.round(n * 100) / 100; }
   function r0(n) { return Math.round(n); }
@@ -760,6 +821,13 @@ var VVY = (function () {
     return this.add(key, '<clipPath id="' + id + '">' + markup + '</clipPath>');
   };
   Defs.prototype.html = function () { return this.out.length ? '<defs>' + this.out.join('') + '</defs>' : ''; };
+  /* haloed label: a white-stroked copy under the filled text, so it reads over any artwork
+     (drawn twice rather than relying on paint-order, which some renderers ignore) */
+  function haloText(attrs, content, w) {
+    var under = attrs.replace(/ fill="[^"]*"/, '');
+    return '<text' + under + ' fill="#fff" stroke="#fff" stroke-width="' + (w || 1.5) + '" stroke-linejoin="round" stroke-opacity="0.9">' + content + '</text>' +
+      '<text' + attrs + '>' + content + '</text>';
+  }
   /* contact shadow: two stacked ellipses fake a soft penumbra without a filter */
   function groundShadow(cx, cy, rx, ry, op) {
     op = op || 0.16;
@@ -1251,7 +1319,9 @@ var VVY = (function () {
     var side = !!B;
     var pw = personIn * 0.31;
     var gap = 16;
-    var mL = 30, mR = 42, mT = 14 + ((opts.party && opts.party.cats) ? 14 : 0), mB = 16;   /* extra headroom for a cat's speech bubble on the roof */
+    /* minimum buffers: labels are drawn INLINE over the artwork (haloed), not in reserved margins */
+    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = 13;   /* mT: roof label / a cat's speech bubble */
+    /* label size scales with the scene width so it lands at ~9-10 px on a 375 px phone */
     /* family: adults and kids drawn between the reference person and the vehicle.
        Adults 66 in (US average adult), kids 45 in; the reference person stays the tallest anchor. */
     var party = opts.party || {}, fam = [], i;
@@ -1279,6 +1349,7 @@ var VVY = (function () {
     var qW = (inter && !B) ? Math.max(28, A.height * 0.42) + gap : 0;   /* ghost "?" placeholder for the comparison vehicle */
     var W = mL + pw + famW + gap + vehSpan + qW + mR;
     var SH = mT + topH + mB;
+    var GF = r1(Math.max(5.2, Math.min(8, W / 48)));   /* guide/label font in scene units */
     function Y(y) { return r1(SH - mB - y); }
     var px = mL + pw / 2;
     var vxA = mL + pw + famW + gap;
@@ -1304,14 +1375,18 @@ var VVY = (function () {
     if (inter && !B) { o.push(qmarkSvg(vxA + LA + gap, 0, A.height, Y)); }
     if (B) { o.push(vehicleSvg(B, vxB, Y, 'B', !!opts.animate, null, dx)); }
 
+    /* dimension lines run edge to edge; the label sits on the line at the right edge, haloed so it
+       reads over the body, the ghost "?" or the sky alike; alternating above/below avoids stacking */
+    var gx1 = r1(W - 2);
     function guide(yIn, label, color, below) {
-      var ty = below ? (Y(yIn) + 4.6) : (Y(yIn) - 1.2);
-      o.push('<line x1="' + r1(mL * 0.35) + '" y1="' + Y(yIn) + '" x2="' + r1(W - mR * 0.55) + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2"/>');
-      o.push('<text x="' + r1(W - 1.5) + '" y="' + r1(ty) + '" text-anchor="end" font-size="3.9" fill="' + color + '" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">' + esc(label) + '</text>');
+      var ty = below ? (Y(yIn) + 4.4) : (Y(yIn) - 1.1);
+      o.push('<line x1="2" y1="' + Y(yIn) + '" x2="' + gx1 + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/>');
+      o.push(haloText(' x="' + gx1 + '" y="' + r1(ty) + '" text-anchor="end" font-size="' + GF + '" font-weight="700" fill="' + color + '" font-family="' + FONT + '"', esc(label), 1.6));
     }
     guide(A.height, shortDim(A.height, metric) + ' roof' + (B ? ' A' : ''), PAL.A.guide, false);
-    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood' + (B ? ' A' : ''), '#7b5ea7', false); }
-    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed' + (B ? ' A' : ''), '#0b7285', false); }
+    /* hood / bed labels go below their lines so they never sit on the roof label when heights are close */
+    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood' + (B ? ' A' : ''), '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7); }
+    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed' + (B ? ' A' : ''), '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true); }
     if (B) {
       guide(B.height, shortDim(B.height, metric) + ' roof B', PAL.B.guide, true);
       if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed B', PAL.B.guide, true); }
@@ -1354,16 +1429,18 @@ var VVY = (function () {
       if (nA) { parts.push(nA + ' more adult' + (nA === 1 ? '' : 's')); }
       if (nK) { parts.push(nK + ' kid' + (nK === 1 ? '' : 's')); }
       if (nD) { parts.push(nD + ' dog' + (nD === 1 ? '' : 's') + ' (22 in at the shoulder)'); }
-      o.push('<text x="' + r1(mL + pw + 4 + famW / 2) + '" y="' + r1(Y(0) + 6.2) + '" text-anchor="middle" font-size="3.6" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">' + esc(parts.join(' \u00b7 ')) + '</text>');
+      /* second line under the ground so it never collides with the "You" label */
+      o.push(haloText(' x="' + r1(mL + pw + 4 + famW / 2) + '" y="' + r1(Y(0) + 11) + '" text-anchor="middle" font-size="' + r1(GF * 0.8) + '" fill="#52606d" font-family="' + FONT + '"', esc(parts.join(' \u00b7 ')), 1.2));
     }
 
-    var bx = r1(mL * 0.30);
+    /* height ruler hugs the reference figure */
+    var bx = 3;
     o.push('<line x1="' + bx + '" y1="' + Y(0) + '" x2="' + bx + '" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<line x1="' + r1(mL * 0.30 - 2) + '" y1="' + Y(personIn) + '" x2="' + r1(mL * 0.30 + 2) + '" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<line x1="' + r1(mL * 0.30 - 2) + '" y1="' + Y(0) + '" x2="' + r1(mL * 0.30 + 2) + '" y2="' + Y(0) + '" stroke="#1f2933" stroke-width="0.5"/>');
-    o.push('<text x="' + r1(px) + '" y="' + r1(Y(0) + 6.2) + '" text-anchor="middle" font-size="4.4" font-weight="600" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; ' + esc(personLabel(personIn, metric)) + '</text>');
+    o.push('<line x1="1" y1="' + Y(personIn) + '" x2="5" y2="' + Y(personIn) + '" stroke="#1f2933" stroke-width="0.5"/>');
+    o.push('<line x1="1" y1="' + Y(0) + '" x2="5" y2="' + Y(0) + '" stroke="#1f2933" stroke-width="0.5"/>');
+    o.push(haloText(' x="' + r1(Math.max(px, 16)) + '" y="' + r1(Y(0) + 5.8) + '" text-anchor="middle" font-size="' + GF + '" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', 'You &#183; ' + esc(personLabel(personIn, metric)), 1.6));
 
-    if (inter) { var bf = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vxA + LA - 24 * bf, Y(0) + 9, false, bf)); }
+    if (inter) { var bf = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vxA + LA - 24 * bf, Y(0) + 6.5, false, bf)); }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1783,7 +1860,6 @@ var VVY = (function () {
      exterior outline (ghosted); inside it, floor, seats, headliner and legroom are laid out from the
      published figures, and each rider is drawn at seated size from their standing height (SEAT
      ratios). Head through the headliner / knees into the seat ahead are drawn as they would be. */
-  var FONT = 'system-ui,Segoe UI,Helvetica,Arial,sans-serif';
   function roofAt(body, xf) {
     /* highest outline y at x-fraction xf (outline is a closed polyline) */
     var pts = body.pts, i, a, b, best = null, t, y;
@@ -2052,7 +2128,7 @@ var VVY = (function () {
     /* ---- measured callouts: THE point of this view. One per seated rider: inches above the head
        to the headliner and inches of knee clearance to the seat ahead (front row: legroom margin),
        colour-coded fine / tight / cramped; "not on file" when the row has no published figure. ---- */
-    var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx, halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"';
+    var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx;
     function bandColor(bnd) { return bnd === 'cramped' ? '#b3261e' : (bnd === 'tight' ? '#9a6a12' : (bnd === 'unknown' ? '#7b8794' : '#0b5b32')); }
     function sgn(v) { var x = metric ? v * 2.54 : v; return (x >= 0 ? '+' : '\u2212') + (Math.round(Math.abs(x) * 10) / 10); }
     for (ci = 0; ci < callouts.length; ci++) {
@@ -2079,7 +2155,7 @@ var VVY = (function () {
       var who = co.p.you ? 'You' : (co.p.kind === 'kid' ? 'Kid' : 'Adult'), rowName = co.row.n === 1 ? 'front' : (co.row.n === 2 ? '2nd row' : '3rd row');
       ty = 6 + ci * (CAL + 1.2);
       lab.push('<circle cx="' + r1(mL - 7) + '" cy="' + r1(ty - 2.6) + '" r="3.4" fill="' + colr + '"/><text x="' + r1(mL - 7) + '" y="' + r1(ty - 1) + '" text-anchor="middle" font-size="4.6" font-weight="700" fill="#fff" font-family="' + FONT + '">' + (ci + 1) + '</text>');
-      lab.push('<text x="' + r1(mL) + '" y="' + r1(ty) + '" font-size="' + CAL + '" font-weight="700" fill="' + colr + '" font-family="' + FONT + '"' + halo + '>' + esc(who + ' ' + personLabel(co.p.h, metric) + ', ' + rowName + ': ') + esc(headTxt) + ' \u00b7 ' + esc(kneeTxt) + '</text>');
+      lab.push(haloText(' x="' + r1(mL) + '" y="' + r1(ty) + '" font-size="' + CAL + '" font-weight="700" fill="' + colr + '" font-family="' + FONT + '"', esc(who + ' ' + personLabel(co.p.h, metric) + ', ' + rowName + ': ') + esc(headTxt) + ' \u00b7 ' + esc(kneeTxt), 1.6));
     }
     o.push(lab.join(''));
     o.push('<text x="2" y="' + r1(Y(0) + 6) + '" font-size="3.3" fill="#7b8794" font-family="' + FONT + '">' + (metric ? 'cm' : 'inches') + ' of room above the head and in front of the knee · guidance, not a verdict: seated ≈ 0.52 × standing; published figures are indicative — seat position varies</text>');
@@ -2295,16 +2371,15 @@ var VVY = (function () {
       o.push('<text x="' + ns[0] + '" y="' + r1(ns[1] + 6) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no seat</text>');
     }
     /* ---- row labels (left) + fit chips (right) ---- */
-    var halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"';
     for (k = 0; k < chips.length; k++) {
       var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, Wd, 0), rp = P(rl.u - 6, 0, 0);
       var name = rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row');
       var kind = rl.seats === 0 ? 'no seats' : (rl.bench ? 'bench · ' + rl.seats : (rl.seats === 1 ? '1 seat' : (rl.n === 1 ? '2 buckets' : (rl.seats === 2 ? "2 captain's chairs" : rl.seats + ' seats'))));
-      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"' + halo + '>' + esc(name) + '</text>');
-      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"' + halo + '>' + esc(kind) + '</text>');
+      o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', esc(name), 1.4));
+      o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"', esc(kind), 1.2));
       var ctext = ch.band === 'empty' ? 'empty' : (ch.band === 'unknown' ? 'room n/a' : (ch.band === 'cramped' ? 'cramped' : (ch.band === 'tight' ? 'tight' : 'fine')));
       var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
-      o.push('<text x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"' + halo + '>' + esc(ctext) + '</text>');
+      o.push(haloText(' x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"', esc(ctext), 1.4));
     }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
@@ -2895,7 +2970,7 @@ window.__rf_filters = true;
        Comparing: one control flips BOTH panes — profile = A and B side by side at one scale in a
        single pane; cutaway / overhead = A in pane A, B in pane B, drawn at a shared scale. */
     view: 'profile',
-    fold: false,   /* the seats fold under the profile pane (alone only) */
+    fold: true,    /* the seats fold under the profile pane (alone only) — open on load */
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
@@ -2923,8 +2998,25 @@ window.__rf_filters = true;
     };
   }
   /* breadcrumb: the last user action, appended to any window.onerror report so a sanitised
-     "Script error." on file:// still says what was being done */
-  function crumb(s) { try { window.RideFitCrumb = s; } catch (e0) {} }
+     "Script error." on file:// still says what was being done; RideFitCrumbAt lets the reporter say
+     how long AFTER our handler finished the error arrived */
+  function crumb(s) { try { window.RideFitCrumb = s; window.RideFitCrumbAt = new Date().getTime(); } catch (e0) {} }
+  /* reveal(): every path that shows a previously hidden panel (the fold, a sheet segment, a compare
+     view) runs through here: the panel name goes in the breadcrumb, the work runs inside its own
+     try/catch and reports with the REAL message, and a marker is set while our code is running so the
+     global handler can tell "thrown inside the app" from "thrown by something else afterwards" */
+  function reveal(name, fn) {
+    crumb('reveal: ' + name);
+    try { window.RideFitInReveal = name; } catch (e0) {}
+    try { fn(); }
+    catch (err) { try { window.RideFitReport(err, 'reveal ' + name); } catch (e2) {} }
+    finally { try { window.RideFitInReveal = ''; window.RideFitRevealDone = new Date().getTime(); } catch (e3) {} }
+  }
+  function setBodyFlag(flag, on) {
+    var b = document.body, re = new RegExp('(^|\\s)' + flag + '(\\s|$)', 'g');
+    var cls = b.className.replace(re, ' ').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
+    b.className = on ? cls + ' ' + flag : cls;
+  }
   /* timers run outside every handler's try/catch: route them through the same reporter */
   function safeTimer(fn, ms) { return setTimeout(function () { try { fn(); } catch (err) { try { window.RideFitReport(err, 'timer'); } catch (e2) {} } }, ms); }
   var supportsPassive = false;
@@ -3117,6 +3209,7 @@ window.__rf_filters = true;
     /* alone: primary profile pane + collapsible seats fold; comparing in an inside view: A | B split */
     var split = !!(eB && state.view !== 'profile');
     scene.className = 'scene' + (split ? ' two' : (state.fold ? ' open' : ''));
+    setBodyFlag('foldopen', !split && state.fold);
     paneA.innerHTML = htmlA;
     paneB.innerHTML = htmlB;
     paneB.style.display = (split || !eB) ? '' : 'none';
@@ -3276,9 +3369,10 @@ window.__rf_filters = true;
   function setView(v) {
     state.view = (v === 'cutaway' || v === 'overhead') ? v : 'profile';
     if (!state.b && state.view === 'overhead') { state.view = 'profile'; }   /* alone, the overhead pane is always there */
-    crumb('view: ' + state.view);
-    render();
-    if (!reduceMotion) { var pa = byId('paneA'); pa.className = 'pane a'; void pa.offsetWidth; pa.className = 'pane a vvy-anim'; }
+    reveal('view ' + state.view, function () {
+      render();
+      if (!reduceMotion) { var pa = byId('paneA'); pa.className = 'pane a'; void pa.offsetWidth; pa.className = 'pane a vvy-anim'; }
+    });
   }
   window.RideFitView = { set: function (v) { setView(v); }, get: function () { return state.view; } };
   function setA(k) { state.a = k; fillSelects(); render(); }
@@ -3351,7 +3445,7 @@ window.__rf_filters = true;
       for (i = 0; i < panes.length; i++) { panes[i].style.display = panes[i].getAttribute('data-pane') === name ? '' : 'none'; }
       try { body.scrollTop = 0; } catch (e0) {}
     }
-    function open(name, p) { setSeg(name); setPos(p || (name === 'rank' ? 'full' : 'half')); }
+    function open(name, p) { reveal('sheet ' + name, function () { setSeg(name); setPos(p || (name === 'rank' ? 'full' : 'half')); }); }
     function toggle() { setPos(pos === 'peek' ? 'half' : (pos === 'half' ? 'full' : 'peek')); }
     /* touch drag on the grab handle / segment bar */
     var startY = 0, startT = 0, dragging = false, vh = 0;
@@ -3729,7 +3823,14 @@ window.__rf_filters = true;
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
     byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
-    byId('foldBtn').onclick = safe(function () { state.fold = !state.fold; crumb('fold: ' + state.fold); byId('scene').className = 'scene' + (state.fold ? ' open' : ''); byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false'); });
+    byId('foldBtn').onclick = safe(function () {
+      state.fold = !state.fold;
+      reveal('seats fold ' + (state.fold ? 'open' : 'closed'), function () {
+        byId('scene').className = 'scene' + (state.fold ? ' open' : '');
+        setBodyFlag('foldopen', state.fold);
+        byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
+      });
+    });
     byId('viewCtl').onclick = safe(onViewCtl);
     byId('viewCtl2').onclick = safe(onViewCtl);
     byId('clearBtn').onclick = safe(clearB);

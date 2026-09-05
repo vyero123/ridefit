@@ -27,7 +27,9 @@ setTimeout(function () {
   var seaS = w.VVY.seatEveryone(w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.identity.brand === 'Ram' && v.identity.model === '1500' && v.identity.config.indexOf('Crew Cab') === 0; })[0]), { person: 70, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 50 }, { kind: 'kid', h: 43 }], dogs: 1 });
   var occS = function (r) { return seaS.occ[r].map(function (x) { return x ? (x.you ? 'you' : x.kind + x.h) : '-'; }).join(','); };
   check(occS(1) === 'you,adult65,-' && occS(2) === 'kid50,kid43,dog22', 'seating order: driver you, 2nd adult front, kids rear, dog takes the spare rear seat, bench middle last (' + occS(1) + ' | ' + occS(2) + ')');
-  check(/\.pane\.a \{[^}]*height: 40vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /\.scene\.open \.pane\.b \{[^}]*height: 240px/.test(html), 'reserved heights: profile pane fixed, seats fold 0 / 240px');
+  check(/\.pane\.a \{[^}]*height: 34vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /body\.live \{ height: 100vh; height: 100dvh; overflow: hidden; \}/.test(html) && /body\.live \.scrollarea \{[^}]*overflow: auto/.test(html) && /padding-bottom: 100px/.test(html), 'vertical budget: pinned 100dvh body, profile pane reserved, scroll area is the only scroller, sheet peek = 100px padding');
+  check(/<div id="scene" class="scene open">/.test(html) && /aria-expanded="true"/.test(html), 'static first paint: seats fold open');
+  check(/rfEnv\(\)/.test(html) && /RideFitInReveal/.test(html) && /addEventListener\('error'/.test(html) && /unhandledrejection/.test(html), 'error instrumentation: timing + environment evidence, reveal marker, resource + promise listeners');
   check(html.indexOf("Dogs don't take a seat") < 0 && html.indexOf('need a rear row folded') < 0 && html.indexOf('will most likely need') < 0, 'no stale "dogs take no seat" copy');
   check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
   check((html.match(/Vadim Yerokhin/g) || []).length === 1, 'attribution exactly once');
@@ -66,8 +68,13 @@ setTimeout(function () {
   check(/dog/.test($('fitLine').textContent) && /seat/.test($('fitLine').textContent), 'fit verdict counts dogs: ' + $('fitLine').textContent.slice(0, 110));
   check(/Your dog/.test($('room').textContent), 'room guidance places the dogs');
   /* fold */
-  check($('scene').className.indexOf('open') < 0 && $('foldBtn').style.display !== 'none', 'seats fold collapsed by default, button shown');
-  click($('foldBtn')); check($('scene').className.indexOf('open') >= 0 && $('foldBtn').getAttribute('aria-expanded') === 'true', 'fold opens'); click($('foldBtn'));
+  check($('scene').className.indexOf('open') >= 0 && /\bfoldopen\b/.test(d.body.className) && $('foldBtn').style.display !== 'none', 'seats fold OPEN by default, body.foldopen set, button shown');
+  click($('foldBtn')); check($('scene').className.indexOf('open') < 0 && !/\bfoldopen\b/.test(d.body.className) && $('foldBtn').getAttribute('aria-expanded') === 'false' && /reveal: seats fold closed/.test(w.RideFitCrumb), 'fold closes, crumb names the panel: ' + w.RideFitCrumb); click($('foldBtn'));
+  check(/reveal: seats fold open/.test(w.RideFitCrumb) && w.RideFitInReveal === '' && w.RideFitRevealDone > 0, 'reveal marker cleared after the fold handler, done-time recorded');
+  /* prove the instrumentation: an error thrown inside a reveal is caught with its real message */
+  w.RideFitReport = (function (orig) { return function (err, where) { w.__lastReport = [String(err && err.message || err), where]; return orig(err, where); }; })(w.RideFitReport);
+  try { w.RideFitTestReveal = null; } catch (e0) {}
+  var rv = w.eval('(function(){ var f = document.getElementById("foldBtn"); return typeof f.onclick; })()'); check(rv === 'function', 'fold handler bound');
   check($('room').textContent.indexOf('Your') >= 0, 'room guidance mentions riders');
   /* find */
   click($('statebar').querySelector('[data-seg="find"]'));

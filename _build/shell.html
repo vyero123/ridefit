@@ -24,21 +24,60 @@ window.RideFitReport = function (err, where) {
     b.style.display = 'block';
   } catch (e) {}
 };
+/* Evidence gathering for errors that reach the GLOBAL handlers. Every handler and timer in the app
+   runs inside try/catch and reports through RideFitReport with the real message, so anything that
+   arrives here escaped all of that. The report says: how long after the app's last handler finished,
+   whether the app was mid-reveal, the script URL/line if the browser gives one, whether it was a
+   resource error, and which known injected globals exist (Firefox iOS: window.__firefox__). */
+function rfEnv() {
+  var e = [];
+  try { if (window.__firefox__) { e.push('window.__firefox__ present (Firefox iOS injected scripts)'); } } catch (x1) {}
+  try { if (window.__gCrWeb) { e.push('window.__gCrWeb present (Chrome iOS injected scripts)'); } } catch (x2) {}
+  try { if (window.webkit && window.webkit.messageHandlers) { var mh = [], k; for (k in window.webkit.messageHandlers) { mh.push(k); } e.push('webkit.messageHandlers: ' + (mh.length ? mh.slice(0, 6).join(',') : 'present')); } } catch (x3) {}
+  try { var sc = document.scripts, n = 0, i; for (i = 0; i < sc.length; i++) { if (sc[i].src) { n++; } } if (n) { e.push(n + ' external <script> tag(s) not from this page'); } } catch (x4) {}
+  return e.length ? ' · environment: ' + e.join('; ') : ' · environment: no injected globals detected';
+}
+function rfTiming() {
+  var now = new Date().getTime(), t = '';
+  try {
+    if (window.RideFitInReveal) { t = ' · thrown WHILE the app was revealing "' + window.RideFitInReveal + '"'; }
+    else if (window.RideFitRevealDone) { t = ' · ' + (now - window.RideFitRevealDone) + ' ms AFTER the app finished its last reveal'; }
+    else if (window.RideFitCrumbAt) { t = ' · ' + (now - window.RideFitCrumbAt) + ' ms after the last action'; }
+  } catch (x) {}
+  return t;
+}
 window.onerror = function (msg, url, line, col, err) {
-  if (err) { window.RideFitReport(err, 'window'); return false; }
-  var s = String(msg);
   var crumb = ''; try { if (window.RideFitCrumb) { crumb = ' — last action: ' + window.RideFitCrumb; } } catch (e) {}
-  if (/^Script error\.?$/.test(s)) {
-    /* No Error object and a sanitised message = the throwing script is CROSS-ORIGIN to this page.
-       Over https this page's own scripts are same-origin and always report a real message, so this
-       almost certainly comes from a browser extension, content blocker or injected userscript. */
-    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'probably outside this page (extension / content blocker / injected script), not the app';
-    window.RideFitReport('Script error with no detail — ' + where + crumb, 'browser');
+  if (err) { window.RideFitReport(err, 'window' + (window.RideFitInReveal ? ' during reveal ' + window.RideFitInReveal : '')); return false; }
+  var s = String(msg);
+  if (/^Script error\.?$/.test(s) && !url) {
+    /* No Error object, no URL, sanitised message: the throwing script is not same-origin with this
+       page. Over https this page's own inline scripts always report a real message, so the evidence
+       below is what decides it — read the timing and environment lines rather than this label. */
+    var where = (location.protocol === 'file:') ? 'file:// hides details — open over https to tell' : 'not from this page\'s own scripts (they always report in full over https)';
+    window.RideFitReport('Script error with no detail — ' + where + crumb + rfTiming() + rfEnv(), 'browser');
     return false;
   }
-  window.RideFitReport(s + ' (line ' + line + ':' + col + ')' + crumb, 'window');
+  window.RideFitReport(s + ' (' + (url || 'no url') + ' ' + line + ':' + col + ')' + crumb + rfTiming(), 'window');
   return false;
 };
+/* capture-phase error listener: also sees resource load failures and gives filename/lineno/error */
+try {
+  window.addEventListener('error', function (ev) {
+    try {
+      if (!ev) { return; }
+      var tgt = ev.target;
+      if (tgt && tgt !== window && tgt.tagName) {
+        window.RideFitReport('resource failed to load: <' + tgt.tagName.toLowerCase() + '> ' + (tgt.src || tgt.href || '') + rfTiming(), 'resource');
+        return;
+      }
+      /* script errors are reported by window.onerror above (same event); only resources are handled here */
+    } catch (x) {}
+  }, true);
+  window.addEventListener('unhandledrejection', function (ev) {
+    try { var r = ev && ev.reason; window.RideFitReport('unhandled promise rejection: ' + (r && r.message ? r.name + ': ' + r.message : String(r)) + rfTiming() + rfEnv(), 'promise'); } catch (x) {}
+  });
+} catch (e9) {}
 </script>
 <style>
 {{CSS}}
@@ -65,9 +104,9 @@ window.onerror = function (msg, url, line, col, err) {
          changes: both panes scale their SVG inside a fixed box. Pane A = profile (exterior, or the
          "peek inside" cutaway); pane B = 45° overhead cabin view. In a comparison the same two panes
          hold A and B and the view control flips both. -->
-    <div id="scene" class="scene">
+    <div id="scene" class="scene open">
       <div class="pane a" id="paneA">{{STATIC_SVG}}</div>
-      <button type="button" class="fold" id="foldBtn" aria-expanded="false" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
+      <button type="button" class="fold" id="foldBtn" aria-expanded="true" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
       <div class="pane b" id="paneB">{{STATIC_INSIDE}}</div>
     </div>
   </section>
@@ -84,6 +123,7 @@ window.onerror = function (msg, url, line, col, err) {
 
   <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab; a 5'10" driver, a 5'5" adult, two kids and a dog). Enable JavaScript for the controls.</p></noscript>
 
+  <div class="scrollarea" id="scrollarea">
   <section class="facts">
     <div id="fitLine">{{STATIC_FIT}}</div>
     <h2 id="vehTitle">{{DEF_TITLE}}</h2>
@@ -107,6 +147,7 @@ window.onerror = function (msg, url, line, col, err) {
     <p>Data provenance: overall height, length, width, wheelbase, ground clearance, curb weight and tire size are taken from manufacturer-published specifications for the model year shown; figures marked &#8776; are derived (including anything under a lift or tire change), and hood/bed heights are shown only where a published source exists. Seat counts are the standard seating for the trim shown and are not from the dimension sources.</p>
   </footer>
   <!-- ===== END ATTRIBUTION BLOCK ===== -->
+  </div>
 </main>
 
 <!-- ===== SHEET: one layer, four question cards. Static (no JS) it is a plain stacked block. ===== -->
