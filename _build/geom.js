@@ -630,7 +630,7 @@ var VVY = (function () {
     var pw = personIn * 0.31;
     var gap = 16;
     /* minimum buffers: labels are drawn INLINE over the artwork (haloed), not in reserved margins */
-    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = opts.interactive ? 30 : 13;   /* mT: roof label / a cat's speech bubble; mB: room for the peek-inside pill when live */
+    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = 13;   /* mT: roof label / a cat's speech bubble */
     /* label size scales with the scene width so it lands at ~9-10 px on a 375 px phone */
     /* family: adults and kids drawn between the reference person and the vehicle.
        Adults 66 in (US average adult), kids 45 in; the reference person stays the tallest anchor. */
@@ -754,7 +754,9 @@ var VVY = (function () {
 
     /* pill scale follows the scene width so the hit area stays ≈ 44 px on a 375 px phone (the scene is
        width-bound there); the hit box bottom lands inside the bottom margin */
-    if (inter) { var bf = Math.max(1, Math.min(1.6, W / 330)); o.push(viewBadge(vxA + LA - 44 * bf, Y(0) + 30 - 22 * bf, false, bf)); }
+    /* the pill sits ON the bodywork (mid-height, centred on the cabin/door area) as part of the drawing;
+       its plate is a semi-opaque white so it reads over any panel colour */
+    if (inter) { var bf = Math.max(1, Math.min(1.6, W / 330)); o.push(viewBadge(vxA + LA * 0.5, Y(A.height * 0.42), false, bf)); }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1425,12 +1427,24 @@ var VVY = (function () {
         if (rr.n > 1 && fr.ls !== null) { var face = R[k - 1].hx + 7, kls = face + fr.ls; if (kls < kneeAnat) { kneeX = kls; } }
         if (rr.n === 1 && fr.ls !== null && fr.ls < 0) { kneeX = kneeAnat - fr.ls * 0.3; }
         if (p.carseat) {
-          /* child car seat: a bucket shell on the cushion, high back with a wing, the child sits on its
-             own cushion ~3 in above the seat */
-          var cx0 = rr.hx + j * 3.5, cb = rr.cush, shellCol = '#4b5563';
-          o.push('<g class="vvy-carseat"><path d="M' + r1(cx0 - 11) + ' ' + Y(cb + 0.5) + ' L' + r1(cx0 + 5) + ' ' + Y(cb + 0.5) + ' L' + r1(cx0 + 8) + ' ' + Y(cb + 26) + ' L' + r1(cx0 + 2) + ' ' + Y(cb + 27) + ' L' + r1(cx0 - 1) + ' ' + Y(cb + 8) + ' L' + r1(cx0 - 11) + ' ' + Y(cb + 6) + ' Z" fill="url(#' + dx.vgrad('carseat', shellCol, 0.2, -0.3) + ')" stroke="' + shade(shellCol, -0.35) + '" stroke-width="0.4"/>' +
-            '<rect x="' + r1(cx0 - 10) + '" y="' + Y(cb + 3.5) + '" width="13" height="3" rx="1.2" fill="' + shade(shellCol, 0.25) + '"/></g>');
-          o.push(seatedSvg(hh, cx0 - 1, cb + 3.5, kneeX + j * 3.5 + 3, cb + 3.5 - Math.max(6, hh * 0.285), Y, col, 'vvy-seated vvy-toddler', dx, faceFor(fr, rr, rr.n === 1), j > 0));
+          /* child car seat, side view: deep base on the cushion, tall back that curves over into a
+             head-hugging top, a big side wing in front of the child's hips, harness strap. The child
+             sits ~4 in above the vehicle cushion and its knees bend over the front lip. */
+          var cx0 = rr.hx + j * 3.5, cb = rr.cush, sh1 = '#3E4A5B', sh2 = shade(sh1, 0.22), csW = Math.max(14, Math.min(20, hh * 0.42)), csH = Math.max(22, Math.min(30, hh * 0.72));
+          var bx0 = cx0 - csW * 0.65, bx1 = cx0 + 6;
+          o.push('<g class="vvy-carseat">' +
+            /* back shell: from the base up and curving forward over the head */
+            '<path d="M' + r1(bx1 - 2) + ' ' + Y(cb + 0.5) + ' L' + r1(bx1 + 3) + ' ' + Y(cb + csH * 0.55) + ' C' + r1(bx1 + 4) + ' ' + Y(cb + csH * 0.9) + ' ' + r1(bx1) + ' ' + Y(cb + csH) + ' ' + r1(bx1 - 6) + ' ' + Y(cb + csH) + ' L' + r1(bx1 - 9) + ' ' + Y(cb + csH - 1) + ' L' + r1(bx1 - 9) + ' ' + Y(cb + csH * 0.72) + ' L' + r1(bx1 - 3) + ' ' + Y(cb + csH * 0.68) + ' L' + r1(bx1 - 4) + ' ' + Y(cb + 4) + ' Z" fill="url(#' + dx.vgrad('carseatb', sh1, 0.18, -0.3) + ')" stroke="' + shade(sh1, -0.4) + '" stroke-width="0.45" stroke-linejoin="round"/>' +
+            /* base */
+            '<path d="M' + r1(bx0) + ' ' + Y(cb + 0.5) + ' L' + r1(bx1) + ' ' + Y(cb + 0.5) + ' L' + r1(bx1 - 1) + ' ' + Y(cb + 6) + ' L' + r1(bx0 + 2) + ' ' + Y(cb + 7) + ' Q' + r1(bx0 - 1) + ' ' + Y(cb + 6) + ' ' + r1(bx0) + ' ' + Y(cb + 3) + ' Z" fill="url(#' + dx.vgrad('carseatb', sh1, 0.18, -0.3) + ')" stroke="' + shade(sh1, -0.4) + '" stroke-width="0.45"/>' +
+            '</g>');
+          /* the child, slightly forward and raised on the seat's own cushion */
+          o.push(seatedSvg(hh, cx0 - 1, cb + 4, kneeX + j * 3.5 + 4, cb + 4 - Math.max(6, hh * 0.285), Y, col, 'vvy-seated vvy-toddler', dx, faceFor(fr, rr, rr.n === 1), j > 0));
+          /* side wing in front of the child's hips + harness strap over the chest */
+          o.push('<g class="vvy-carseat vvy-carseat-front">' +
+            '<path d="M' + r1(bx0 + 1) + ' ' + Y(cb + 6.5) + ' L' + r1(bx1 - 4) + ' ' + Y(cb + 6) + ' L' + r1(bx1 - 4) + ' ' + Y(cb + csH * 0.5) + ' Q' + r1(bx1 - 8) + ' ' + Y(cb + csH * 0.55) + ' ' + r1(bx0 + 6) + ' ' + Y(cb + csH * 0.38) + ' Q' + r1(bx0) + ' ' + Y(cb + csH * 0.3) + ' ' + r1(bx0 + 1) + ' ' + Y(cb + 6.5) + ' Z" fill="' + sh2 + '" fill-opacity="0.9" stroke="' + shade(sh1, -0.4) + '" stroke-width="0.45" stroke-linejoin="round"/>' +
+            '<path d="M' + r1(bx1 - 5) + ' ' + Y(cb + csH * 0.62) + ' L' + r1(cx0 - hh * 0.06) + ' ' + Y(cb + 8) + '" stroke="#C4661A" stroke-width="1.2" stroke-linecap="round" fill="none"/>' +
+            '</g>');
         } else {
           o.push(seatedSvg(hh, rr.hx + j * 3.5, rr.cush, kneeX + j * 3.5, floor, Y, col, 'vvy-seated' + (p.you ? ' vvy-you' : ''), dx, faceFor(fr, rr, rr.n === 1), j > 0));
         }
@@ -1468,6 +1482,21 @@ var VVY = (function () {
         o.push(groundShadow(nxd - 2, Y(0) + 0.6, 14, 1.2, 0.18) + sittingDogSvg(nxd, 0, Y, 22, dx));
         o.push('<text x="' + r1(nxd) + '" y="' + r1(Y(0) + 6) + '" text-anchor="middle" font-size="3.4" fill="#8a1c14" font-family="' + FONT + '">no room</text>');
       }
+    }
+    /* folded strollers in the cargo bay / trunk / bed: a slim frame with two wheel pairs, leaning */
+    var nStr = sea.strollers, si;
+    for (si = 0; si < nStr; si++) {
+      var sx, sy;
+      if (sea.space.kind === 'bed') { sx = vx + L * 0.955 - 30 - si * 9; sy = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20); }
+      else if (trunk) { sx = cabinR + 8 + si * 7; sy = floor + 2; }
+      else { sx = Math.min(cargoR - 6, cargoF + 4 + si * 7); sy = floor; }
+      o.push('<g class="vvy-stroller" opacity="0.95">' +
+        '<line x1="' + r1(sx) + '" y1="' + Y(sy + 1) + '" x2="' + r1(sx + 5) + '" y2="' + Y(sy + 26) + '" stroke="#5B6470" stroke-width="1.6" stroke-linecap="round"/>' +
+        '<line x1="' + r1(sx + 2.5) + '" y1="' + Y(sy + 1) + '" x2="' + r1(sx + 7) + '" y2="' + Y(sy + 24) + '" stroke="#5B6470" stroke-width="1.2" stroke-linecap="round"/>' +
+        '<path d="M' + r1(sx + 5) + ' ' + Y(sy + 26) + ' Q' + r1(sx + 9) + ' ' + Y(sy + 28) + ' ' + r1(sx + 10) + ' ' + Y(sy + 25) + '" stroke="#5B6470" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="' + r1(sx) + '" cy="' + Y(sy + 1.5) + '" r="1.6" fill="#2A3038"/><circle cx="' + r1(sx + 4) + '" cy="' + Y(sy + 1.5) + '" r="1.6" fill="#2A3038"/>' +
+        '<rect x="' + r1(sx + 1) + '" y="' + Y(sy + 18) + '" width="5" height="10" rx="1.5" fill="#C4661A" opacity="0.85"/>' +
+        '</g>');
     }
     if (nBed) {
       /* near bed side wall in front of the dog: from the bed floor up to the rail, bed front to tailgate */
@@ -1536,7 +1565,7 @@ var VVY = (function () {
      read from it — fit is only signalled through the colour states (fine / tight / cramped) and the
      row chips; the numbers live in the profile "peek inside" cutaway.
      opts: { party, ref:{L,W} (shared scale for A/B), role:'A'|'B', idPrefix } */
-  var OV = { KY: 0.47, KZ: 0.8, PERSP: 0.28 };
+  var OV = { KY: 0.62, KZ: 0.55, PERSP: 0.28 };   /* rows spaced so each row's occupants clear the row ahead */
   function seatPlan(cfg) {
     /* seats per row and whether each row is a bench or individual chairs, from seats/rows/cab */
     var rows = has(cfg.rows) ? Math.max(1, Math.min(3, cfg.rows)) : 2, seats = has(cfg.seats) ? cfg.seats : 5;
@@ -1696,13 +1725,24 @@ var VVY = (function () {
         var wv = fr.band === 'unknown' ? null : (fr.hs === null ? fr.ls : (fr.ls === null ? fr.hs : Math.min(fr.hs, fr.ls)));
         if (wv !== null && (worst === null || wv < worst)) { worst = wv; }
         if (oc.carseat) {
-          var csv = rr.vs[j], csu = rr.u, cw = 9;
-          o.push('<g class="vvy-carseat-top"><polygon points="' + pts([[csu - 12, csv - cw, 1], [csu - 12, csv + cw, 1], [csu + 4, csv + cw, 1], [csu + 4, csv - cw, 1]]) + '" fill="' + shade('#4b5563', 0.1) + '" stroke="' + shade('#4b5563', -0.35) + '" stroke-width="0.35"/>' +
-            '<polygon points="' + pts([[csu + 2, csv - cw, 0], [csu + 2, csv + cw, 0], [csu + 5, csv + cw - 1, 26], [csu + 5, csv - cw + 1, 26]]) + '" fill="url(#' + dx.vgrad('carseato', '#4b5563', 0.25, -0.25) + ')"/>' +
-            '<polygon points="' + pts([[csu - 12, csv - cw, 0], [csu - 12, csv - cw + 2.5, 0], [csu + 3, csv - cw + 2.5, 14], [csu + 3, csv - cw, 14]]) + '" fill="' + shade('#4b5563', -0.1) + '"/>' +
-            '<polygon points="' + pts([[csu - 12, csv + cw, 0], [csu - 12, csv + cw - 2.5, 0], [csu + 3, csv + cw - 2.5, 14], [csu + 3, csv + cw, 14]]) + '" fill="' + shade('#4b5563', -0.1) + '"/></g>');
+          var csv = rr.vs[j], csu = rr.u, cw = Math.max(8, Math.min(10.5, oc.h * 0.16)), csHt = Math.max(20, Math.min(28, oc.h * 0.7)), sc1 = '#3E4A5B';
+          var backF = 'url(#' + dx.vgrad('carseato', sc1, 0.28, -0.25) + ')';
+          o.push('<g class="vvy-carseat-top">' +
+            /* base tray on the cushion */
+            '<polygon points="' + pts([[csu - 14, csv - cw, 1], [csu - 14, csv + cw, 1], [csu + 4, csv + cw, 1], [csu + 4, csv - cw, 1]]) + '" fill="' + shade(sc1, 0.35) + '" stroke="' + shade(sc1, -0.35) + '" stroke-width="0.35"/>' +
+            /* tall back with a rounded top */
+            '<polygon points="' + pts([[csu + 2, csv - cw, 0], [csu + 2, csv + cw, 0], [csu + 4, csv + cw - 0.5, csHt * 0.8], [csu + 4, csv + cw * 0.6, csHt], [csu + 4, csv - cw * 0.6, csHt], [csu + 4, csv - cw + 0.5, csHt * 0.8]]) + '" fill="' + backF + '" stroke="' + shade(sc1, -0.4) + '" stroke-width="0.35" stroke-linejoin="round"/>' +
+            /* side wings: vertical faces rising to the back, lower at the front */
+            '<polygon points="' + pts([[csu - 14, csv - cw, 0], [csu - 14, csv - cw + 2.2, 0], [csu - 14, csv - cw + 2.2, 6], [csu + 2, csv - cw + 2.2, csHt * 0.55], [csu + 2, csv - cw, csHt * 0.55], [csu + 2, csv - cw, 0]]) + '" fill="' + shade(sc1, -0.05) + '" stroke="' + shade(sc1, -0.4) + '" stroke-width="0.3"/>' +
+            '<polygon points="' + pts([[csu - 14, csv + cw, 0], [csu - 14, csv + cw - 2.2, 0], [csu - 14, csv + cw - 2.2, 6], [csu + 2, csv + cw - 2.2, csHt * 0.55], [csu + 2, csv + cw, csHt * 0.55], [csu + 2, csv + cw, 0]]) + '" fill="' + shade(sc1, -0.05) + '" stroke="' + shade(sc1, -0.4) + '" stroke-width="0.3"/>' +
+            '</g>');
         }
         o.push(riderSvg(oc, rr.u - (oc.carseat ? 3 : 0), rr.vs[j], fr));
+        if (oc.carseat) {
+          var cw2 = Math.max(8, Math.min(10.5, oc.h * 0.16));
+          o.push('<g class="vvy-carseat-top vvy-carseat-lip"><polygon points="' + pts([[rr.u - 14, rr.vs[j] - cw2, 0], [rr.u - 14, rr.vs[j] + cw2, 0], [rr.u - 14, rr.vs[j] + cw2, 6], [rr.u - 14, rr.vs[j] - cw2, 6]]) + '" fill="' + shade('#3E4A5B', 0.1) + '" stroke="' + shade('#3E4A5B', -0.4) + '" stroke-width="0.3"/>' +
+            '<polyline points="' + pts([[rr.u - 2, rr.vs[j] - 0.06 * oc.h, 0.30 * oc.h], [rr.u - 8, rr.vs[j], 0.08 * oc.h], [rr.u - 2, rr.vs[j] + 0.06 * oc.h, 0.30 * oc.h]]) + '" fill="none" stroke="#C4661A" stroke-width="1" stroke-linecap="round"/></g>');
+        }
       }
       var bandR = worst === null ? (nRiders ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
       chips.push({ row: rr, band: bandR });
@@ -1716,6 +1756,12 @@ var VVY = (function () {
       if (dgo.place === 'bed') { o.push(dogTop(L - 24 - nb * 13, Wd * (nb % 2 ? 0.68 : 0.36), 22)); nb++; }
       else if (dgo.place === 'cargo') { o.push(dogTop(Math.min(cabR - 8, last.u + 14 + nc2 * 6), Wd * (nc2 % 2 ? 0.68 : 0.36), 22)); nc2++; }
       else { o.push(dogTop(L * 0.3 + nn * 14, -12, 20)); var nl = P(L * 0.3 + nn * 14, -12, 0); o.push('<text x="' + nl[0] + '" y="' + r1(nl[1] + 5) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no room</text>'); nn++; }
+    }
+    for (i = 0; i < sea.strollers; i++) {
+      var su = sea.space.kind === 'bed' ? L - 8 - i * 4 : (trunk ? uR + 8 + i * 4 : Math.min(cabR - 5, last.u + 12 + i * 4)), sv = Wd * 0.5 + (i % 2 ? 6 : -6);
+      o.push('<g class="vvy-stroller-top"><polygon points="' + pts([[su - 3, sv - 11, 0], [su - 3, sv + 11, 0], [su + 3, sv + 11, 5], [su + 3, sv - 11, 5]]) + '" fill="#5B6470" stroke="#2A3038" stroke-width="0.3"/>' +
+        '<polygon points="' + pts([[su - 1, sv - 9, 5], [su - 1, sv + 9, 5], [su + 2, sv + 9, 9], [su + 2, sv - 9, 9]]) + '" fill="#C4661A" opacity="0.85"/>' +
+        '<circle cx="' + P(su - 3, sv - 11, 0)[0] + '" cy="' + P(su - 3, sv - 11, 0)[1] + '" r="1.3" fill="#2A3038"/><circle cx="' + P(su - 3, sv + 11, 0)[0] + '" cy="' + P(su - 3, sv + 11, 0)[1] + '" r="1.3" fill="#2A3038"/></g>');
     }
     var emptySeats = [];
     for (k = 0; k < R.length; k++) { for (j = 0; j < R[k].vs.length; j++) { if (!R[k].occ[j]) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } } }

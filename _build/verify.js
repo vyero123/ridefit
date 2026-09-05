@@ -44,7 +44,9 @@ setTimeout(function () {
   check(f2c.fits === false && /car seat needs a rear seat/.test(f2c.text), 'two-seater: car seat cannot go up front: ' + f2c.text.slice(0, 100));
   check(/\.pane\.a \{[^}]*height: 34vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /body\.live \{ height: 100vh; height: 100dvh; overflow: hidden; \}/.test(html) && /body\.live \.scrollarea \{[^}]*overflow: auto/.test(html) && /padding-bottom: 100px/.test(html), 'vertical budget: pinned 100dvh body, profile pane reserved, scroll area is the only scroller, sheet peek = 100px padding');
   check(/<div id="scene" class="scene open">/.test(html) && /aria-expanded="true"/.test(html) && /id="foldBtn"[^>]*>[^<]*<span class="fchev">&#9652;<\/span> See the specs</.test(html), 'static first paint: seats fold open, button offers the specs');
-  check(/RideFitNote = function/.test(html) && /#extnote \{/.test(html) && /It is not from Ride Fit/.test(html), 'outside errors: quiet closable note channel exists');
+  check(!/RideFitNote|extnote/.test(html) && /RideFitOutside = function/.test(html) && /console\.warn\('\[Ride Fit\] outside-script error/.test(html), 'outside errors: no UI at all, console.warn only; red bar kept for own errors');
+  check(/\.fold \{ display: block; width: max-content; max-width: 46%/.test(html), 'fold button compact (max-content, ≤46% width), 44px tall');
+  check(/\.brand \.lockup text \{ fill: #1C3040; \}/.test(html) && (html.match(/fill="#1C3040">Ride<tspan fill="#C4661A"> Fit<\/tspan>/g) || []).length === 2, 'wordmark "Ride" is logo navy in BOTH inlined lockups (+ CSS belt-and-braces)');
   check(/rfEnv\(\)/.test(html) && /RideFitInReveal/.test(html) && /addEventListener\('error'/.test(html) && /unhandledrejection/.test(html), 'error instrumentation: timing + environment evidence, reveal marker, resource + promise listeners');
   check(html.indexOf("Dogs don't take a seat") < 0 && html.indexOf('need a rear row folded') < 0 && html.indexOf('will most likely need') < 0, 'no stale "dogs take no seat" copy');
   check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
@@ -100,17 +102,16 @@ setTimeout(function () {
   /* remove the toddlers again */
   for (tries = 0; tries < 20; tries++) { var rmsT = d.querySelectorAll('#people .prow'), hit = null, ri; for (ri = rmsT.length - 1; ri >= 0; ri--) { if (/Toddler/.test(rmsT[ri].textContent)) { hit = rmsT[ri]; break; } } if (!hit) { break; } click(hit.querySelector('[data-rm]')); }
   check(d.querySelectorAll('#people .prow').length === 6 && !$('ceilMsg').textContent, 'toddlers removed, ceiling message cleared');
-  w.RideFitView.set('cutaway'); click($('addToddler')); check(d.querySelectorAll('#paneA .vvy-carseat').length === 1 && d.querySelectorAll('#paneB .vvy-carseat-top').length === 1, 'car seat drawn in the cutaway and the overhead'); var rm2 = d.querySelectorAll('#people .prow'); click(rm2[rm2.length - 1].querySelector('[data-rm]')); w.RideFitView.set('profile');
+  w.RideFitView.set('cutaway'); click($('addToddler')); check(d.querySelectorAll('#paneA .vvy-carseat').length === 2 && d.querySelectorAll('#paneA .vvy-carseat-front').length === 1 && d.querySelectorAll('#paneB .vvy-carseat-top').length === 2 && d.querySelectorAll('#paneA .vvy-stroller').length === 1 && d.querySelectorAll('#paneB .vvy-stroller-top').length === 1, 'car seat shell (back + side wing + harness) drawn in the cutaway and the overhead; stroller drawn in the cargo area in both'); var rm2 = d.querySelectorAll('#people .prow'); click(rm2[rm2.length - 1].querySelector('[data-rm]')); w.RideFitView.set('profile');
   check(/Your dog/.test($('room').textContent), 'room guidance places the dogs');
   /* fold */
   check($('scene').className.indexOf('open') >= 0 && /\bfoldopen\b/.test(d.body.className) && $('foldBtn').style.display !== 'none', 'seats fold OPEN by default, body.foldopen set, button shown');
   check(/See the specs/.test($('foldBtn').textContent), 'fold open: button reads "See the specs"');
   click($('foldBtn')); check($('scene').className.indexOf('open') < 0 && !/\bfoldopen\b/.test(d.body.className) && $('foldBtn').getAttribute('aria-expanded') === 'false' && /See who sits where/.test($('foldBtn').textContent) && /reveal: seats fold closed/.test(w.RideFitCrumb), 'fold closes, button reads "See who sits where", crumb names the panel'); click($('foldBtn'));
-  /* outside error -> quiet note, no red bar, no breadcrumb-as-cause; own error -> red bar */
+  /* outside error -> nothing in the UI, console.warn with evidence; own error -> red bar */
+  var warned = []; w.console.warn = function (m) { warned.push(String(m)); };
   w.webkit = { messageHandlers: {} }; w.onerror('Script error.', '', 0, 0, undefined);
-  var note = $('extnote');
-  check(!!note && $('errbar').style.display !== 'block' && note.textContent.indexOf('last action') < 0 && /not from Ride Fit/.test(note.textContent) && /webkit\.messageHandlers/.test($('extnote-detail').textContent), 'sanitised outside error -> quiet note, red bar stays hidden, no breadcrumb, details kept');
-  click(note.querySelector('button[aria-label="Dismiss"]')); check(!$('extnote'), 'outside-error note is dismissible');
+  check(!$('extnote') && $('errbar').style.display !== 'block' && warned.length === 1 && /outside-script error/.test(warned[0]) && /webkit\.messageHandlers/.test(warned[0]) && !/last action/.test(warned[0]), 'sanitised outside error -> no UI, red bar hidden, console.warn carries timing + environment');
   w.onerror('TypeError: boom', 'https://x/', 1, 1, new w.Error('boom')); check($('errbar').style.display === 'block' && /boom/.test($('errbar').textContent), 'own error still shows the red bar'); $('errbar').style.display = 'none'; $('errbar').textContent = '';
   check(/reveal: seats fold open/.test(w.RideFitCrumb) && w.RideFitInReveal === '' && w.RideFitRevealDone > 0, 'reveal marker cleared after the fold handler, done-time recorded');
   /* prove the instrumentation: an error thrown inside a reveal is caught with its real message */
@@ -150,6 +151,8 @@ setTimeout(function () {
   /* interior toggle */
   var tog = d.querySelector('#scene [data-hit="view"]');
   check(!!tog, 'interior toggle present in scene');
+  (function () { var sv = $('paneA').innerHTML, hb = /data-hit="view"[^>]*>\s*<rect class="vvy-hitbox" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(sv), vh = /data-hit="vehicle"[^>]*>\s*<rect class="vvy-hitbox" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(sv);
+    var cx = +hb[1] + hb[3] / 2, cy = +hb[2] + hb[4] / 2; check(cx > +vh[1] && cx < +vh[1] + +vh[3] && cy > +vh[2] && cy < +vh[2] + +vh[4] && +hb[3] >= 84, 'peek-inside pill sits on the vehicle body (centre inside the vehicle hit box), hit box ≥ 84 units wide'); })();
   if (tog) { click(tog); check(d.querySelector('#paneA .vvy-interior') !== null && d.querySelector('#paneB .vvy-inside') !== null, 'peek inside: cutaway in pane A, overhead stays in pane B'); var cal = d.querySelectorAll('#paneA .vvy-interior text').length; console.log('     ' + ($('paneA').querySelector('svg').getAttribute('aria-label') || '').slice(0, 90) + ' | text nodes ' + cal); check(/head/.test($('paneA').textContent) && /knee|leg/.test($('paneA').textContent), 'cutaway callouts mention head + knee'); click(d.querySelector('#scene [data-hit="view"]')); check(d.querySelector('#paneA .vvy-veh-A') !== null && d.querySelector('#paneA .vvy-interior') === null, 'back to profile'); }
   /* stable box: the scene element keeps the same class/height contract across states */
   var scBox = $('scene'); check(scBox.className.indexOf('scene') === 0 && scBox.querySelectorAll('.pane').length === 2 && $('foldBtn'), 'scene keeps its reserved panes + fold');
