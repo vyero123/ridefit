@@ -17,12 +17,18 @@ setTimeout(function () {
   check(/\blive\b/.test(d.body.className) && d.querySelectorAll('[data-live][disabled]').length === 0, 'boot: live, controls enabled, ' + w.RIDEFIT_VEHICLES.count + ' records');
   check($('errbar').style.display !== 'block', 'error bar hidden: ' + $('errbar').textContent);
   /* static first paint */
-  var st = /<div class="pane" id="paneA">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html), st2 = /<div class="pane" id="paneB">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html);
+  var st = /<div class="pane a" id="paneA">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html), st2 = /<div class="pane b" id="paneB">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html);
   check(!!st && st[1].indexOf('vvy-veh-A') > 0 && html.indexOf('Ram 1500') > 0 && !!st2 && st2[1].indexOf('vvy-inside') > 0, 'static first paint: profile + overhead panes prerendered');
   var fam = st ? (st[1].match(/class="vvy-fam/g) || []).length : 0, dogs = st ? (st[1].match(/class="vvy-dog"/g) || []).length : 0;
   check(fam === 3 && dogs === 1 && st[1].indexOf("You &#183; 5' 10&quot;") > 0 && st[1].indexOf('animateTransform') < 0, 'static first paint crew: you 5\'10" + 3 riders + 1 dog, no animation (' + fam + ' riders, ' + dogs + ' dogs)');
-  check(st2 && (st2[1].match(/vvy-seated-top/g) || []).length === 4, 'static overhead shows 4 seated riders');
-  check(/\.scene \{[^}]*height: 44vh[^}]*contain: strict/.test(html), 'scene box has a reserved fixed height (contain: strict)');
+  check(st2 && (st2[1].match(/vvy-seated-top/g) || []).length === 4 && (st2[1].match(/vvy-dog-top/g) || []).length === 1, 'static overhead shows 4 seated riders + the dog on a seat');
+  check(st2 && !/<text[^>]*>[^<]*who sits where/.test(st2[1]) && !/<text[^>]*>[^<]*measured in the profile/.test(st2[1]), 'no caption text under the overhead view');
+  /* seating order in the static first paint: you (driver) + adult 65 up front, kids in row 2, dog on the spare row-2 seat */
+  var seaS = w.VVY.seatEveryone(w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.identity.brand === 'Ram' && v.identity.model === '1500' && v.identity.config.indexOf('Crew Cab') === 0; })[0]), { person: 70, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 50 }, { kind: 'kid', h: 43 }], dogs: 1 });
+  var occS = function (r) { return seaS.occ[r].map(function (x) { return x ? (x.you ? 'you' : x.kind + x.h) : '-'; }).join(','); };
+  check(occS(1) === 'you,adult65,-' && occS(2) === 'kid50,kid43,dog22', 'seating order: driver you, 2nd adult front, kids rear, dog takes the spare rear seat, bench middle last (' + occS(1) + ' | ' + occS(2) + ')');
+  check(/\.pane\.a \{[^}]*height: 40vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /\.scene\.open \.pane\.b \{[^}]*height: 240px/.test(html), 'reserved heights: profile pane fixed, seats fold 0 / 240px');
+  check(html.indexOf("Dogs don't take a seat") < 0 && html.indexOf('need a rear row folded') < 0 && html.indexOf('will most likely need') < 0, 'no stale "dogs take no seat" copy');
   check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
   check((html.match(/Vadim Yerokhin/g) || []).length === 1, 'attribution exactly once');
   /* sweep every config through the selectors, exterior + interior */
@@ -40,6 +46,7 @@ setTimeout(function () {
         s = $('scene').innerHTML;
         if (!/<svg/.test(s) || /NaN|undefined/.test(s) || /NaN|undefined/.test($('specs').textContent) || /NaN|undefined/.test($('room').textContent)) { bad.push($('vehTitle').textContent); }
         if (!/vvy-inside/.test(s)) { bad.push('no overhead pane ' + $('vehTitle').textContent); }
+        if (/<text[^>]*>[^<]*who sits where/.test(s)) { bad.push('caption present ' + $('vehTitle').textContent); }
         if (w.RideFitView) { w.RideFitView.set('cutaway'); s = $('scene').innerHTML; if (!/vvy-interior/.test(s) || /NaN|undefined/.test(s)) { bad.push('cutaway ' + $('vehTitle').textContent); } w.RideFitView.set('profile'); }
       }
     }
@@ -56,6 +63,11 @@ setTimeout(function () {
   /* crew */
   click($('addAdult')); click($('addKid')); click(d.querySelector('[data-step="dogs"][data-d="1"]')); click(d.querySelector('[data-step="cats"][data-d="1"]'));
   check(d.querySelectorAll('#paneA .vvy-fam').length === 5 && d.querySelectorAll('#paneA .vvy-dog').length === 2 && d.querySelectorAll('#paneA .vvy-cat').length === 1 && d.querySelectorAll('#paneA .vvy-tail animateTransform').length === 2, 'crew drawn: default 3 + 2 riders, 2 dogs (tails wagging), 1 cat');
+  check(/dog/.test($('fitLine').textContent) && /seat/.test($('fitLine').textContent), 'fit verdict counts dogs: ' + $('fitLine').textContent.slice(0, 110));
+  check(/Your dog/.test($('room').textContent), 'room guidance places the dogs');
+  /* fold */
+  check($('scene').className.indexOf('open') < 0 && $('foldBtn').style.display !== 'none', 'seats fold collapsed by default, button shown');
+  click($('foldBtn')); check($('scene').className.indexOf('open') >= 0 && $('foldBtn').getAttribute('aria-expanded') === 'true', 'fold opens'); click($('foldBtn'));
   check($('room').textContent.indexOf('Your') >= 0, 'room guidance mentions riders');
   /* find */
   click($('statebar').querySelector('[data-seg="find"]'));
@@ -75,7 +87,7 @@ setTimeout(function () {
   /* compare via shortlist */
   click($('rankTable').querySelector('[data-heart]')); click($('shortlist').querySelector('[data-slb]'));
   check($('legend').querySelector('.pillB') !== null && $('cmpBody').querySelectorAll('tbody tr').length > 5, 'compare: ' + $('legend').textContent.replace(/\s+/g, ' ').slice(0, 70) + ' | ' + $('cmpBody').querySelectorAll('tbody tr').length + ' rows');
-  check($('scene').className.indexOf('one') >= 0 && d.querySelectorAll('#paneA .vvy-veh-B').length === 1 && $('viewCtl').style.display !== 'none', 'compare profile: A and B in one pane, view control shown');
+  check($('scene').className.indexOf('two') < 0 && d.querySelectorAll('#paneA .vvy-veh-B').length === 1 && $('viewCtl').style.display !== 'none' && $('foldBtn').style.display === 'none', 'compare profile: A and B in one pane, view control shown, fold hidden');
   click($('viewCtl').querySelector('[data-view="overhead"]'));
   check(d.querySelectorAll('#paneA .vvy-inside').length === 1 && d.querySelectorAll('#paneB .vvy-inside').length === 1 && $('scene').className.indexOf('two') >= 0, 'compare seats: overhead A | overhead B');
   click($('viewCtl2').querySelector('[data-view="cutaway"]'));
@@ -91,7 +103,10 @@ setTimeout(function () {
   check(!!tog, 'interior toggle present in scene');
   if (tog) { click(tog); check(d.querySelector('#paneA .vvy-interior') !== null && d.querySelector('#paneB .vvy-inside') !== null, 'peek inside: cutaway in pane A, overhead stays in pane B'); var cal = d.querySelectorAll('#paneA .vvy-interior text').length; console.log('     ' + ($('paneA').querySelector('svg').getAttribute('aria-label') || '').slice(0, 90) + ' | text nodes ' + cal); check(/head/.test($('paneA').textContent) && /knee|leg/.test($('paneA').textContent), 'cutaway callouts mention head + knee'); click(d.querySelector('#scene [data-hit="view"]')); check(d.querySelector('#paneA .vvy-veh-A') !== null && d.querySelector('#paneA .vvy-interior') === null, 'back to profile'); }
   /* stable box: the scene element keeps the same class/height contract across states */
-  var scBox = $('scene'); check(scBox.className.indexOf('scene') === 0 && scBox.querySelectorAll('.pane').length === 2, 'scene keeps its two reserved panes');
+  var scBox = $('scene'); check(scBox.className.indexOf('scene') === 0 && scBox.querySelectorAll('.pane').length === 2 && $('foldBtn'), 'scene keeps its reserved panes + fold');
+  /* dogs change the fit maths: a 2-seater with you + 1 dog + 1 adult must not fit */
+  var two = null; for (i = 0; i < w.RIDEFIT_VEHICLES.vehicles.length; i++) { if (w.RIDEFIT_VEHICLES.vehicles[i].capacity && w.RIDEFIT_VEHICLES.vehicles[i].capacity.seats === 2) { two = w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles[i]); break; } }
+  if (two) { var f2s = w.VVY.fit(two, { person: 70, people: [{ kind: 'adult', h: 65 }], dogs: 1 }); check(f2s.fits === false && /dog/.test(f2s.text), 'two-seater + dog does not fit: ' + f2s.text.slice(0, 100)); }
   /* ES5: no arrow/let/const/template literals in inline scripts */
   var scripts = html.match(/<script>[\s\S]*?<\/script>/g) || [];
   var es6 = 0; for (i = 0; i < scripts.length; i++) { if (/=>|\blet\b |\bconst\b |`/.test(scripts[i].replace(/RIDEFIT_VEHICLES=[\s\S]*$/, ''))) { es6++; } }

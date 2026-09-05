@@ -65,9 +65,10 @@ window.onerror = function (msg, url, line, col, err) {
          changes: both panes scale their SVG inside a fixed box. Pane A = profile (exterior, or the
          "peek inside" cutaway); pane B = 45° overhead cabin view. In a comparison the same two panes
          hold A and B and the view control flips both. -->
-    <div id="scene" class="scene two">
-      <div class="pane" id="paneA">{{STATIC_SVG}}</div>
-      <div class="pane" id="paneB">{{STATIC_INSIDE}}</div>
+    <div id="scene" class="scene">
+      <div class="pane a" id="paneA">{{STATIC_SVG}}</div>
+      <button type="button" class="fold" id="foldBtn" aria-expanded="false" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
+      <div class="pane b" id="paneB">{{STATIC_INSIDE}}</div>
     </div>
   </section>
 
@@ -181,7 +182,7 @@ window.onerror = function (msg, url, line, col, err) {
       <span id="heightOut" style="display:none"></span><span id="adultsVal" style="display:none"></span><span id="kidsVal" style="display:none"></span>
       <div id="fitBox"></div>
       <div id="roomBox"></div>
-      <p class="hint">One seat per rider. Dogs don't take a seat, but they usually need a rear row folded for space. Cats, as everyone knows, go wherever they please. Seat counts are the standard seating for the trim shown.</p>
+      <p class="hint">One seat per rider — and per dog: a dog takes a seat like a passenger. When the seats run out it rides in the cargo bay (if the published space is big enough) or the bed of a pickup; a sedan's trunk doesn't count. Seating order: you drive, the second adult rides up front, everyone else fills the rear rows, and a front bench middle seat is used last (by a dog before a person). Cats, as everyone knows, take nothing and go wherever they please. Seat counts are the standard seating for the trim shown.</p>
     </section>
 
     <!-- ---- Card: Find (one filter state shared with search, fit, rankings, compare) ---- -->

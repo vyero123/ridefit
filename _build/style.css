@@ -14,22 +14,34 @@ body {
 }
 .noscript { background: #fff4d6; color: #5a3d00; border: 1px solid #f0d28a; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin: 10px 12px 0; }
 
-/* ---------- scene: FIXED, RESERVED box — zero layout shift ----------
-   The panes never size to their content: the SVG scales inside a box whose height is set here
-   (viewport-relative, clamped). Adding riders, swapping vehicles, cats wandering, verdict text —
-   none of it can move the box or anything below it. */
-.scene { display: grid; grid-template-columns: 3fr 2fr; gap: 6px; height: 44vh; min-height: 220px; max-height: 380px; contain: strict; }
-.scene.one { grid-template-columns: 1fr; }
-.pane { position: relative; overflow: hidden; min-width: 0; min-height: 0; background: #fbfcfd; border-radius: 10px; }
+/* ---------- scene: FIXED, RESERVED boxes — zero layout shift ----------
+   The profile pane is the primary and has a reserved height; the 45° seats view is a fold below
+   it, collapsed by default (height 0) and a fixed height when open. Sizes never follow content:
+   each SVG scales inside its box. Only the user's own fold tap changes the total height. */
+.scene { display: block; contain: layout; }
+.pane { position: relative; overflow: hidden; min-width: 0; background: #fbfcfd; border-radius: 10px; }
 .pane svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
-.pane.a { background: linear-gradient(#fff, #f6f8fa); }
+.pane.a { height: 40vh; min-height: 200px; max-height: 360px; background: linear-gradient(#fff, #f6f8fa); }
+.pane.b { height: 0; }
+.scene.open .pane.b { height: 240px; margin-top: 4px; }
+.fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; color: #1f4e79; background: #f3f5f8; border: 1px solid #e4e7eb; border-radius: 8px; padding: 6px 10px; text-align: left; cursor: pointer; height: 30px; }
+.fold .fchev { display: inline-block; transition: transform .2s; margin-right: 4px; }
+.scene.open .fold .fchev { transform: rotate(180deg); }
+.scene.open .fold { color: #52606d; }
+body.static .fold { display: none; }
+body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the seats view open */
+/* comparison split (peek inside / seats for A and B): two equal panes, fold hidden */
+.scene.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.scene.two .fold { display: none; }
+.scene.two .pane.a, .scene.two .pane.b { height: 40vh; min-height: 200px; max-height: 360px; margin-top: 0; }
 .viewctl { margin-left: auto; display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
 .vbtn { font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 9px; border: 0; border-radius: 99px; background: transparent; color: #52606d; cursor: pointer; white-space: nowrap; }
 .vbtn.on { background: #1f2933; color: #fff; }
 @media (max-width: 599px) {
-  /* phone: stack — the wide profile on top, the tall overhead below, one fixed box */
-  .scene { grid-template-columns: 1fr; grid-template-rows: 34% 66%; height: 54vh; min-height: 310px; max-height: 460px; gap: 4px; }
-  .scene.one { grid-template-rows: 1fr; }
+  .pane.a { height: 30vh; min-height: 150px; max-height: 240px; }
+  .scene.open .pane.b { height: 230px; }
+  .scene.two { grid-template-columns: 1fr; }
+  .scene.two .pane.a, .scene.two .pane.b { height: 26vh; min-height: 140px; max-height: 220px; }
   .vbtn { font-size: 11px; padding: 5px 7px; }
 }
 
@@ -342,7 +354,7 @@ table.rank td.fitc.none i { font-size: 10px; }
   body.live .grab { display: none; }
   body.live .main { padding: 0 20px 24px; }
   body.live .hero { position: sticky; top: 0; z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
-  .scene { height: 46vh; max-height: 420px; }
+  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 44vh; max-height: 400px; }
   .facts { padding: 14px 4px; }
   .vvy-specs { grid-template-columns: 1fr 1fr 1fr; }
   .cmpgrid { grid-template-columns: 1fr; }

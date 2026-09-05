@@ -875,25 +875,136 @@ var VVY = (function () {
     return o.join('');
   }
 
-  /* ---------------- occupancy ----------------
-     party = { adults, kids, pets } -> { fits, people, seats, spare, petNote, text, cls } */
+  /* ---------------- seating: ONE model used everywhere ----------------
+     seatEveryone(cfg, party) places every rider AND every dog:
+       1. driver's seat      — the reference person (you)
+       2. front passenger    — the second adult (first adult in the party)
+       3. everyone else      — rear rows, row 2 then row 3, in the order given
+       4. front bench middle — filled LAST of all, and preferentially by a dog
+     Dogs take a seat like a passenger. When seats run out a dog goes in the cargo bay (hatch /
+     crossover / SUV / minivan / wagon / van with a published cargo figure of CARGO_PER_DOG cu ft per
+     dog behind the last row) or the bed of a pickup. A sedan/coupe trunk is not a place for a dog.
+     Cats take nothing and go where they please.
+     Seat index within a row: 0 = driver side, 1 = far side, 2 = middle (drawn on the right in the
+     overhead view, which looks at a left-hand-drive car from the hood). */
+  var CARGO_PER_DOG = 12;
+  function seatLayout(cfg) {
+    var rows = has(cfg.rows) ? Math.max(1, Math.min(3, cfg.rows)) : 2, seats = has(cfg.seats) ? cfg.seats : 5;
+    var front = (seats >= 6 && rows <= 2 && cfg.bedLen) ? 3 : 2;
+    if (rows < 2) { front = Math.min(3, seats); }
+    var r2 = rows < 2 ? 0 : (rows >= 3 ? Math.min(3, seats - front - 2) : seats - front);
+    if (r2 < 0) { r2 = 0; }
+    var r3 = rows >= 3 ? Math.max(0, seats - front - r2) : 0;
+    var out = [{ n: 1, seats: front, bench: front === 3 }];
+    if (rows >= 2) { out.push({ n: 2, seats: r2, bench: r2 >= 3 }); }
+    if (rows >= 3) { out.push({ n: 3, seats: Math.min(3, r3), bench: r3 >= 2 }); }
+    return out;
+  }
+  function dogSpace(cfg) {
+    var t = cfg.template || 'sedan';
+    if (/^pickup/.test(t) || has(cfg.bedLen)) { return { kind: 'bed', dogs: 99 }; }
+    if (t === 'sedan' || t === 'coupe' || t === 'wedge') { return { kind: 'none', dogs: 0 }; }
+    var c = has(cfg.cargo3) ? cfg.cargo3 : (has(cfg.cargo2) ? cfg.cargo2 : null);
+    if (c === null) { return { kind: 'unknown', dogs: 0 }; }
+    return { kind: 'cargo', dogs: Math.floor(c / CARGO_PER_DOG), cuft: c };
+  }
+  function seatEveryone(cfg, party) {
+    party = party || {};
+    var you = { h: has(party.person) ? party.person : 70, kind: 'adult', you: true };
+    var people = party.people || [], nDogs = Math.min(party.dogs || 0, 12);
+    var lay = seatLayout(cfg), rowsN = has(cfg.rows) ? cfg.rows : null, seatsN = has(cfg.seats) ? cfg.seats : null;
+    var occ = {}, i, k, r;   /* occ[row] = [ {p|dog} per seat index ] */
+    for (k = 0; k < lay.length; k++) { occ[lay[k].n] = []; for (i = 0; i < lay[k].seats; i++) { occ[lay[k].n].push(null); } }
+    var placed = [], unseated = [];
+    function put(p, row, seat) { occ[row][seat] = p; placed.push({ p: p, row: row, seat: seat }); }
+    /* 1. driver */
+    if (occ[1] && occ[1].length) { put(you, 1, 0); } else { unseated.push(you); }
+    /* 2. front passenger = the first other adult */
+    var rest = people.slice(), ai = -1;
+    for (i = 0; i < rest.length; i++) { if (rest[i].kind !== 'kid') { ai = i; break; } }
+    if (ai >= 0 && occ[1] && occ[1].length > 1) { put(rest[ai], 1, 1); rest.splice(ai, 1); }
+    /* 3. rear rows in the order given: window seats first, middle last */
+    var order = [];
+    for (k = 0; k < lay.length; k++) { if (lay[k].n > 1) { var n = lay[k].seats; if (n >= 1) { order.push([lay[k].n, 0]); } if (n >= 2) { order.push([lay[k].n, 1]); } if (n >= 3) { order.push([lay[k].n, 2]); } } }
+    /* then the front passenger seat if still free; the front bench middle is kept for last */
+    if (occ[1] && occ[1].length > 1 && !occ[1][1]) { order.push([1, 1]); }
+    var oi = 0;
+    while (rest.length && oi < order.length) { put(rest.shift(), order[oi][0], order[oi][1]); oi++; }
+    /* 4. dogs take the remaining seats (rear first, front passenger, bench middle last of all) */
+    var dogsOut = [], free = [];
+    for (k = lay.length - 1; k >= 0; k--) { for (i = 0; i < occ[lay[k].n].length; i++) { if (!occ[lay[k].n][i] && !(lay[k].n === 1 && i === 2)) { free.push([lay[k].n, i]); } } }
+    free.sort(function (x, y) { return (x[0] === 1 ? 1 : 0) - (y[0] === 1 ? 1 : 0) || x[0] - y[0] || x[1] - y[1]; });
+    if (occ[1] && occ[1].length > 2 && !occ[1][2]) { free.push([1, 2]); }
+    var space = dogSpace(cfg), spaceLeft = space.dogs;
+    for (i = 0; i < nDogs; i++) {
+      var dog = { kind: 'dog', h: 22, i: i };
+      if (free.length) { var f = free.shift(); put(dog, f[0], f[1]); dogsOut.push({ dog: dog, place: 'seat', row: f[0], seat: f[1] }); }
+      else if (spaceLeft > 0) { spaceLeft--; dogsOut.push({ dog: dog, place: space.kind }); }
+      else { dogsOut.push({ dog: dog, place: 'none' }); }
+    }
+    /* leftover people: the front bench middle is the very last seat to fill — and if a dog holds a
+       proper seat while a person needs one, the dog moves to the middle and the person takes its seat */
+    while (rest.length) {
+      var mid = (occ[1] && occ[1].length > 2 && !occ[1][2]);
+      if (!mid) { unseated.push(rest.shift()); continue; }
+      var swapped = false;
+      for (i = 0; i < dogsOut.length && !swapped; i++) {
+        var dO = dogsOut[i];
+        if (dO.place === 'seat' && !(dO.row === 1 && dO.seat === 2)) {
+          var pp = rest.shift();
+          occ[dO.row][dO.seat] = pp; placed.push({ p: pp, row: dO.row, seat: dO.seat });
+          for (k = 0; k < placed.length; k++) { if (placed[k].p === dO.dog) { placed[k].row = 1; placed[k].seat = 2; } }
+          occ[1][2] = dO.dog; dO.row = 1; dO.seat = 2; swapped = true;
+        }
+      }
+      if (!swapped) { put(rest.shift(), 1, 2); }
+    }
+    /* people before dogs: if anyone is still standing while a dog holds a seat, the dog gives it up
+       and goes to the cargo bay / bed (or has nowhere to ride) */
+    for (i = dogsOut.length - 1; i >= 0 && unseated.length; i--) {
+      var dE = dogsOut[i];
+      if (dE.place !== 'seat') { continue; }
+      var who = unseated.shift();
+      occ[dE.row][dE.seat] = who; placed.push({ p: who, row: dE.row, seat: dE.seat });
+      for (k = placed.length - 1; k >= 0; k--) { if (placed[k].p === dE.dog) { placed.splice(k, 1); } }
+      if (spaceLeft > 0) { spaceLeft--; dE.place = space.kind; } else { dE.place = 'none'; }
+      delete dE.row; delete dE.seat;
+    }
+    return { layout: lay, occ: occ, placed: placed, unseated: unseated, dogs: dogsOut, space: space, rows: rowsN, seats: seatsN, you: you };
+  }
+  /* row -> riders (people only, in seat order) for the drawing code */
+  function ridersByRow(sea) {
+    var out = { 1: [], 2: [], 3: [], 0: sea.unseated.slice() }, i, r, s, o;
+    for (r = 1; r <= 3; r++) { o = sea.occ[r]; if (!o) { continue; } for (s = 0; s < o.length; s++) { if (o[s] && o[s].kind !== 'dog') { out[r].push(o[s]); } } }
+    return out;
+  }
+
+  /* ---------------- occupancy verdict ----------------
+     party = { person, people, dogs, cats } -> { fits, people, seats, spare, text, cls } */
   function fit(cfg, party) {
-    var people = (party.adults || 0) + (party.kids || 0);
-    var pets = (party.dogs !== undefined ? party.dogs : party.pets) || 0;
+    party = party || {};
+    var people = 1 + (party.people || []).length, dogs = party.dogs || 0;
+    if (party.people === undefined) { people = (party.adults || 0) + (party.kids || 0); }
     var seats = has(cfg.seats) ? cfg.seats : null;
     var rows = has(cfg.rows) ? cfg.rows : null;
     if (seats === null) { return { fits: null, people: people, seats: null, spare: null, text: 'Seat count not on file.', cls: 'unknown' }; }
-    var spare = seats - people;
-    var r = { fits: spare >= 0, people: people, seats: seats, spare: spare, pets: pets, cls: spare >= 0 ? 'ok' : 'no' };
-    var t;
-    if (people === 0 && pets === 0) { t = seats + ' seats in ' + rows + (rows === 1 ? ' row' : ' rows') + '. Add your party to check the fit.'; r.cls = 'idle'; }
-    else if (spare < 0) { t = 'Does not fit: ' + people + ' people need ' + people + ' seats and this ' + ((cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle')) + ' has ' + seats + '. ' + (-spare) + ' ' + (spare === -1 ? 'person' : 'people') + ' would be left behind.'; }
-    else { t = 'Fits: ' + people + ' of ' + seats + ' seats used' + (spare > 0 ? ', ' + spare + ' spare' : ', every seat taken') + '.'; }
-    if (pets > 0) {
-      if (rows === 1) { t += ' Dogs: a single-row vehicle has no rear seats to fold — ' + pets + (pets === 1 ? ' dog would ride ' : ' dogs would ride ') + 'on the floor or a passenger seat' + (cfg.bedLen ? ', or in the bed' : '') + '.'; }
-      else if (rows === 3) { t += ' Dogs: ' + pets + (pets === 1 ? ' dog' : ' dogs') + ' will most likely need the third row folded for cargo space' + (spare >= 0 && spare < 2 && people > 0 ? ' — and with ' + spare + ' spare seat' + (spare === 1 ? '' : 's') + ' that squeezes the people' : '') + '.'; }
-      else { t += ' Dogs: ' + pets + (pets === 1 ? ' dog' : ' dogs') + ' will most likely need the rear seats folded' + (cfg.bedLen ? ' or the bed used' : '') + (spare >= 0 && spare < 2 && people > 0 ? ' — with ' + spare + ' spare seat' + (spare === 1 ? '' : 's') + ' that squeezes the people' : '') + '.'; }
-      r.petNote = true;
+    var sea = seatEveryone(cfg, party), i, seatedDogs = 0, cargoDogs = 0, bedDogs = 0, lostDogs = 0;
+    for (i = 0; i < sea.dogs.length; i++) { if (sea.dogs[i].place === 'seat') { seatedDogs++; } else if (sea.dogs[i].place === 'cargo') { cargoDogs++; } else if (sea.dogs[i].place === 'bed') { bedDogs++; } else { lostDogs++; } }
+    var used = (people - sea.unseated.length) + seatedDogs, spare = seats - used;
+    var fits = sea.unseated.length === 0 && lostDogs === 0;
+    var r = { fits: fits, people: people, seats: seats, spare: spare, pets: dogs, cls: fits ? 'ok' : 'no', seated: sea };
+    var name = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle'), t;
+    if (people === 0 && dogs === 0) { t = seats + ' seats in ' + rows + (rows === 1 ? ' row' : ' rows') + '. Add your party to check the fit.'; r.cls = 'idle'; }
+    else if (!fits) {
+      t = 'Does not fit: ' + people + (people === 1 ? ' person' : ' people') + (dogs ? ' and ' + dogs + (dogs === 1 ? ' dog' : ' dogs') : '') + ' need ' + (people + dogs) + ' seats and this ' + name + ' has ' + seats + '.';
+      if (sea.unseated.length) { t += ' ' + sea.unseated.length + (sea.unseated.length === 1 ? ' person' : ' people') + ' would be left behind.'; }
+      if (lostDogs) {
+        t += ' ' + lostDogs + (lostDogs === 1 ? ' dog has' : ' dogs have') + ' no seat and ' + (sea.space.kind === 'none' ? 'a ' + (cfg.template === 'wedge' ? 'closed bed' : 'trunk') + ' is no place for a dog' : (sea.space.kind === 'unknown' ? 'the cargo space is not on file' : 'the cargo bay (' + sea.space.cuft + ' cu ft) is only big enough for ' + sea.space.dogs + (sea.space.dogs === 1 ? ' dog' : ' dogs'))) + '.';
+      }
+    } else {
+      t = 'Fits: ' + used + ' of ' + seats + ' seats used' + (seatedDogs ? ' (' + seatedDogs + ' by ' + (seatedDogs === 1 ? 'a dog' : 'dogs') + ')' : '') + (spare > 0 ? ', ' + spare + ' spare' : ', every seat taken') + '.';
+      if (cargoDogs) { t += ' ' + cargoDogs + (cargoDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the cargo bay (' + sea.space.cuft + ' cu ft behind the last row).'; }
+      if (bedDogs) { t += ' ' + bedDogs + (bedDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the bed.'; }
     }
     r.text = t;
     return r;
@@ -920,24 +1031,11 @@ var VVY = (function () {
 
   function rowLabel(n) { return n === 2 ? 'second row' : 'third row'; }
 
-  /* Assign riders to rows: the reference person drives; the others fill row 2, then row 3, then
-     the spare front seat, tallest first, so the guidance is about the seats people would actually use. */
-  function assignRows(cfg, people) {
-    var rows = has(cfg.rows) ? cfg.rows : 2;
-    var seats = has(cfg.seats) ? cfg.seats : 5;
-    var frontSeats = (seats >= 6 && rows <= 2 && cfg.bedLen) ? 3 : 2;
-    if (rows < 2) { frontSeats = seats; }
-    var cap2 = rows < 2 ? 0 : (rows >= 3 ? Math.min(3, seats - frontSeats - 2) : seats - frontSeats);
-    if (cap2 < 0) { cap2 = 0; }
-    var cap3 = rows >= 3 ? seats - frontSeats - cap2 : 0;
-    var out = [], i, front = frontSeats - 1, r2 = cap2, r3 = cap3;
-    var sorted = people.slice().sort(function (a, b) { return b.h - a.h; });
-    for (i = 0; i < sorted.length; i++) {
-      if (r2 > 0) { out.push({ p: sorted[i], row: 2 }); r2--; }
-      else if (r3 > 0) { out.push({ p: sorted[i], row: 3 }); r3--; }
-      else if (front > 0) { out.push({ p: sorted[i], row: 1 }); front--; }
-      else { out.push({ p: sorted[i], row: 0 }); }
-    }
+  /* people (excluding you) -> [{p,row}] in the shared seating order; row 0 = no seat */
+  function assignRows(cfg, people, person) {
+    var sea = seatEveryone(cfg, { person: person, people: people, dogs: 0 }), out = [], i;
+    for (i = 0; i < sea.placed.length; i++) { if (!sea.placed[i].p.you && sea.placed[i].p.kind !== 'dog') { out.push({ p: sea.placed[i].p, row: sea.placed[i].row }); } }
+    for (i = 0; i < sea.unseated.length; i++) { if (!sea.unseated[i].you) { out.push({ p: sea.unseated[i], row: 0 }); } }
     return out;
   }
 
@@ -965,8 +1063,11 @@ var VVY = (function () {
     }
     o.push('<p class="vvy-room gen">' + esc(genTxt) + '</p>');
 
-    if (people.length) {
-      a = assignRows(cfg, people);
+    if (people.length || party.dogs) {
+      /* dogs take seats too, so seat them first: the guidance is about the seats people actually get */
+      var seaAll = seatEveryone(cfg, party); a = [];
+      for (i = 0; i < seaAll.placed.length; i++) { if (!seaAll.placed[i].p.you && seaAll.placed[i].p.kind !== 'dog') { a.push({ p: seaAll.placed[i].p, row: seaAll.placed[i].row }); } }
+      for (i = 0; i < seaAll.unseated.length; i++) { if (!seaAll.unseated[i].you) { a.push({ p: seaAll.unseated[i], row: 0 }); } }
       o.push('<ul class="vvy-room list">');
       for (i = 0; i < a.length; i++) {
         r = a[i]; who = 'Your ' + esc(personLabel(r.p.h, metric)) + (r.p.kind === 'kid' ? ' kid' : ' adult');
@@ -983,6 +1084,13 @@ var VVY = (function () {
         else if (b.band === 'tight') { txt = who + ' will be tight in the ' + rowLabel(r.row) + ' of this one' + (why.length ? ' (' + why.join(', ') + ')' : '') + ' — fine for short trips.'; cls = 'warn'; }
         else { txt = who + ' will be cramped in the ' + rowLabel(r.row) + (why.length ? ' (' + why.join(', ') + ')' : '') + '.'; cls = 'no'; }
         o.push('<li class="' + cls + '">' + txt + '</li>');
+      }
+      for (i = 0; i < seaAll.dogs.length; i++) {
+        var dg = seaAll.dogs[i], dwho = 'Your dog' + (seaAll.dogs.length > 1 ? ' ' + (i + 1) : '');
+        if (dg.place === 'seat') { o.push('<li class="ok">' + dwho + ' takes a seat' + (dg.row === 1 ? (dg.seat === 2 ? ' — the front bench middle' : ' up front') : ' in the ' + rowLabel(dg.row)) + '.</li>'); }
+        else if (dg.place === 'cargo') { o.push('<li class="ok">' + dwho + ' rides in the cargo bay behind the last row (' + seaAll.space.cuft + ' cu ft).</li>'); }
+        else if (dg.place === 'bed') { o.push('<li class="ok">' + dwho + ' rides in the bed — no seat left inside.</li>'); }
+        else { o.push('<li class="no">' + dwho + ' has nowhere to ride: no seat left and ' + (seaAll.space.kind === 'none' ? 'a trunk is no place for a dog' : (seaAll.space.kind === 'unknown' ? 'the cargo space is not on file' : 'the cargo bay only takes ' + seaAll.space.dogs)) + '.</li>'); }
       }
       o.push('</ul>');
     }
@@ -1025,10 +1133,10 @@ var VVY = (function () {
   }
   /* party fit per row for the rankings: tallest rider assigned to each row, or null when nobody sits there */
   function partyRows(cfg, party) {
-    var people = [{ h: party.person || 70, kind: 'adult', you: true }].concat(party.people || []);
-    var a = assignRows(cfg, people.slice(1)), i, tall = { 1: people[0].h, 2: null, 3: null };
-    for (i = 0; i < a.length; i++) {
-      if (a[i].row >= 1 && (tall[a[i].row] === null || a[i].p.h > tall[a[i].row])) { tall[a[i].row] = a[i].p.h; }
+    var sea = seatEveryone(cfg, party), i, tall = { 1: null, 2: null, 3: null }, pl;
+    for (i = 0; i < sea.placed.length; i++) {
+      pl = sea.placed[i]; if (pl.p.kind === 'dog') { continue; }
+      if (tall[pl.row] === null || pl.p.h > tall[pl.row]) { tall[pl.row] = pl.p.h; }
     }
     return { 1: tall[1] === null ? null : rowFit(cfg, 1, tall[1]), 2: tall[2] === null ? null : rowFit(cfg, 2, tall[2]), 3: tall[3] === null ? null : rowFit(cfg, 3, tall[3]), tall: tall };
   }
@@ -1226,8 +1334,8 @@ var VVY = (function () {
     /* ---- riders ---- */
     var callouts = [];
     var you = { h: personIn, kind: 'adult', you: true };
-    var assigned = assignRows(cfg, people), rider = [], byRow = { 1: [you], 2: [], 3: [], 0: [] }, j;
-    for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
+    var sea = seatEveryone(cfg, { person: personIn, people: people, dogs: party.dogs || 0 }), j;
+    var byRow = ridersByRow(sea);
     var bands = {};
     function faceFor(fitr, rowObj, isFront) {
       return function (hcx, hcy, crown, kneeX, kneeY) {
@@ -1266,21 +1374,35 @@ var VVY = (function () {
       nx += q.h * 0.31 + 4;
     }
 
-    /* ---- pets ---- */
-    var nD = Math.min(party.dogs || 0, 12), nC = Math.min(party.cats || 0, 12);
+    /* ---- dogs: where the shared seating model put them ---- */
+    var nC = Math.min(party.cats || 0, 12), nBed = 0, nCargo = 0, nNone = 0, dg, rowOf;
     var cargoOK = !trunk && !pickup && !wedge && (cargoR - cargoF) > 16 && rows >= 2;
-    for (i = 0; i < nD; i++) {
-      if (pickup) {
-        /* in the bed: bed floor = published bedHeight or rail - 20 */
+    for (i = 0; i < sea.dogs.length; i++) {
+      dg = sea.dogs[i];
+      if (dg.place === 'seat') {
+        rowOf = null; for (k = 0; k < R.length; k++) { if (R[k].n === dg.row) { rowOf = R[k]; } }
+        if (rowOf) { o.push(groundShadow(rowOf.hx - 4, Y(rowOf.cush + 0.5) + 0.4, 9, 0.9, 0.2) + sittingDogSvg(rowOf.hx - 4 + dg.seat * 2, rowOf.cush + 0.5, Y, 20, dx)); }
+      } else if (dg.place === 'bed') {
+        /* rear of the bed, clearly behind the cab; the near bed wall is drawn over its lower body below */
         var bedY = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20);
-        o.push(sittingDogSvg(vx + L * 0.86 - i * 14, bedY, Y, 22, dx));
-      } else if (cargoOK) {
-        o.push(sittingDogSvg(Math.min(cargoR - 10, cargoF + 8 + i * 12), floor, Y, 22, dx));
+        var bx = vx + L * 0.955 - 9 - nBed * 15; nBed++;
+        o.push(groundShadow(bx - 1, Y(bedY) + 0.6, 12, 1.1, 0.22) + sittingDogSvg(bx, bedY, Y, 22, dx));
+      } else if (dg.place === 'cargo' && cargoOK) {
+        o.push(groundShadow(Math.min(cargoR - 10, cargoF + 8 + nCargo * 12) - 1, Y(floor) + 0.6, 12, 1.1, 0.2) + sittingDogSvg(Math.min(cargoR - 10, cargoF + 8 + nCargo * 12), floor, Y, 22, dx)); nCargo++;
+      } else if (dg.place === 'cargo') {
+        o.push(sittingDogSvg(lastR.hx + 14 + nCargo * 10, floor, Y, 20, dx)); nCargo++;
       } else {
-        /* footwell of the last row (or front passenger footwell when single-row) */
-        var fw = lastR.n === 1 ? lastR.hx - 20 : lastR.hx - 14 - i * 6;
-        o.push(sittingDogSvg(fw, floor, Y, 17, dx));
+        /* nowhere to ride: beside the vehicle, labelled */
+        var nxd = vx + L + 8 + nNone * 26; nNone++;
+        o.push(groundShadow(nxd - 2, Y(0) + 0.6, 14, 1.2, 0.18) + sittingDogSvg(nxd, 0, Y, 22, dx));
+        o.push('<text x="' + r1(nxd) + '" y="' + r1(Y(0) + 6) + '" text-anchor="middle" font-size="3.4" fill="#8a1c14" font-family="' + FONT + '">no room</text>');
       }
+    }
+    if (nBed) {
+      /* near bed side wall in front of the dog: from the bed floor up to the rail, bed front to tailgate */
+      var railY = body.pts[9][1] * H0 + rise, bedFloorY = has(e.bedHeight) ? e.bedHeight : railY - 20;
+      o.push('<rect x="' + r1(vx + L * body.pts[8][0]) + '" y="' + Y(railY) + '" width="' + r1(L * (0.995 - body.pts[8][0])) + '" height="' + r1(Y(bedFloorY) - Y(railY)) + '" fill="' + pal.body + '" opacity="0.55"/>');
+      o.push('<line x1="' + r1(vx + L * body.pts[8][0]) + '" y1="' + Y(railY) + '" x2="' + r1(vx + L * 0.995) + '" y2="' + Y(railY) + '" stroke="' + pal.stroke + '" stroke-width="0.5"/>');
     }
     var catSpots = [];
     /* lap of the first rear rider, dashboard, parcel shelf / rear seat top, cargo floor */
@@ -1365,7 +1487,7 @@ var VVY = (function () {
     var ref = opts.ref || { L: L, W: Wd };
     var party = opts.party || {}, people = party.people || [];
     var KY = OV.KY, KZ = OV.KZ;
-    var m = 6, mT = 20, mB = 12, mLab = 26;   /* mLab: left column for row labels */
+    var m = 6, mT = 20, mB = 6, mLab = 26;   /* mLab: left column for row labels */
     /* the hood faces the viewer almost square-on, so it is foreshortened harder than the cabin */
     var body0 = body, glz = body0.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
     var hoodU = glz[0][0] * L, KYH = 0.26;
@@ -1375,7 +1497,8 @@ var VVY = (function () {
     var cx = mLab + m + ref.W * 0.58, y0 = SH - mB;
     var dx = new Defs((opts.idPrefix || 'vvy') + 'o' + role), o = [], i, k, j;
     function sc(u) { return 1 - OV.PERSP * (u / ref.L); }
-    function P(u, v, z) { var s = sc(u); return [r1(cx + (v - Wd / 2) * s), r1(y0 - uy(u) - (z || 0) * KZ * s)]; }
+    /* seen from the hood end of a left-hand-drive car the driver's side is on the RIGHT: v grows leftward */
+    function P(u, v, z) { var s = sc(u); return [r1(cx - (v - Wd / 2) * s), r1(y0 - uy(u) - (z || 0) * KZ * s)]; }
     function pts(list) { var a = [], q; for (q = 0; q < list.length; q++) { var p = P(list[q][0], list[q][1], list[q][2]); a.push(p[0] + ',' + p[1]); } return a.join(' '); }
     var nm = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle');
     o.push('<svg class="vvy-svg vvy-inside" viewBox="0 0 ' + r1(W) + ' ' + r1(SH) + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the ' + esc(nm) + ': who sits where. Headroom is judged in the profile view.">');
@@ -1403,10 +1526,9 @@ var VVY = (function () {
     /* ---- assign riders to seats (same row assignment as everywhere else; seat order: driver,
             far side, middle) ---- */
     var you = { h: personIn, kind: 'adult', you: true };
-    var assigned = assignRows(cfg, people), byRow = { 1: [you], 2: [], 3: [], 0: [] };
-    for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
-    for (k = 0; k < R.length; k++) { R[k].riders = byRow[R[k].n].slice(0, R[k].vs.length); }
-    var noSeat = byRow[0];
+    var sea = seatEveryone(cfg, { person: personIn, people: people, dogs: party.dogs || 0 });
+    for (k = 0; k < R.length; k++) { R[k].occ = sea.occ[R[k].n] || []; }
+    var noSeat = sea.unseated;
     /* ---- body plan ---- */
     var shadowP = P(L / 2, Wd / 2, 0);
     o.push('<ellipse cx="' + shadowP[0] + '" cy="' + r1(y0 - uy(L) * 0.5 + 4) + '" rx="' + r1(Wd * 0.56) + '" ry="' + r1(uy(L) * 0.52) + '" fill="#1f2933" opacity="0.08"/>');
@@ -1466,6 +1588,17 @@ var VVY = (function () {
         '<path d="M' + r1(hp[0] - hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + ' Q' + hp[0] + ' ' + r1(hp[1] + hw * 0.75) + ' ' + r1(hp[0] + hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hw * 0.12)) + '" stroke-linecap="round"/></g>');
       return '<g class="vvy-seated-top' + (p.you ? ' vvy-you' : '') + '">' + s.join('') + '</g>';
     }
+    function dogTop(u, v, h) {
+      /* sitting dog facing the viewer: body, head with ears, happy face */
+      var s = [], b = P(u, v, 0), hp = P(u, v, 0.9 * h), w = 0.55 * h * sc(u), hr = 0.3 * h * sc(u);
+      s.push('<ellipse cx="' + b[0] + '" cy="' + r1(b[1] - 0.25 * h * KZ) + '" rx="' + r1(w * 0.6) + '" ry="' + r1(0.45 * h * KZ) + '" fill="url(#' + dx.vgrad('dogo', '#6b4f3a', 0.22, -0.3) + ')"/>');
+      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hr) + '" fill="#6b4f3a"/>');
+      s.push('<ellipse cx="' + r1(hp[0] - hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/><ellipse cx="' + r1(hp[0] + hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/>');
+      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + r1(hp[0] + hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.25) + '" r="' + r1(Math.max(0.4, hr * 0.16)) + '" fill="#1f2933"/>' +
+        '<path d="M' + r1(hp[0] - hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + ' Q' + hp[0] + ' ' + r1(hp[1] + hr * 0.85) + ' ' + r1(hp[0] + hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hr * 0.13)) + '" stroke-linecap="round"/></g>');
+      s.push('<ellipse cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.78) + '" rx="' + r1(hr * 0.2) + '" ry="' + r1(hr * 0.3) + '" fill="#e8848f"/>');
+      return '<g class="vvy-dog vvy-dog-top">' + s.join('') + '</g>';
+    }
     for (k = R.length - 1; k >= 0; k--) {
       var rr = R[k], sw = rr.sw, worst = null;
       /* cushions */
@@ -1482,38 +1615,32 @@ var VVY = (function () {
         o.push('<polygon points="' + pts([[rr.u + 3, segs[q][0], 0], [rr.u + 3, segs[q][1], 0], [rr.u + 6, segs[q][1], 24], [rr.u + 6, segs[q][0], 24]]) + '" fill="' + backFill + '" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>');
       }
       for (j = 0; j < rr.vs.length; j++) { o.push('<polygon points="' + pts([[rr.u + 5, rr.vs[j] - 5, 25], [rr.u + 5, rr.vs[j] + 5, 25], [rr.u + 6, rr.vs[j] + 5, 31], [rr.u + 6, rr.vs[j] - 5, 31]]) + '" fill="' + shade(seatCol, -0.1) + '" rx="1"/>'); }
-      /* riders in their seats */
-      for (j = 0; j < rr.riders.length; j++) {
-        var fr = rowFit(cfg, rr.n, rr.riders[j].h);
+      /* occupants in their seats (seat index = position across the row); dogs on seats too */
+      var nRiders = 0;
+      for (j = 0; j < rr.occ.length && j < rr.vs.length; j++) {
+        var oc = rr.occ[j]; if (!oc) { continue; }
+        if (oc.kind === 'dog') { o.push(dogTop(rr.u - 4, rr.vs[j], 20)); continue; }
+        nRiders++;
+        var fr = rowFit(cfg, rr.n, oc.h);
         var wv = fr.band === 'unknown' ? null : (fr.hs === null ? fr.ls : (fr.ls === null ? fr.hs : Math.min(fr.hs, fr.ls)));
         if (wv !== null && (worst === null || wv < worst)) { worst = wv; }
-        o.push(riderSvg(rr.riders[j], rr.u, rr.vs[j], fr));
+        o.push(riderSvg(oc, rr.u, rr.vs[j], fr));
       }
-      /* cats on empty seats */
-      var bandR = worst === null ? (rr.riders.length ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
+      var bandR = worst === null ? (nRiders ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
       chips.push({ row: rr, band: bandR });
     }
     /* ---- pets ---- */
-    var nD = Math.min(party.dogs || 0, 12), nC = Math.min(party.cats || 0, 12), last = R[R.length - 1];
-    function dogTop(u, v, h) {
-      /* sitting dog facing the viewer: body, head with ears, happy face */
-      var s = [], b = P(u, v, 0), hp = P(u, v, 0.9 * h), w = 0.55 * h * sc(u), hr = 0.3 * h * sc(u);
-      s.push('<ellipse cx="' + b[0] + '" cy="' + r1(b[1] - 0.25 * h * KZ) + '" rx="' + r1(w * 0.6) + '" ry="' + r1(0.45 * h * KZ) + '" fill="url(#' + dx.vgrad('dogo', '#6b4f3a', 0.22, -0.3) + ')"/>');
-      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hr) + '" fill="#6b4f3a"/>');
-      s.push('<ellipse cx="' + r1(hp[0] - hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/><ellipse cx="' + r1(hp[0] + hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/>');
-      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + r1(hp[0] + hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.25) + '" r="' + r1(Math.max(0.4, hr * 0.16)) + '" fill="#1f2933"/>' +
-        '<path d="M' + r1(hp[0] - hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + ' Q' + hp[0] + ' ' + r1(hp[1] + hr * 0.85) + ' ' + r1(hp[0] + hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hr * 0.13)) + '" stroke-linecap="round"/></g>');
-      s.push('<ellipse cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.78) + '" rx="' + r1(hr * 0.2) + '" ry="' + r1(hr * 0.3) + '" fill="#e8848f"/>');
-      return '<g class="vvy-dog vvy-dog-top">' + s.join('') + '</g>';
-    }
+    var nC = Math.min(party.cats || 0, 12), last = R[R.length - 1], nb = 0, nc2 = 0, nn = 0;
     var cargoOK = !trunk && !wedge && !pickup && (cabR - (last.u + 10)) > 14;
-    for (i = 0; i < nD; i++) {
-      if (pickup) { o.push(dogTop(uR + 16 + i * 14, Wd * (i % 2 ? 0.7 : 0.35), 22)); }
-      else if (cargoOK) { o.push(dogTop(last.u + 12 + Math.min(cabR - last.u - 20, 6) , Wd * (i % 2 ? 0.68 : 0.36), 22)); }
-      else { /* footwell of the last row's far-side seat */ o.push(dogTop(last.u - 22, Wd * 0.72 + (i % 2) * 4, 16)); }
+    for (i = 0; i < sea.dogs.length; i++) {
+      var dgo = sea.dogs[i];
+      if (dgo.place === 'seat') { continue; }   /* drawn with its row above */
+      if (dgo.place === 'bed') { o.push(dogTop(L - 24 - nb * 13, Wd * (nb % 2 ? 0.68 : 0.36), 22)); nb++; }
+      else if (dgo.place === 'cargo') { o.push(dogTop(Math.min(cabR - 8, last.u + 14 + nc2 * 6), Wd * (nc2 % 2 ? 0.68 : 0.36), 22)); nc2++; }
+      else { o.push(dogTop(L * 0.3 + nn * 14, -12, 20)); var nl = P(L * 0.3 + nn * 14, -12, 0); o.push('<text x="' + nl[0] + '" y="' + r1(nl[1] + 5) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no room</text>'); nn++; }
     }
     var emptySeats = [];
-    for (k = 0; k < R.length; k++) { for (j = R[k].riders.length; j < R[k].vs.length; j++) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } }
+    for (k = 0; k < R.length; k++) { for (j = 0; j < R[k].vs.length; j++) { if (!R[k].occ[j]) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } } }
     for (i = 0; i < nC; i++) {
       var cp = emptySeats.length ? emptySeats[i % emptySeats.length] : [uH + 6, Wd * 0.5];
       var cpp = P(cp[0], cp[1], 2);
@@ -1538,7 +1665,7 @@ var VVY = (function () {
     /* ---- row labels (left) + fit chips (right) ---- */
     var halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"';
     for (k = 0; k < chips.length; k++) {
-      var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, 0, 0), rp = P(rl.u - 6, Wd, 0);
+      var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, Wd, 0), rp = P(rl.u - 6, 0, 0);
       var name = rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row');
       var kind = rl.seats === 0 ? 'no seats' : (rl.bench ? 'bench · ' + rl.seats : (rl.seats === 1 ? '1 seat' : (rl.n === 1 ? '2 buckets' : (rl.seats === 2 ? "2 captain's chairs" : rl.seats + ' seats'))));
       o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"' + halo + '>' + esc(name) + '</text>');
@@ -1547,7 +1674,6 @@ var VVY = (function () {
       var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
       o.push('<text x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"' + halo + '>' + esc(ctext) + '</text>');
     }
-    o.push('<text x="' + r1(W / 2) + '" y="' + r1(SH - 3) + '" text-anchor="middle" font-size="3.8" fill="#7b8794" font-family="' + FONT + '">who sits where · room is measured in the profile view</text>');
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1570,6 +1696,8 @@ var VVY = (function () {
     renderInside: renderInside,
     rowFit: rowFit,
     partyRows: partyRows,
+    seatEveryone: seatEveryone,
+    seatLayout: seatLayout,
     SEAT: SEAT,
     specsHtml: specsHtml,
     compsHtml: compsHtml,

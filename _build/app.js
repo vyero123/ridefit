@@ -13,6 +13,7 @@
        Comparing: one control flips BOTH panes — profile = A and B side by side at one scale in a
        single pane; cutaway / overhead = A in pane A, B in pane B, drawn at a shared scale. */
     view: 'profile',
+    fold: false,   /* the seats fold under the profile pane (alone only) */
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
@@ -231,10 +232,14 @@
         htmlB = VVY.renderInside(eB, state.person, state.metric, { party: state.party, role: 'B', idPrefix: 'pb', ref: ref });
       }
     }
-    scene.className = 'scene ' + (htmlB ? 'two' : 'one');
+    /* alone: primary profile pane + collapsible seats fold; comparing in an inside view: A | B split */
+    var split = !!(eB && state.view !== 'profile');
+    scene.className = 'scene' + (split ? ' two' : (state.fold ? ' open' : ''));
     paneA.innerHTML = htmlA;
     paneB.innerHTML = htmlB;
-    paneB.style.display = htmlB ? '' : 'none';
+    paneB.style.display = (split || !eB) ? '' : 'none';
+    byId('foldBtn').style.display = (split || eB) ? 'none' : '';
+    byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
     if (changed && !reduceMotion) {
       paneA.className = 'pane a'; void paneA.offsetWidth; paneA.className = 'pane a vvy-anim';
       paneB.className = 'pane b'; void paneB.offsetWidth; paneB.className = 'pane b vvy-anim';
@@ -842,6 +847,7 @@
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
     byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
+    byId('foldBtn').onclick = safe(function () { state.fold = !state.fold; crumb('fold: ' + state.fold); byId('scene').className = 'scene' + (state.fold ? ' open' : ''); byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false'); });
     byId('viewCtl').onclick = safe(onViewCtl);
     byId('viewCtl2').onclick = safe(onViewCtl);
     byId('clearBtn').onclick = safe(clearB);

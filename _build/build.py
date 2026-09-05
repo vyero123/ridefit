@@ -69,7 +69,7 @@ count = sum(len(m['configs']) for b in data['brands'] for m in b['models'])
 # Default crew for the static first paint — MUST match state.party / state.person in app.js:
 # you 5'10" (70 in), an adult 5'5" (65), a kid 4'2" (50, typical at 8), a kid 3'7" (43, typical at 5), one dog.
 DEFAULT_PERSON = 70
-DEFAULT_PARTY = {'people': [{'kind': 'adult', 'h': 65}, {'kind': 'kid', 'h': 50}, {'kind': 'kid', 'h': 43}], 'dogs': 1, 'cats': 0, 'adults': 2, 'kids': 2}
+DEFAULT_PARTY = {'person': DEFAULT_PERSON, 'people': [{'kind': 'adult', 'h': 65}, {'kind': 'kid', 'h': 50}, {'kind': 'kid', 'h': 43}], 'dogs': 1, 'cats': 0, 'adults': 2, 'kids': 2}
 node_src = """
 var VVY = require(%s);
 var cfg = %s, party = %s, person = %s;

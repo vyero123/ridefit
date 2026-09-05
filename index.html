@@ -57,22 +57,34 @@ body {
 }
 .noscript { background: #fff4d6; color: #5a3d00; border: 1px solid #f0d28a; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin: 10px 12px 0; }
 
-/* ---------- scene: FIXED, RESERVED box — zero layout shift ----------
-   The panes never size to their content: the SVG scales inside a box whose height is set here
-   (viewport-relative, clamped). Adding riders, swapping vehicles, cats wandering, verdict text —
-   none of it can move the box or anything below it. */
-.scene { display: grid; grid-template-columns: 3fr 2fr; gap: 6px; height: 44vh; min-height: 220px; max-height: 380px; contain: strict; }
-.scene.one { grid-template-columns: 1fr; }
-.pane { position: relative; overflow: hidden; min-width: 0; min-height: 0; background: #fbfcfd; border-radius: 10px; }
+/* ---------- scene: FIXED, RESERVED boxes — zero layout shift ----------
+   The profile pane is the primary and has a reserved height; the 45° seats view is a fold below
+   it, collapsed by default (height 0) and a fixed height when open. Sizes never follow content:
+   each SVG scales inside its box. Only the user's own fold tap changes the total height. */
+.scene { display: block; contain: layout; }
+.pane { position: relative; overflow: hidden; min-width: 0; background: #fbfcfd; border-radius: 10px; }
 .pane svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
-.pane.a { background: linear-gradient(#fff, #f6f8fa); }
+.pane.a { height: 40vh; min-height: 200px; max-height: 360px; background: linear-gradient(#fff, #f6f8fa); }
+.pane.b { height: 0; }
+.scene.open .pane.b { height: 240px; margin-top: 4px; }
+.fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; color: #1f4e79; background: #f3f5f8; border: 1px solid #e4e7eb; border-radius: 8px; padding: 6px 10px; text-align: left; cursor: pointer; height: 30px; }
+.fold .fchev { display: inline-block; transition: transform .2s; margin-right: 4px; }
+.scene.open .fold .fchev { transform: rotate(180deg); }
+.scene.open .fold { color: #52606d; }
+body.static .fold { display: none; }
+body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the seats view open */
+/* comparison split (peek inside / seats for A and B): two equal panes, fold hidden */
+.scene.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.scene.two .fold { display: none; }
+.scene.two .pane.a, .scene.two .pane.b { height: 40vh; min-height: 200px; max-height: 360px; margin-top: 0; }
 .viewctl { margin-left: auto; display: inline-flex; background: #f3f5f8; border-radius: 99px; padding: 2px; flex: none; }
 .vbtn { font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 9px; border: 0; border-radius: 99px; background: transparent; color: #52606d; cursor: pointer; white-space: nowrap; }
 .vbtn.on { background: #1f2933; color: #fff; }
 @media (max-width: 599px) {
-  /* phone: stack — the wide profile on top, the tall overhead below, one fixed box */
-  .scene { grid-template-columns: 1fr; grid-template-rows: 34% 66%; height: 54vh; min-height: 310px; max-height: 460px; gap: 4px; }
-  .scene.one { grid-template-rows: 1fr; }
+  .pane.a { height: 30vh; min-height: 150px; max-height: 240px; }
+  .scene.open .pane.b { height: 230px; }
+  .scene.two { grid-template-columns: 1fr; }
+  .scene.two .pane.a, .scene.two .pane.b { height: 26vh; min-height: 140px; max-height: 220px; }
   .vbtn { font-size: 11px; padding: 5px 7px; }
 }
 
@@ -385,7 +397,7 @@ table.rank td.fitc.none i { font-size: 10px; }
   body.live .grab { display: none; }
   body.live .main { padding: 0 20px 24px; }
   body.live .hero { position: sticky; top: 0; z-index: 10; border: 1px solid #e4e7eb; border-radius: 0 0 14px 14px; }
-  .scene { height: 46vh; max-height: 420px; }
+  .pane.a, .scene.two .pane.a, .scene.two .pane.b { height: 44vh; max-height: 400px; }
   .facts { padding: 14px 4px; }
   .vvy-specs { grid-template-columns: 1fr 1fr 1fr; }
   .cmpgrid { grid-template-columns: 1fr; }
@@ -419,9 +431,10 @@ table.rank td.fitc.none i { font-size: 10px; }
          changes: both panes scale their SVG inside a fixed box. Pane A = profile (exterior, or the
          "peek inside" cutaway); pane B = 45° overhead cabin view. In a comparison the same two panes
          hold A and B and the view control flips both. -->
-    <div id="scene" class="scene two">
-      <div class="pane" id="paneA"><svg class="vvy-svg" viewBox="0 0 442.3 107.4" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scaled comparison of a person against Ram 1500 — Crew Cab 5'7&quot; Bed 4x2"><defs><linearGradient id="vvy-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6d9dd"/><stop offset="0.45" stop-color="#e4e7eb"/><stop offset="1" stop-color="#edeff2"/></linearGradient><linearGradient id="vvy-bodyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7991aa"/><stop offset="0.45" stop-color="#436587"/><stop offset="1" stop-color="#2f4962"/></linearGradient><linearGradient id="vvy-glassA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6d5e2"/><stop offset="0.45" stop-color="#aec4d6"/><stop offset="1" stop-color="#98adbe"/></linearGradient><clipPath id="vvy-cbA0"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z"/></clipPath><clipPath id="vvy-cgA1"><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46"/></clipPath><clipPath id="vvy-ctA2"><rect x="163.2" y="12" width="241.7" height="29"/></clipPath><radialGradient id="vvy-tireA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#2b3238"/><stop offset="0.62" stop-color="#20272e"/><stop offset="0.86" stop-color="#484e54"/><stop offset="1" stop-color="#15191e"/></radialGradient><radialGradient id="vvy-rimA" cx="0.5" cy="0.5" r="0.5" fx="0.42" fy="0.4"><stop offset="0" stop-color="#777f88"/><stop offset="0.55" stop-color="#98a3ae"/><stop offset="1" stop-color="#bcc3ca"/></radialGradient><radialGradient id="vvy-dishA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="0.7" stop-color="#000" stop-opacity="0.05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="vvy-p3" gradientUnits="userSpaceOnUse" x1="30.4" y1="0" x2="51.4" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="vvy-p4" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="75.5" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="vvy-p5" gradientUnits="userSpaceOnUse" x1="80.1" y1="0" x2="95.1" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-p6" gradientUnits="userSpaceOnUse" x1="99.6" y1="0" x2="112.5" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient></defs><rect x="0" y="91.4" width="442.3" height="16" fill="url(#vvy-ground)" opacity="0.7"/><line x1="0" y1="91.4" x2="442.3" y2="91.4" stroke="#9aa5b1" stroke-width="0.6"/><line x1="0" y1="79.4" x2="442.3" y2="79.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="67.4" x2="442.3" y2="67.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="55.4" x2="442.3" y2="55.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="43.4" x2="442.3" y2="43.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="31.4" x2="442.3" y2="31.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="19.4" x2="442.3" y2="19.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><g class="vvy-shadow"><ellipse cx="284.1" cy="92.2" rx="122.3" ry="3" fill="#1f2933" opacity="0.07"/><ellipse cx="284.1" cy="92.2" rx="109.2" ry="2" fill="#1f2933" opacity="0.2"/></g><g class="vvy-veh vvy-veh-A"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="url(#vvy-bodyA)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><g clip-path="url(#vvy-cbA0)"><rect x="165.6" y="72" width="237" height="13.8" fill="#000" opacity="0.16"/><ellipse cx="206.5" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><ellipse cx="351.1" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><g clip-path="url(#vvy-ctA2)"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.28" stroke-linejoin="round"/></g><rect x="165.6" y="45.8" width="237" height="3.5" fill="#fff" opacity="0.07"/></g><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46" fill="url(#vvy-glassA)" opacity="0.85"/><g clip-path="url(#vvy-cgA1)"><polygon points="260.1,15.2 272.4,15.2 262.9,47 253.4,47" fill="#fff" opacity="0.28"/><polygon points="276.4,15.2 279.8,15.2 270.3,47 267.6,47" fill="#fff" opacity="0.16"/><rect x="250" y="39.4" width="71.9" height="8.9" fill="#000" opacity="0.14"/></g><g transform="translate(206.5 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g><g transform="translate(351.1 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g></g><line x1="10.5" y1="14" x2="419.2" y2="14" stroke="#1f4e79" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="12.8" text-anchor="end" font-size="3.9" fill="#1f4e79" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">77.4 in roof</text><line x1="10.5" y1="56.6" x2="419.2" y2="56.6" stroke="#0b7285" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="55.4" text-anchor="end" font-size="3.9" fill="#0b7285" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">34.8 in bed</text><g class="vvy-shadow"><ellipse cx="40.9" cy="92" rx="12.5" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="40.9" cy="92" rx="11.2" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-person" fill="url(#vvy-p3)"><polygon points="33,34.1 30.2,36.2 29.2,48 28.4,57.9 30.6,58.1 32.6,48 34.1,36.9" fill="#161d24"/><polygon points="40,59.2 33.7,58.6 34,68.3 35.3,81.6 35.5,91.4 39,91.4 39.2,81.6 40.3,70.4" fill="#182028"/><polygon points="41.7,59.2 48,58.6 47.7,68.3 46.5,81.6 46.2,91.4 42.7,91.4 42.5,81.6 41.4,70.4"/><polygon points="38.8,29.9 43,29.9 44.7,32.3 48.7,34 48.3,38.2 46.6,46.6 46.2,49.4 47.7,54.3 47.9,58.5 41.8,59.6 39.9,59.6 33.9,58.5 34,54.3 35.5,49.4 35.1,46.6 33.4,38.2 33,34 37,32.3"/><polygon points="48.7,34.1 51.5,36.2 52.5,48 53.3,57.9 51.1,58.1 49.1,48 47.6,36.9"/><ellipse cx="40.9" cy="26" rx="3" ry="4.6"/><ellipse cx="39.6" cy="23.9" rx="1" ry="1.4" fill="#fff" opacity="0.2"/><ellipse cx="40.9" cy="30.4" rx="2.1" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="39.8" cy="25.1" r="0.4"/><circle cx="41.9" cy="25.1" r="0.4"/><path d="M39.5 26.8 Q40.9 28.1 42.3 26.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="65.8" cy="92" rx="11.6" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="65.8" cy="92" rx="10.4" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-adult" fill="url(#vvy-p4)"><polygon points="58.5,38.2 55.9,40.2 55,51.1 54.2,60.3 56.3,60.5 58.1,51.1 59.5,40.8" fill="#2b3743"/><polygon points="65,61.5 59.1,61 59.4,70 60.6,82.3 60.8,91.4 64.1,91.4 64.2,82.3 65.3,71.9" fill="#303e4b"/><polygon points="66.6,61.5 72.4,61 72.1,70 71,82.3 70.7,91.4 67.5,91.4 67.3,82.3 66.3,71.9"/><polygon points="63.8,34.3 67.7,34.3 69.4,36.5 73.1,38.1 72.7,42 71.1,49.8 70.7,52.4 72.1,57 72.3,60.9 66.7,61.8 64.9,61.8 59.3,60.9 59.4,57 60.8,52.4 60.4,49.8 58.9,42 58.5,38.1 62.2,36.5"/><polygon points="73.1,38.2 75.7,40.2 76.6,51.1 77.3,60.3 75.3,60.5 73.4,51.1 72,40.8"/><ellipse cx="65.8" cy="30.7" rx="2.8" ry="4.3"/><ellipse cx="64.6" cy="28.7" rx="0.9" ry="1.3" fill="#fff" opacity="0.2"/><ellipse cx="65.8" cy="34.7" rx="2" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="64.8" cy="29.9" r="0.4"/><circle cx="66.8" cy="29.9" r="0.4"/><path d="M64.5 31.4 Q65.8 32.6 67.1 31.4" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="87.6" cy="92" rx="9" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="87.6" cy="92" rx="8" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p5)"><polygon points="82,50.5 80,52 79.3,60.4 78.7,67.5 80.3,67.6 81.7,60.4 82.8,52.5" fill="#435868"/><polygon points="87,68.4 82.5,68 82.7,74.9 83.6,84.4 83.8,91.4 86.3,91.4 86.4,84.4 87.2,76.4" fill="#4a6274"/><polygon points="88.2,68.4 92.7,68 92.5,74.9 91.6,84.4 91.4,91.4 88.9,91.4 88.8,84.4 88,76.4"/><polygon points="86.1,47.5 89.1,47.5 90.4,49.2 93.2,50.4 92.9,53.4 91.7,59.4 91.4,61.4 92.5,64.9 92.6,67.9 88.3,68.7 86.9,68.7 82.6,67.9 82.7,64.9 83.8,61.4 83.5,59.4 82.3,53.4 82,50.4 84.9,49.2"/><polygon points="93.2,50.5 95.2,52 95.9,60.4 96.5,67.5 94.9,67.6 93.5,60.4 92.4,52.5"/><ellipse cx="87.6" cy="44.7" rx="2.2" ry="3.3"/><ellipse cx="86.7" cy="43.2" rx="0.7" ry="1" fill="#fff" opacity="0.2"/><ellipse cx="87.6" cy="47.8" rx="1.5" ry="0.6" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="86.9" cy="44.1" r="0.4"/><circle cx="88.4" cy="44.1" r="0.4"/><path d="M86.6 45.3 Q87.6 46.2 88.6 45.3" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="106" cy="92" rx="7.7" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="106" cy="92" rx="6.9" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p6)"><polygon points="101.2,56.2 99.5,57.5 98.9,64.7 98.4,70.8 99.7,70.9 100.9,64.7 101.9,57.9" fill="#435868"/><polygon points="105.5,71.6 101.6,71.3 101.8,77.2 102.6,85.4 102.7,91.4 104.9,91.4 105,85.4 105.7,78.5" fill="#4a6274"/><polygon points="106.5,71.6 110.4,71.3 110.2,77.2 109.5,85.4 109.3,91.4 107.1,91.4 107,85.4 106.4,78.5"/><polygon points="104.7,53.6 107.3,53.6 108.4,55.1 110.8,56.1 110.6,58.7 109.5,63.9 109.3,65.6 110.2,68.6 110.3,71.2 106.6,71.8 105.4,71.8 101.7,71.2 101.8,68.6 102.7,65.6 102.5,63.9 101.5,58.7 101.2,56.1 103.7,55.1"/><polygon points="110.8,56.2 112.6,57.5 113.2,64.7 113.7,70.8 112.3,70.9 111.1,64.7 110.1,57.9"/><ellipse cx="106" cy="51.2" rx="1.9" ry="2.8"/><ellipse cx="105.2" cy="49.9" rx="0.6" ry="0.9" fill="#fff" opacity="0.2"/><ellipse cx="106" cy="53.9" rx="1.3" ry="0.5" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="105.4" cy="50.7" r="0.4"/><circle cx="106.7" cy="50.7" r="0.4"/><path d="M105.2 51.7 Q106 52.5 106.9 51.7" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g pointer-events="none"><g class="vvy-shadow"><ellipse cx="132.3" cy="92" rx="17.9" ry="2" fill="#1f2933" opacity="0.06"/><ellipse cx="132.3" cy="92" rx="16" ry="1.3" fill="#1f2933" opacity="0.18"/></g><g class="vvy-dog" fill="url(#vvy-dog)"><rect x="122.3" y="79.4" width="3" height="12" fill="#4d392a"/><rect x="135.3" y="79.4" width="3" height="12" fill="#4d392a"/><path d="M120.3 72.4 L140.3 70.4 L142.3 77.4 L122.3 79.4 Z"/><path d="M140.3 70.4 L143.3 64.4 L150.3 66.4 L149.3 71.4 L144.3 73.4 Z"/><path d="M143.3 64.4 L141.3 60.4 L145.3 63.4 Z"/><g class="vvy-tail"><path d="M120.3 72.4 L115.3 65.4 L117.3 64.4 L122.3 71.4 Z"/></g><rect x="128.3" y="79.4" width="3" height="12"/><rect x="139.3" y="79.4" width="3" height="12"/><path d="M122.3 73 L139.3 71.1" stroke="#fff" stroke-width="0.9" stroke-linecap="round" opacity="0.18" fill="none"/><circle cx="146.8" cy="67.4" r="0.7" fill="#1f2933"/><path d="M145.8 70.2 Q148.1 71.8 149.9 70.4" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/><ellipse cx="148.3" cy="71.8" rx="0.9" ry="1.3" fill="#e8848f"/></g></g><text x="105.8" y="97.6" text-anchor="middle" font-size="3.6" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">1 more adult · 2 kids · 1 dog (22 in at the shoulder)</text><line x1="9" y1="91.4" x2="9" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="21.4" x2="11" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="91.4" x2="11" y2="91.4" stroke="#1f2933" stroke-width="0.5"/><text x="40.9" y="97.6" text-anchor="middle" font-size="4.4" font-weight="600" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; 5' 10&quot;</text></svg></div>
-      <div class="pane" id="paneB"><svg class="vvy-svg vvy-inside" viewBox="0 0 154.1 123.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the Ram 1500: who sits where. Headroom is judged in the profile view."><defs><linearGradient id="pboA-bodyo" gradientUnits="userSpaceOnUse" x1="34.5" y1="0" x2="126.9" y2="0"><stop offset="0" stop-color="#6985a0"/><stop offset="0.55" stop-color="#3f6285"/><stop offset="1" stop-color="#2d4760"/></linearGradient><linearGradient id="pboA-seato" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a59a91"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#645b52"/></linearGradient><linearGradient id="pboA-backo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b0a79f"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#7a6f64"/></linearGradient><linearGradient id="pboA-r0" gradientUnits="userSpaceOnUse" x1="52.2" y1="0" x2="70.4" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="pboA-r1" gradientUnits="userSpaceOnUse" x1="93.2" y1="0" x2="107.2" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-r2" gradientUnits="userSpaceOnUse" x1="74.7" y1="0" x2="86.7" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-r3" gradientUnits="userSpaceOnUse" x1="50.5" y1="0" x2="70.1" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="pboA-dogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient><linearGradient id="pboA-glasso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7d6e2"/><stop offset="0.45" stop-color="#b2c6d7"/><stop offset="1" stop-color="#a1b6c8"/></linearGradient></defs><ellipse cx="80.7" cy="69.8" rx="47" ry="47.6" fill="#1f2933" opacity="0.08"/><polygon points="37.1,104.9 45.8,104.9 47,98.1 38.5,98.1" fill="#20272e" rx="2"/><polygon points="115.6,104.9 124.3,104.9 122.9,98.1 114.5,98.1" fill="#20272e" rx="2"/><polygon points="44.9,49.2 52.1,49.2 53.2,37 46.4,37" fill="#20272e" rx="2"/><polygon points="109.3,49.2 116.5,49.2 115.1,37 108.2,37" fill="#20272e" rx="2"/><g class="vvy-veh vvy-veh-A"><polygon points="48.8,111.6 112.6,111.6 122.1,108.5 111.7,26.6 104.9,20 56.5,20 49.8,26.6 39.3,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.5" stroke-linejoin="round"/><polygon points="50,54.2 111.4,54.2 108.2,21.4 53.2,21.4" fill="#203143"/><polyline points="50.6,48.8 110.9,48.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="51.1,43.3 110.3,43.3" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="51.6,37.8 109.8,37.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="52.2,32.4 109.3,32.4" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="52.7,26.9 108.8,26.9" fill="none" stroke="#182533" stroke-width="0.5"/><polygon points="46.6,89.7 114.9,89.7 111.5,55.2 49.9,55.2" fill="#f3eee4"/><polygon points="43,89.7 47.5,89.7 50.7,55.2 46.7,55.2" fill="#294056"/><polygon points="114,89.7 118.5,89.7 114.7,55.2 110.7,55.2" fill="#324e6a"/><polygon points="49.5,67.8 111.9,67.8 111,58.4 50.4,58.4" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="70.3,67.8 70.6,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="91.1,67.8 90.8,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="50.4,58.4 111,58.4 110.9,41.4 50.6,41.4" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="57.3,41.1 65.5,41.1 65.5,36.8 57.4,36.8" fill="#7d7167" rx="1"/><polygon points="96,41.1 104.1,41.1 104.1,36.8 95.9,36.8" fill="#7d7167" rx="1"/><polygon points="76.6,41.1 84.8,41.1 84.8,36.8 76.6,36.8" fill="#7d7167" rx="1"/><g class="vvy-seated-top"><polygon points="56.4,58.5 66.1,58.5 65.2,64.6 56.4,64.6" fill="#344352"/><polygon points="55.9,59.2 66.6,59.2 67.9,44 54.6,44" fill="url(#pboA-r0)"/><polygon points="54.6,44.9 52.7,46.1 53.5,57.7 55.1,57.7" fill="#313f4d"/><polygon points="67.9,44.9 69.8,46.1 68.6,57.7 67,57.7" fill="#313f4d"/><circle cx="61.3" cy="40.6" r="3.3" fill="url(#pboA-r0)"/><circle cx="60.3" cy="39.4" r="0.9" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="60.2" cy="40.4" r="0.4"/><circle cx="62.4" cy="40.4" r="0.4"/><path d="M60 41.6 Q61.3 43.1 62.6 41.6" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="96.5,58.5 103.9,58.5 103.9,62.9 97.2,62.9" fill="#516a7f"/><polygon points="96.1,59.2 104.3,59.2 105.3,47.6 95,47.6" fill="url(#pboA-r1)"/><polygon points="95,48.3 93.6,49.3 94.5,58.2 95.8,58.2" fill="#4c6477"/><polygon points="105.3,48.3 106.8,49.3 106.1,58.2 104.9,58.2" fill="#4c6477"/><circle cx="100.2" cy="45" r="2.5" fill="url(#pboA-r1)"/><circle cx="99.4" cy="44.1" r="0.7" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="99.4" cy="44.9" r="0.4"/><circle cx="101" cy="44.9" r="0.4"/><path d="M99.2 45.8 Q100.2 46.9 101.2 45.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="77.5,58.5 83.9,58.5 83.6,62.1 77.8,62.1" fill="#516a7f"/><polygon points="77.2,59.2 84.3,59.2 85.1,49.4 76.3,49.4" fill="url(#pboA-r2)"/><polygon points="76.3,49.9 75.1,50.8 75.7,58.4 76.8,58.4" fill="#4c6477"/><polygon points="85.1,49.9 86.4,50.8 85.7,58.4 84.6,58.4" fill="#4c6477"/><circle cx="80.7" cy="47.1" r="2.2" fill="url(#pboA-r2)"/><circle cx="80" cy="46.3" r="0.6" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="80" cy="47" r="0.4"/><circle cx="81.4" cy="47" r="0.4"/><path d="M79.8 47.8 Q80.7 48.7 81.6 47.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><polygon points="48,83.7 113.4,83.7 112.5,74.3 48.9,74.3" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="69.8,83.7 70.1,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="91.6,83.7 91.3,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="48.9,74.3 112.5,74.3 112.4,56.5 49.1,56.5" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="56.1,56.3 64.7,56.3 64.7,51.7 56.2,51.7" fill="#7d7167" rx="1"/><polygon points="96.7,56.3 105.3,56.3 105.3,51.7 96.7,51.7" fill="#7d7167" rx="1"/><polygon points="76.4,56.3 85,56.3 85,51.7 76.4,51.7" fill="#7d7167" rx="1"/><g class="vvy-seated-top vvy-you"><polygon points="54.9,74.4 65.7,74.4 64.7,81 54.8,81" fill="#1a232b"/><polygon points="54.2,75.1 66.3,75.1 67.8,57.9 52.7,57.9" fill="url(#pboA-r3)"/><polygon points="52.7,58.8 50.6,60.3 51.5,73.2 53.4,73.2" fill="#192129"/><polygon points="67.8,58.8 70,60.3 68.6,73.2 66.8,73.2" fill="#192129"/><circle cx="60.3" cy="54" r="3.7" fill="url(#pboA-r3)"/><circle cx="59.2" cy="52.7" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="59.1" cy="53.8" r="0.4"/><circle cx="61.5" cy="53.8" r="0.4"/><path d="M58.8 55.1 Q60.3 56.8 61.8 55.1" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-dog vvy-dog-top"><ellipse cx="70.8" cy="43.3" rx="5.7" ry="7.9" fill="url(#pboA-dogo)"/><circle cx="70.8" cy="35.1" r="5.2" fill="#6b4f3a"/><ellipse cx="65.8" cy="34.1" rx="1.7" ry="3.1" fill="#4e3727"/><ellipse cx="75.8" cy="34.1" rx="1.7" ry="3.1" fill="#4e3727"/><g fill="#fff" opacity="0.92"><circle cx="69" cy="34.3" r="0.6"/><circle cx="72.6" cy="34.3" r="0.6"/><circle cx="70.8" cy="36.4" r="0.8" fill="#1f2933"/><path d="M68.7 37.4 Q70.8 39.5 72.9 37.4" fill="none" stroke="#fff" stroke-width="0.7" stroke-linecap="round"/></g><ellipse cx="70.8" cy="39.2" rx="1" ry="1.6" fill="#e8848f"/></g><polygon points="46.6,89.7 114.9,89.7 114.5,76.7 46.9,76.7" fill="#1c2c3c"/><ellipse cx="59.9" cy="70.2" rx="6.5" ry="3.5" fill="none" stroke="#16222f" stroke-width="1.4"/><polygon points="45.7,89.7 115.8,89.7 112.3,63.1 49.1,63.1" fill="url(#pboA-glasso)" opacity="0.18" stroke="#24405c" stroke-width="0.4" stroke-opacity="0.5"/><polygon points="48.8,111.6 112.6,111.6 122.1,108.5 118.5,89.7 43,89.7 39.3,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><polyline points="53.2,103.9 108.3,103.9" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.22"/></g><text x="42.9" y="62.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">2nd row</text><text x="42.9" y="68.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="118.6" y="63.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text><text x="41.2" y="78.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">Front</text><text x="41.2" y="84.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="120.3" y="79.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text><text x="77" y="120.6" text-anchor="middle" font-size="3.8" fill="#7b8794" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">who sits where · room is measured in the profile view</text></svg></div>
+    <div id="scene" class="scene">
+      <div class="pane a" id="paneA"><svg class="vvy-svg" viewBox="0 0 442.3 107.4" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scaled comparison of a person against Ram 1500 — Crew Cab 5'7&quot; Bed 4x2"><defs><linearGradient id="vvy-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6d9dd"/><stop offset="0.45" stop-color="#e4e7eb"/><stop offset="1" stop-color="#edeff2"/></linearGradient><linearGradient id="vvy-bodyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7991aa"/><stop offset="0.45" stop-color="#436587"/><stop offset="1" stop-color="#2f4962"/></linearGradient><linearGradient id="vvy-glassA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6d5e2"/><stop offset="0.45" stop-color="#aec4d6"/><stop offset="1" stop-color="#98adbe"/></linearGradient><clipPath id="vvy-cbA0"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z"/></clipPath><clipPath id="vvy-cgA1"><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46"/></clipPath><clipPath id="vvy-ctA2"><rect x="163.2" y="12" width="241.7" height="29"/></clipPath><radialGradient id="vvy-tireA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#2b3238"/><stop offset="0.62" stop-color="#20272e"/><stop offset="0.86" stop-color="#484e54"/><stop offset="1" stop-color="#15191e"/></radialGradient><radialGradient id="vvy-rimA" cx="0.5" cy="0.5" r="0.5" fx="0.42" fy="0.4"><stop offset="0" stop-color="#777f88"/><stop offset="0.55" stop-color="#98a3ae"/><stop offset="1" stop-color="#bcc3ca"/></radialGradient><radialGradient id="vvy-dishA" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="0.7" stop-color="#000" stop-opacity="0.05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="vvy-p3" gradientUnits="userSpaceOnUse" x1="30.4" y1="0" x2="51.4" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="vvy-p4" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="75.5" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="vvy-p5" gradientUnits="userSpaceOnUse" x1="80.1" y1="0" x2="95.1" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-p6" gradientUnits="userSpaceOnUse" x1="99.6" y1="0" x2="112.5" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="vvy-dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient></defs><rect x="0" y="91.4" width="442.3" height="16" fill="url(#vvy-ground)" opacity="0.7"/><line x1="0" y1="91.4" x2="442.3" y2="91.4" stroke="#9aa5b1" stroke-width="0.6"/><line x1="0" y1="79.4" x2="442.3" y2="79.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="67.4" x2="442.3" y2="67.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="55.4" x2="442.3" y2="55.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="43.4" x2="442.3" y2="43.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="31.4" x2="442.3" y2="31.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><line x1="0" y1="19.4" x2="442.3" y2="19.4" stroke="#cbd2d9" stroke-width="0.22" stroke-dasharray="1.6 2.4"/><g class="vvy-shadow"><ellipse cx="284.1" cy="92.2" rx="122.3" ry="3" fill="#1f2933" opacity="0.07"/><ellipse cx="284.1" cy="92.2" rx="109.2" ry="2" fill="#1f2933" opacity="0.2"/></g><g class="vvy-veh vvy-veh-A"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="url(#vvy-bodyA)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><g clip-path="url(#vvy-cbA0)"><rect x="165.6" y="72" width="237" height="13.8" fill="#000" opacity="0.16"/><ellipse cx="206.5" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><ellipse cx="351.1" cy="74.5" rx="20.6" ry="19.9" fill="#000" opacity="0.22"/><g clip-path="url(#vvy-ctA2)"><path d="M167.9 78.8 L167.9 53.5 L174.9 49.2 L212.4 48 L248.8 46.9 L266.9 14 L322.7 14 L325.4 42.1 L327.8 43.8 L398.9 43.8 L400.3 47.3 L400.3 74.6 L397 77.4 L387.3 78.8 L384 83.1 L184.1 83.1 Z" fill="none" stroke="#fff" stroke-width="1.6" opacity="0.28" stroke-linejoin="round"/></g><rect x="165.6" y="45.8" width="237" height="3.5" fill="#fff" opacity="0.07"/></g><polygon points="252,46 269.7,16.2 319.9,16.2 319.9,46" fill="url(#vvy-glassA)" opacity="0.85"/><g clip-path="url(#vvy-cgA1)"><polygon points="260.1,15.2 272.4,15.2 262.9,47 253.4,47" fill="#fff" opacity="0.28"/><polygon points="276.4,15.2 279.8,15.2 270.3,47 267.6,47" fill="#fff" opacity="0.16"/><rect x="250" y="39.4" width="71.9" height="8.9" fill="#000" opacity="0.14"/></g><g transform="translate(206.5 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g><g transform="translate(351.1 74.5)"><circle r="16.9" fill="url(#vvy-tireA)"/><circle r="15.7" fill="none" stroke="#fff" stroke-width="0.84" opacity="0.14" stroke-dasharray="27 101.2" transform="rotate(-150)"/><g><circle r="8.8" fill="url(#vvy-rimA)"/><line x1="0" y1="0" x2="7.76" y2="0" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="-6.28" y2="-4.56" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><line x1="0" y1="0" x2="2.4" y2="-7.38" stroke="#20272e" stroke-width="2.36" stroke-linecap="round"/><circle r="8.8" fill="url(#vvy-dishA)"/><circle r="2.2" fill="#20272e"/><circle cx="-0.51" cy="-0.51" r="1" fill="#fff" opacity="0.35"/></g></g></g><line x1="10.5" y1="14" x2="419.2" y2="14" stroke="#1f4e79" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="12.8" text-anchor="end" font-size="3.9" fill="#1f4e79" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">77.4 in roof</text><line x1="10.5" y1="56.6" x2="419.2" y2="56.6" stroke="#0b7285" stroke-width="0.45" stroke-dasharray="3 2"/><text x="440.8" y="55.4" text-anchor="end" font-size="3.9" fill="#0b7285" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">34.8 in bed</text><g class="vvy-shadow"><ellipse cx="40.9" cy="92" rx="12.5" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="40.9" cy="92" rx="11.2" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-person" fill="url(#vvy-p3)"><polygon points="33,34.1 30.2,36.2 29.2,48 28.4,57.9 30.6,58.1 32.6,48 34.1,36.9" fill="#161d24"/><polygon points="40,59.2 33.7,58.6 34,68.3 35.3,81.6 35.5,91.4 39,91.4 39.2,81.6 40.3,70.4" fill="#182028"/><polygon points="41.7,59.2 48,58.6 47.7,68.3 46.5,81.6 46.2,91.4 42.7,91.4 42.5,81.6 41.4,70.4"/><polygon points="38.8,29.9 43,29.9 44.7,32.3 48.7,34 48.3,38.2 46.6,46.6 46.2,49.4 47.7,54.3 47.9,58.5 41.8,59.6 39.9,59.6 33.9,58.5 34,54.3 35.5,49.4 35.1,46.6 33.4,38.2 33,34 37,32.3"/><polygon points="48.7,34.1 51.5,36.2 52.5,48 53.3,57.9 51.1,58.1 49.1,48 47.6,36.9"/><ellipse cx="40.9" cy="26" rx="3" ry="4.6"/><ellipse cx="39.6" cy="23.9" rx="1" ry="1.4" fill="#fff" opacity="0.2"/><ellipse cx="40.9" cy="30.4" rx="2.1" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="39.8" cy="25.1" r="0.4"/><circle cx="41.9" cy="25.1" r="0.4"/><path d="M39.5 26.8 Q40.9 28.1 42.3 26.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="65.8" cy="92" rx="11.6" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="65.8" cy="92" rx="10.4" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-adult" fill="url(#vvy-p4)"><polygon points="58.5,38.2 55.9,40.2 55,51.1 54.2,60.3 56.3,60.5 58.1,51.1 59.5,40.8" fill="#2b3743"/><polygon points="65,61.5 59.1,61 59.4,70 60.6,82.3 60.8,91.4 64.1,91.4 64.2,82.3 65.3,71.9" fill="#303e4b"/><polygon points="66.6,61.5 72.4,61 72.1,70 71,82.3 70.7,91.4 67.5,91.4 67.3,82.3 66.3,71.9"/><polygon points="63.8,34.3 67.7,34.3 69.4,36.5 73.1,38.1 72.7,42 71.1,49.8 70.7,52.4 72.1,57 72.3,60.9 66.7,61.8 64.9,61.8 59.3,60.9 59.4,57 60.8,52.4 60.4,49.8 58.9,42 58.5,38.1 62.2,36.5"/><polygon points="73.1,38.2 75.7,40.2 76.6,51.1 77.3,60.3 75.3,60.5 73.4,51.1 72,40.8"/><ellipse cx="65.8" cy="30.7" rx="2.8" ry="4.3"/><ellipse cx="64.6" cy="28.7" rx="0.9" ry="1.3" fill="#fff" opacity="0.2"/><ellipse cx="65.8" cy="34.7" rx="2" ry="0.8" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="64.8" cy="29.9" r="0.4"/><circle cx="66.8" cy="29.9" r="0.4"/><path d="M64.5 31.4 Q65.8 32.6 67.1 31.4" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="87.6" cy="92" rx="9" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="87.6" cy="92" rx="8" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p5)"><polygon points="82,50.5 80,52 79.3,60.4 78.7,67.5 80.3,67.6 81.7,60.4 82.8,52.5" fill="#435868"/><polygon points="87,68.4 82.5,68 82.7,74.9 83.6,84.4 83.8,91.4 86.3,91.4 86.4,84.4 87.2,76.4" fill="#4a6274"/><polygon points="88.2,68.4 92.7,68 92.5,74.9 91.6,84.4 91.4,91.4 88.9,91.4 88.8,84.4 88,76.4"/><polygon points="86.1,47.5 89.1,47.5 90.4,49.2 93.2,50.4 92.9,53.4 91.7,59.4 91.4,61.4 92.5,64.9 92.6,67.9 88.3,68.7 86.9,68.7 82.6,67.9 82.7,64.9 83.8,61.4 83.5,59.4 82.3,53.4 82,50.4 84.9,49.2"/><polygon points="93.2,50.5 95.2,52 95.9,60.4 96.5,67.5 94.9,67.6 93.5,60.4 92.4,52.5"/><ellipse cx="87.6" cy="44.7" rx="2.2" ry="3.3"/><ellipse cx="86.7" cy="43.2" rx="0.7" ry="1" fill="#fff" opacity="0.2"/><ellipse cx="87.6" cy="47.8" rx="1.5" ry="0.6" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="86.9" cy="44.1" r="0.4"/><circle cx="88.4" cy="44.1" r="0.4"/><path d="M86.6 45.3 Q87.6 46.2 88.6 45.3" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-shadow"><ellipse cx="106" cy="92" rx="7.7" ry="2.1" fill="#1f2933" opacity="0.06"/><ellipse cx="106" cy="92" rx="6.9" ry="1.4" fill="#1f2933" opacity="0.18"/></g><g class="vvy-fam vvy-kid" fill="url(#vvy-p6)"><polygon points="101.2,56.2 99.5,57.5 98.9,64.7 98.4,70.8 99.7,70.9 100.9,64.7 101.9,57.9" fill="#435868"/><polygon points="105.5,71.6 101.6,71.3 101.8,77.2 102.6,85.4 102.7,91.4 104.9,91.4 105,85.4 105.7,78.5" fill="#4a6274"/><polygon points="106.5,71.6 110.4,71.3 110.2,77.2 109.5,85.4 109.3,91.4 107.1,91.4 107,85.4 106.4,78.5"/><polygon points="104.7,53.6 107.3,53.6 108.4,55.1 110.8,56.1 110.6,58.7 109.5,63.9 109.3,65.6 110.2,68.6 110.3,71.2 106.6,71.8 105.4,71.8 101.7,71.2 101.8,68.6 102.7,65.6 102.5,63.9 101.5,58.7 101.2,56.1 103.7,55.1"/><polygon points="110.8,56.2 112.6,57.5 113.2,64.7 113.7,70.8 112.3,70.9 111.1,64.7 110.1,57.9"/><ellipse cx="106" cy="51.2" rx="1.9" ry="2.8"/><ellipse cx="105.2" cy="49.9" rx="0.6" ry="0.9" fill="#fff" opacity="0.2"/><ellipse cx="106" cy="53.9" rx="1.3" ry="0.5" fill="#000" opacity="0.18"/><g class="vvy-face" fill="#fff" opacity="0.9"><circle cx="105.4" cy="50.7" r="0.4"/><circle cx="106.7" cy="50.7" r="0.4"/><path d="M105.2 51.7 Q106 52.5 106.9 51.7" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g pointer-events="none"><g class="vvy-shadow"><ellipse cx="132.3" cy="92" rx="17.9" ry="2" fill="#1f2933" opacity="0.06"/><ellipse cx="132.3" cy="92" rx="16" ry="1.3" fill="#1f2933" opacity="0.18"/></g><g class="vvy-dog" fill="url(#vvy-dog)"><rect x="122.3" y="79.4" width="3" height="12" fill="#4d392a"/><rect x="135.3" y="79.4" width="3" height="12" fill="#4d392a"/><path d="M120.3 72.4 L140.3 70.4 L142.3 77.4 L122.3 79.4 Z"/><path d="M140.3 70.4 L143.3 64.4 L150.3 66.4 L149.3 71.4 L144.3 73.4 Z"/><path d="M143.3 64.4 L141.3 60.4 L145.3 63.4 Z"/><g class="vvy-tail"><path d="M120.3 72.4 L115.3 65.4 L117.3 64.4 L122.3 71.4 Z"/></g><rect x="128.3" y="79.4" width="3" height="12"/><rect x="139.3" y="79.4" width="3" height="12"/><path d="M122.3 73 L139.3 71.1" stroke="#fff" stroke-width="0.9" stroke-linecap="round" opacity="0.18" fill="none"/><circle cx="146.8" cy="67.4" r="0.7" fill="#1f2933"/><path d="M145.8 70.2 Q148.1 71.8 149.9 70.4" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/><ellipse cx="148.3" cy="71.8" rx="0.9" ry="1.3" fill="#e8848f"/></g></g><text x="105.8" y="97.6" text-anchor="middle" font-size="3.6" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">1 more adult · 2 kids · 1 dog (22 in at the shoulder)</text><line x1="9" y1="91.4" x2="9" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="21.4" x2="11" y2="21.4" stroke="#1f2933" stroke-width="0.5"/><line x1="7" y1="91.4" x2="11" y2="91.4" stroke="#1f2933" stroke-width="0.5"/><text x="40.9" y="97.6" text-anchor="middle" font-size="4.4" font-weight="600" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif">You &#183; 5' 10&quot;</text></svg></div>
+      <button type="button" class="fold" id="foldBtn" aria-expanded="false" aria-controls="paneB" data-live disabled><span class="fchev">&#9662;</span> Seats &#183; who sits where</button>
+      <div class="pane b" id="paneB"><svg class="vvy-svg vvy-inside" viewBox="0 0 154.1 117.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the Ram 1500: who sits where. Headroom is judged in the profile view."><defs><linearGradient id="pboA-bodyo" gradientUnits="userSpaceOnUse" x1="34.5" y1="0" x2="126.9" y2="0"><stop offset="0" stop-color="#6985a0"/><stop offset="0.55" stop-color="#3f6285"/><stop offset="1" stop-color="#2d4760"/></linearGradient><linearGradient id="pboA-seato" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a59a91"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#645b52"/></linearGradient><linearGradient id="pboA-backo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b0a79f"/><stop offset="0.45" stop-color="#8b7e72"/><stop offset="1" stop-color="#7a6f64"/></linearGradient><linearGradient id="pboA-r0" gradientUnits="userSpaceOnUse" x1="54.3" y1="0" x2="68.3" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-r1" gradientUnits="userSpaceOnUse" x1="94.2" y1="0" x2="106.2" y2="0"><stop offset="0" stop-color="#829aac"/><stop offset="0.55" stop-color="#5f7d95"/><stop offset="1" stop-color="#445a6b"/></linearGradient><linearGradient id="pboA-dogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c7665"/><stop offset="0.45" stop-color="#6b4f3a"/><stop offset="1" stop-color="#4b3729"/></linearGradient><linearGradient id="pboA-r2" gradientUnits="userSpaceOnUse" x1="50.5" y1="0" x2="70.1" y2="0"><stop offset="0" stop-color="#505860"/><stop offset="0.55" stop-color="#1f2933"/><stop offset="1" stop-color="#161e25"/></linearGradient><linearGradient id="pboA-r3" gradientUnits="userSpaceOnUse" x1="92.1" y1="0" x2="110.3" y2="0"><stop offset="0" stop-color="#687683"/><stop offset="0.55" stop-color="#3d4f60"/><stop offset="1" stop-color="#2c3945"/></linearGradient><linearGradient id="pboA-glasso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7d6e2"/><stop offset="0.45" stop-color="#b2c6d7"/><stop offset="1" stop-color="#a1b6c8"/></linearGradient></defs><ellipse cx="80.7" cy="69.8" rx="47" ry="47.6" fill="#1f2933" opacity="0.08"/><polygon points="124.3,104.9 115.6,104.9 114.5,98.1 122.9,98.1" fill="#20272e" rx="2"/><polygon points="45.8,104.9 37.1,104.9 38.5,98.1 47,98.1" fill="#20272e" rx="2"/><polygon points="116.5,49.2 109.3,49.2 108.2,37 115.1,37" fill="#20272e" rx="2"/><polygon points="52.1,49.2 44.9,49.2 46.4,37 53.2,37" fill="#20272e" rx="2"/><g class="vvy-veh vvy-veh-A"><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 49.8,26.6 56.5,20 104.9,20 111.7,26.6 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.5" stroke-linejoin="round"/><polygon points="111.4,54.2 50,54.2 53.2,21.4 108.2,21.4" fill="#203143"/><polyline points="110.9,48.8 50.6,48.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="110.3,43.3 51.1,43.3" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.8,37.8 51.6,37.8" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="109.3,32.4 52.2,32.4" fill="none" stroke="#182533" stroke-width="0.5"/><polyline points="108.8,26.9 52.7,26.9" fill="none" stroke="#182533" stroke-width="0.5"/><polygon points="114.9,89.7 46.6,89.7 49.9,55.2 111.5,55.2" fill="#f3eee4"/><polygon points="118.5,89.7 114,89.7 110.7,55.2 114.7,55.2" fill="#294056"/><polygon points="47.5,89.7 43,89.7 46.7,55.2 50.7,55.2" fill="#324e6a"/><polygon points="111.9,67.8 49.5,67.8 50.4,58.4 111,58.4" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.1,67.8 90.8,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="70.3,67.8 70.6,58.4" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="111,58.4 50.4,58.4 50.6,41.4 110.9,41.4" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="104.1,41.1 96,41.1 95.9,36.8 104.1,36.8" fill="#7d7167" rx="1"/><polygon points="65.5,41.1 57.3,41.1 57.4,36.8 65.5,36.8" fill="#7d7167" rx="1"/><polygon points="84.8,41.1 76.6,41.1 76.6,36.8 84.8,36.8" fill="#7d7167" rx="1"/><g class="vvy-seated-top"><polygon points="103.9,58.5 96.5,58.5 97.2,62.9 103.9,62.9" fill="#516a7f"/><polygon points="104.3,59.2 96.1,59.2 95,47.6 105.3,47.6" fill="url(#pboA-r0)"/><polygon points="105.3,48.3 106.8,49.3 106.1,58.2 104.9,58.2" fill="#4c6477"/><polygon points="95,48.3 93.6,49.3 94.5,58.2 95.8,58.2" fill="#4c6477"/><circle cx="100.2" cy="45" r="2.5" fill="url(#pboA-r0)"/><circle cx="99.4" cy="44.1" r="0.7" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="99.4" cy="44.9" r="0.4"/><circle cx="101" cy="44.9" r="0.4"/><path d="M99.2 45.8 Q100.2 46.9 101.2 45.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="64.4,58.5 58.1,58.5 58.1,62.1 63.8,62.1" fill="#516a7f"/><polygon points="64.8,59.2 57.7,59.2 56.8,49.4 65.7,49.4" fill="url(#pboA-r1)"/><polygon points="65.7,49.9 66.9,50.8 66.1,58.4 65,58.4" fill="#4c6477"/><polygon points="56.8,49.9 55.6,50.8 56.2,58.4 57.2,58.4" fill="#4c6477"/><circle cx="61.3" cy="47.1" r="2.2" fill="url(#pboA-r1)"/><circle cx="60.6" cy="46.3" r="0.6" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="60.6" cy="47" r="0.4"/><circle cx="62" cy="47" r="0.4"/><path d="M60.4 47.8 Q61.3 48.7 62.2 47.8" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-dog vvy-dog-top"><ellipse cx="80.7" cy="57.7" rx="5.5" ry="7.2" fill="url(#pboA-dogo)"/><circle cx="80.7" cy="49.8" r="5" fill="#6b4f3a"/><ellipse cx="76" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><ellipse cx="85.4" cy="48.8" rx="1.6" ry="3" fill="#4e3727"/><g fill="#fff" opacity="0.92"><circle cx="79" cy="49.1" r="0.6"/><circle cx="82.4" cy="49.1" r="0.6"/><circle cx="80.7" cy="51" r="0.8" fill="#1f2933"/><path d="M78.7 52 Q80.7 54 82.7 52" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round"/></g><ellipse cx="80.7" cy="53.7" rx="1" ry="1.5" fill="#e8848f"/></g><polygon points="113.4,83.7 48,83.7 48.9,74.3 112.5,74.3" fill="url(#pboA-seato)" stroke="#615850" stroke-width="0.35"/><polyline points="91.6,83.7 91.3,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polyline points="69.8,83.7 70.1,74.3" fill="none" stroke="#615850" stroke-width="0.35"/><polygon points="112.5,74.3 48.9,74.3 49.1,56.5 112.4,56.5" fill="url(#pboA-backo)" stroke="#615850" stroke-width="0.35"/><polygon points="105.3,56.3 96.7,56.3 96.7,51.7 105.3,51.7" fill="#7d7167" rx="1"/><polygon points="64.7,56.3 56.1,56.3 56.2,51.7 64.7,51.7" fill="#7d7167" rx="1"/><polygon points="85,56.3 76.4,56.3 76.4,51.7 85,51.7" fill="#7d7167" rx="1"/><g class="vvy-seated-top vvy-you"><polygon points="106.6,74.4 95.7,74.4 96.7,81 106.6,81" fill="#1a232b"/><polygon points="107.2,75.1 95.1,75.1 93.6,57.9 108.7,57.9" fill="url(#pboA-r2)"/><polygon points="108.7,58.8 110.8,60.3 109.9,73.2 108.1,73.2" fill="#192129"/><polygon points="93.6,58.8 91.5,60.3 92.8,73.2 94.6,73.2" fill="#192129"/><circle cx="101.2" cy="54" r="3.7" fill="url(#pboA-r2)"/><circle cx="100.1" cy="52.7" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="100" cy="53.8" r="0.4"/><circle cx="102.4" cy="53.8" r="0.4"/><path d="M99.7 55.1 Q101.2 56.8 102.7 55.1" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><g class="vvy-seated-top"><polygon points="65.3,74.4 55.2,74.4 55.2,80.4 64.4,80.4" fill="#344352"/><polygon points="65.9,75.1 54.7,75.1 53.3,59.1 67.3,59.1" fill="url(#pboA-r3)"/><polygon points="67.3,60 69.3,61.4 68,73.4 66.3,73.4" fill="#313f4d"/><polygon points="53.3,60 51.3,61.4 52.2,73.4 53.9,73.4" fill="#313f4d"/><circle cx="60.3" cy="55.6" r="3.5" fill="url(#pboA-r3)"/><circle cx="59.3" cy="54.4" r="1" fill="#fff" opacity="0.2"/><g fill="#fff" opacity="0.92"><circle cx="59.2" cy="55.4" r="0.4"/><circle cx="61.4" cy="55.4" r="0.4"/><path d="M58.9 56.6 Q60.3 58.2 61.7 56.6" fill="none" stroke="#fff" stroke-width="0.4" stroke-linecap="round"/></g></g><polygon points="114.9,89.7 46.6,89.7 46.9,76.7 114.5,76.7" fill="#1c2c3c"/><ellipse cx="101.5" cy="70.2" rx="6.5" ry="3.5" fill="none" stroke="#16222f" stroke-width="1.4"/><polygon points="115.8,89.7 45.7,89.7 49.1,63.1 112.3,63.1" fill="url(#pboA-glasso)" opacity="0.18" stroke="#24405c" stroke-width="0.4" stroke-opacity="0.5"/><polygon points="112.6,111.6 48.8,111.6 39.3,108.5 43,89.7 118.5,89.7 122.1,108.5" fill="url(#pboA-bodyo)" stroke="#24405c" stroke-width="0.45" stroke-linejoin="round"/><polyline points="108.3,103.9 53.2,103.9" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.22"/></g><text x="42.9" y="62.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">2nd row</text><text x="42.9" y="68.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="118.6" y="63.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text><text x="41.2" y="78.6" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">Front</text><text x="41.2" y="84.1" text-anchor="end" font-size="4" fill="#52606d" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">bench · 3</text><text x="120.3" y="79.6" font-size="5" font-weight="700" fill="#0b5b32" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">fine</text></svg></div>
     </div>
   </section>
 
@@ -438,14 +451,14 @@ table.rank td.fitc.none i { font-size: 10px; }
   <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab; a 5'10" driver, a 5'5" adult, two kids and a dog). Enable JavaScript for the controls.</p></noscript>
 
   <section class="facts">
-    <div id="fitLine"><div class="vvy-fit ok">Fits: 4 of 6 seats used, 2 spare. Dogs: 1 dog will most likely need the rear seats folded or the bed used.</div></div>
+    <div id="fitLine"><div class="vvy-fit ok">Fits: 5 of 6 seats used (1 by a dog), 1 spare.</div></div>
     <h2 id="vehTitle">2026 Ram 1500</h2>
     <p id="vehSub">Crew Cab 5&#x27;7&quot; Bed 4x2</p>
     <div id="specs"><dl class="vvy-specs"><div class="vvy-spec"><dt>Overall height</dt><dd>77.4 in (6'5&quot;)</dd></div><div class="vvy-spec"><dt>Length</dt><dd>232.4 in (19'4&quot;)</dd></div><div class="vvy-spec"><dt>Wheelbase</dt><dd>144.6 in (12'1&quot;)</dd></div><div class="vvy-spec"><dt>Ground clearance</dt><dd>8.3 in (0'8&quot;)</dd></div><div class="vvy-spec"><dt>Curb weight</dt><dd>4,917 lb</dd></div><div class="vvy-spec"><dt>Bed floor height</dt><dd>34.8 in (2'11&quot;)</dd></div><div class="vvy-spec"><dt>Bed length</dt><dd>67.4 in (5'7&quot;)</dd></div><div class="vvy-spec"><dt>2nd-row headroom</dt><dd>39.9 in (3'4&quot;)</dd></div><div class="vvy-spec"><dt>2nd-row legroom</dt><dd>44.8 in (3'9&quot;)</dd></div><div class="vvy-spec"><dt>Cargo, seats folded</dt><dd>72 cu ft</dd></div><div class="vvy-spec"><dt>Max towing</dt><dd>7,660 lb</dd></div><div class="vvy-spec"><dt>Max payload</dt><dd>2,412 lb</dd></div><div class="vvy-spec"><dt>Seating</dt><dd>6 seats, 2 rows <span class="vvy-note">≈</span></dd></div></dl></div>
     <h3 class="sec">How it lines up with you</h3>
     <div id="comps"><ul class="vvy-comps"><li>The roof clears the top of your head by 7.4 in.</li><li>The bed floor is level with your wrists.</li><li>The lowest point of the body is 8.3 in off the ground — your ankles on you.</li><li>Each tire stands 33.7 in tall — your wrists on you (≈ stock tire size not on file).</li><li>Stood on its nose it would be 3.3× your height.</li><li class="vvy-missing">No published hood height for this configuration — omitted rather than estimated.</li></ul></div>
     <h3 class="sec">Back-seat room for your crew</h3>
-    <div id="room"><p class="vvy-room gen">Second row: roomy enough for adults on a long drive (39.9 in headroom, 44.8 in legroom).</p><ul class="vvy-room list"><li class="ok">Your 5' 5&quot; adult should be comfortable in the second row, even on a long drive.</li><li class="ok">Your 4' 2&quot; kid should be comfortable in the second row, even on a long drive.</li><li class="ok">Your 3' 7&quot; kid should be comfortable in the second row, even on a long drive.</li></ul><p class="vvy-room caveat">Guidance, not a verdict: seat height, cushion angle and how far the front seats are set change real-world room by inches.</p></div>
+    <div id="room"><p class="vvy-room gen">Second row: roomy enough for adults on a long drive (39.9 in headroom, 44.8 in legroom).</p><ul class="vvy-room list"><li class="ok">Your 5' 5&quot; adult rides up front (40.9 in legroom).</li><li class="ok">Your 4' 2&quot; kid should be comfortable in the second row, even on a long drive.</li><li class="ok">Your 3' 7&quot; kid should be comfortable in the second row, even on a long drive.</li><li class="ok">Your dog takes a seat in the second row.</li></ul><p class="vvy-room caveat">Guidance, not a verdict: seat height, cushion angle and how far the front seats are set change real-world room by inches.</p></div>
     <div id="srcNote"><p class="vvy-src">Dimensions: 2026 Ram 1500 Specifications, Stellantis media press kit; curb weight ramtrucks.com Tradesman 4x2 3.6L.</p></div>
     <div id="cmpWrap" style="display:none">
       <h3 class="sec" id="cmpTitle"></h3>
@@ -535,7 +548,7 @@ table.rank td.fitc.none i { font-size: 10px; }
       <span id="heightOut" style="display:none"></span><span id="adultsVal" style="display:none"></span><span id="kidsVal" style="display:none"></span>
       <div id="fitBox"></div>
       <div id="roomBox"></div>
-      <p class="hint">One seat per rider. Dogs don't take a seat, but they usually need a rear row folded for space. Cats, as everyone knows, go wherever they please. Seat counts are the standard seating for the trim shown.</p>
+      <p class="hint">One seat per rider — and per dog: a dog takes a seat like a passenger. When the seats run out it rides in the cargo bay (if the published space is big enough) or the bed of a pickup; a sedan's trunk doesn't count. Seating order: you drive, the second adult rides up front, everyone else fills the rear rows, and a front bench middle seat is used last (by a dog before a person). Cats, as everyone knows, take nothing and go wherever they please. Seat counts are the standard seating for the trim shown.</p>
     </section>
 
     <!-- ---- Card: Find (one filter state shared with search, fit, rankings, compare) ---- -->
@@ -1494,25 +1507,136 @@ var VVY = (function () {
     return o.join('');
   }
 
-  /* ---------------- occupancy ----------------
-     party = { adults, kids, pets } -> { fits, people, seats, spare, petNote, text, cls } */
+  /* ---------------- seating: ONE model used everywhere ----------------
+     seatEveryone(cfg, party) places every rider AND every dog:
+       1. driver's seat      — the reference person (you)
+       2. front passenger    — the second adult (first adult in the party)
+       3. everyone else      — rear rows, row 2 then row 3, in the order given
+       4. front bench middle — filled LAST of all, and preferentially by a dog
+     Dogs take a seat like a passenger. When seats run out a dog goes in the cargo bay (hatch /
+     crossover / SUV / minivan / wagon / van with a published cargo figure of CARGO_PER_DOG cu ft per
+     dog behind the last row) or the bed of a pickup. A sedan/coupe trunk is not a place for a dog.
+     Cats take nothing and go where they please.
+     Seat index within a row: 0 = driver side, 1 = far side, 2 = middle (drawn on the right in the
+     overhead view, which looks at a left-hand-drive car from the hood). */
+  var CARGO_PER_DOG = 12;
+  function seatLayout(cfg) {
+    var rows = has(cfg.rows) ? Math.max(1, Math.min(3, cfg.rows)) : 2, seats = has(cfg.seats) ? cfg.seats : 5;
+    var front = (seats >= 6 && rows <= 2 && cfg.bedLen) ? 3 : 2;
+    if (rows < 2) { front = Math.min(3, seats); }
+    var r2 = rows < 2 ? 0 : (rows >= 3 ? Math.min(3, seats - front - 2) : seats - front);
+    if (r2 < 0) { r2 = 0; }
+    var r3 = rows >= 3 ? Math.max(0, seats - front - r2) : 0;
+    var out = [{ n: 1, seats: front, bench: front === 3 }];
+    if (rows >= 2) { out.push({ n: 2, seats: r2, bench: r2 >= 3 }); }
+    if (rows >= 3) { out.push({ n: 3, seats: Math.min(3, r3), bench: r3 >= 2 }); }
+    return out;
+  }
+  function dogSpace(cfg) {
+    var t = cfg.template || 'sedan';
+    if (/^pickup/.test(t) || has(cfg.bedLen)) { return { kind: 'bed', dogs: 99 }; }
+    if (t === 'sedan' || t === 'coupe' || t === 'wedge') { return { kind: 'none', dogs: 0 }; }
+    var c = has(cfg.cargo3) ? cfg.cargo3 : (has(cfg.cargo2) ? cfg.cargo2 : null);
+    if (c === null) { return { kind: 'unknown', dogs: 0 }; }
+    return { kind: 'cargo', dogs: Math.floor(c / CARGO_PER_DOG), cuft: c };
+  }
+  function seatEveryone(cfg, party) {
+    party = party || {};
+    var you = { h: has(party.person) ? party.person : 70, kind: 'adult', you: true };
+    var people = party.people || [], nDogs = Math.min(party.dogs || 0, 12);
+    var lay = seatLayout(cfg), rowsN = has(cfg.rows) ? cfg.rows : null, seatsN = has(cfg.seats) ? cfg.seats : null;
+    var occ = {}, i, k, r;   /* occ[row] = [ {p|dog} per seat index ] */
+    for (k = 0; k < lay.length; k++) { occ[lay[k].n] = []; for (i = 0; i < lay[k].seats; i++) { occ[lay[k].n].push(null); } }
+    var placed = [], unseated = [];
+    function put(p, row, seat) { occ[row][seat] = p; placed.push({ p: p, row: row, seat: seat }); }
+    /* 1. driver */
+    if (occ[1] && occ[1].length) { put(you, 1, 0); } else { unseated.push(you); }
+    /* 2. front passenger = the first other adult */
+    var rest = people.slice(), ai = -1;
+    for (i = 0; i < rest.length; i++) { if (rest[i].kind !== 'kid') { ai = i; break; } }
+    if (ai >= 0 && occ[1] && occ[1].length > 1) { put(rest[ai], 1, 1); rest.splice(ai, 1); }
+    /* 3. rear rows in the order given: window seats first, middle last */
+    var order = [];
+    for (k = 0; k < lay.length; k++) { if (lay[k].n > 1) { var n = lay[k].seats; if (n >= 1) { order.push([lay[k].n, 0]); } if (n >= 2) { order.push([lay[k].n, 1]); } if (n >= 3) { order.push([lay[k].n, 2]); } } }
+    /* then the front passenger seat if still free; the front bench middle is kept for last */
+    if (occ[1] && occ[1].length > 1 && !occ[1][1]) { order.push([1, 1]); }
+    var oi = 0;
+    while (rest.length && oi < order.length) { put(rest.shift(), order[oi][0], order[oi][1]); oi++; }
+    /* 4. dogs take the remaining seats (rear first, front passenger, bench middle last of all) */
+    var dogsOut = [], free = [];
+    for (k = lay.length - 1; k >= 0; k--) { for (i = 0; i < occ[lay[k].n].length; i++) { if (!occ[lay[k].n][i] && !(lay[k].n === 1 && i === 2)) { free.push([lay[k].n, i]); } } }
+    free.sort(function (x, y) { return (x[0] === 1 ? 1 : 0) - (y[0] === 1 ? 1 : 0) || x[0] - y[0] || x[1] - y[1]; });
+    if (occ[1] && occ[1].length > 2 && !occ[1][2]) { free.push([1, 2]); }
+    var space = dogSpace(cfg), spaceLeft = space.dogs;
+    for (i = 0; i < nDogs; i++) {
+      var dog = { kind: 'dog', h: 22, i: i };
+      if (free.length) { var f = free.shift(); put(dog, f[0], f[1]); dogsOut.push({ dog: dog, place: 'seat', row: f[0], seat: f[1] }); }
+      else if (spaceLeft > 0) { spaceLeft--; dogsOut.push({ dog: dog, place: space.kind }); }
+      else { dogsOut.push({ dog: dog, place: 'none' }); }
+    }
+    /* leftover people: the front bench middle is the very last seat to fill — and if a dog holds a
+       proper seat while a person needs one, the dog moves to the middle and the person takes its seat */
+    while (rest.length) {
+      var mid = (occ[1] && occ[1].length > 2 && !occ[1][2]);
+      if (!mid) { unseated.push(rest.shift()); continue; }
+      var swapped = false;
+      for (i = 0; i < dogsOut.length && !swapped; i++) {
+        var dO = dogsOut[i];
+        if (dO.place === 'seat' && !(dO.row === 1 && dO.seat === 2)) {
+          var pp = rest.shift();
+          occ[dO.row][dO.seat] = pp; placed.push({ p: pp, row: dO.row, seat: dO.seat });
+          for (k = 0; k < placed.length; k++) { if (placed[k].p === dO.dog) { placed[k].row = 1; placed[k].seat = 2; } }
+          occ[1][2] = dO.dog; dO.row = 1; dO.seat = 2; swapped = true;
+        }
+      }
+      if (!swapped) { put(rest.shift(), 1, 2); }
+    }
+    /* people before dogs: if anyone is still standing while a dog holds a seat, the dog gives it up
+       and goes to the cargo bay / bed (or has nowhere to ride) */
+    for (i = dogsOut.length - 1; i >= 0 && unseated.length; i--) {
+      var dE = dogsOut[i];
+      if (dE.place !== 'seat') { continue; }
+      var who = unseated.shift();
+      occ[dE.row][dE.seat] = who; placed.push({ p: who, row: dE.row, seat: dE.seat });
+      for (k = placed.length - 1; k >= 0; k--) { if (placed[k].p === dE.dog) { placed.splice(k, 1); } }
+      if (spaceLeft > 0) { spaceLeft--; dE.place = space.kind; } else { dE.place = 'none'; }
+      delete dE.row; delete dE.seat;
+    }
+    return { layout: lay, occ: occ, placed: placed, unseated: unseated, dogs: dogsOut, space: space, rows: rowsN, seats: seatsN, you: you };
+  }
+  /* row -> riders (people only, in seat order) for the drawing code */
+  function ridersByRow(sea) {
+    var out = { 1: [], 2: [], 3: [], 0: sea.unseated.slice() }, i, r, s, o;
+    for (r = 1; r <= 3; r++) { o = sea.occ[r]; if (!o) { continue; } for (s = 0; s < o.length; s++) { if (o[s] && o[s].kind !== 'dog') { out[r].push(o[s]); } } }
+    return out;
+  }
+
+  /* ---------------- occupancy verdict ----------------
+     party = { person, people, dogs, cats } -> { fits, people, seats, spare, text, cls } */
   function fit(cfg, party) {
-    var people = (party.adults || 0) + (party.kids || 0);
-    var pets = (party.dogs !== undefined ? party.dogs : party.pets) || 0;
+    party = party || {};
+    var people = 1 + (party.people || []).length, dogs = party.dogs || 0;
+    if (party.people === undefined) { people = (party.adults || 0) + (party.kids || 0); }
     var seats = has(cfg.seats) ? cfg.seats : null;
     var rows = has(cfg.rows) ? cfg.rows : null;
     if (seats === null) { return { fits: null, people: people, seats: null, spare: null, text: 'Seat count not on file.', cls: 'unknown' }; }
-    var spare = seats - people;
-    var r = { fits: spare >= 0, people: people, seats: seats, spare: spare, pets: pets, cls: spare >= 0 ? 'ok' : 'no' };
-    var t;
-    if (people === 0 && pets === 0) { t = seats + ' seats in ' + rows + (rows === 1 ? ' row' : ' rows') + '. Add your party to check the fit.'; r.cls = 'idle'; }
-    else if (spare < 0) { t = 'Does not fit: ' + people + ' people need ' + people + ' seats and this ' + ((cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle')) + ' has ' + seats + '. ' + (-spare) + ' ' + (spare === -1 ? 'person' : 'people') + ' would be left behind.'; }
-    else { t = 'Fits: ' + people + ' of ' + seats + ' seats used' + (spare > 0 ? ', ' + spare + ' spare' : ', every seat taken') + '.'; }
-    if (pets > 0) {
-      if (rows === 1) { t += ' Dogs: a single-row vehicle has no rear seats to fold — ' + pets + (pets === 1 ? ' dog would ride ' : ' dogs would ride ') + 'on the floor or a passenger seat' + (cfg.bedLen ? ', or in the bed' : '') + '.'; }
-      else if (rows === 3) { t += ' Dogs: ' + pets + (pets === 1 ? ' dog' : ' dogs') + ' will most likely need the third row folded for cargo space' + (spare >= 0 && spare < 2 && people > 0 ? ' — and with ' + spare + ' spare seat' + (spare === 1 ? '' : 's') + ' that squeezes the people' : '') + '.'; }
-      else { t += ' Dogs: ' + pets + (pets === 1 ? ' dog' : ' dogs') + ' will most likely need the rear seats folded' + (cfg.bedLen ? ' or the bed used' : '') + (spare >= 0 && spare < 2 && people > 0 ? ' — with ' + spare + ' spare seat' + (spare === 1 ? '' : 's') + ' that squeezes the people' : '') + '.'; }
-      r.petNote = true;
+    var sea = seatEveryone(cfg, party), i, seatedDogs = 0, cargoDogs = 0, bedDogs = 0, lostDogs = 0;
+    for (i = 0; i < sea.dogs.length; i++) { if (sea.dogs[i].place === 'seat') { seatedDogs++; } else if (sea.dogs[i].place === 'cargo') { cargoDogs++; } else if (sea.dogs[i].place === 'bed') { bedDogs++; } else { lostDogs++; } }
+    var used = (people - sea.unseated.length) + seatedDogs, spare = seats - used;
+    var fits = sea.unseated.length === 0 && lostDogs === 0;
+    var r = { fits: fits, people: people, seats: seats, spare: spare, pets: dogs, cls: fits ? 'ok' : 'no', seated: sea };
+    var name = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle'), t;
+    if (people === 0 && dogs === 0) { t = seats + ' seats in ' + rows + (rows === 1 ? ' row' : ' rows') + '. Add your party to check the fit.'; r.cls = 'idle'; }
+    else if (!fits) {
+      t = 'Does not fit: ' + people + (people === 1 ? ' person' : ' people') + (dogs ? ' and ' + dogs + (dogs === 1 ? ' dog' : ' dogs') : '') + ' need ' + (people + dogs) + ' seats and this ' + name + ' has ' + seats + '.';
+      if (sea.unseated.length) { t += ' ' + sea.unseated.length + (sea.unseated.length === 1 ? ' person' : ' people') + ' would be left behind.'; }
+      if (lostDogs) {
+        t += ' ' + lostDogs + (lostDogs === 1 ? ' dog has' : ' dogs have') + ' no seat and ' + (sea.space.kind === 'none' ? 'a ' + (cfg.template === 'wedge' ? 'closed bed' : 'trunk') + ' is no place for a dog' : (sea.space.kind === 'unknown' ? 'the cargo space is not on file' : 'the cargo bay (' + sea.space.cuft + ' cu ft) is only big enough for ' + sea.space.dogs + (sea.space.dogs === 1 ? ' dog' : ' dogs'))) + '.';
+      }
+    } else {
+      t = 'Fits: ' + used + ' of ' + seats + ' seats used' + (seatedDogs ? ' (' + seatedDogs + ' by ' + (seatedDogs === 1 ? 'a dog' : 'dogs') + ')' : '') + (spare > 0 ? ', ' + spare + ' spare' : ', every seat taken') + '.';
+      if (cargoDogs) { t += ' ' + cargoDogs + (cargoDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the cargo bay (' + sea.space.cuft + ' cu ft behind the last row).'; }
+      if (bedDogs) { t += ' ' + bedDogs + (bedDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the bed.'; }
     }
     r.text = t;
     return r;
@@ -1539,24 +1663,11 @@ var VVY = (function () {
 
   function rowLabel(n) { return n === 2 ? 'second row' : 'third row'; }
 
-  /* Assign riders to rows: the reference person drives; the others fill row 2, then row 3, then
-     the spare front seat, tallest first, so the guidance is about the seats people would actually use. */
-  function assignRows(cfg, people) {
-    var rows = has(cfg.rows) ? cfg.rows : 2;
-    var seats = has(cfg.seats) ? cfg.seats : 5;
-    var frontSeats = (seats >= 6 && rows <= 2 && cfg.bedLen) ? 3 : 2;
-    if (rows < 2) { frontSeats = seats; }
-    var cap2 = rows < 2 ? 0 : (rows >= 3 ? Math.min(3, seats - frontSeats - 2) : seats - frontSeats);
-    if (cap2 < 0) { cap2 = 0; }
-    var cap3 = rows >= 3 ? seats - frontSeats - cap2 : 0;
-    var out = [], i, front = frontSeats - 1, r2 = cap2, r3 = cap3;
-    var sorted = people.slice().sort(function (a, b) { return b.h - a.h; });
-    for (i = 0; i < sorted.length; i++) {
-      if (r2 > 0) { out.push({ p: sorted[i], row: 2 }); r2--; }
-      else if (r3 > 0) { out.push({ p: sorted[i], row: 3 }); r3--; }
-      else if (front > 0) { out.push({ p: sorted[i], row: 1 }); front--; }
-      else { out.push({ p: sorted[i], row: 0 }); }
-    }
+  /* people (excluding you) -> [{p,row}] in the shared seating order; row 0 = no seat */
+  function assignRows(cfg, people, person) {
+    var sea = seatEveryone(cfg, { person: person, people: people, dogs: 0 }), out = [], i;
+    for (i = 0; i < sea.placed.length; i++) { if (!sea.placed[i].p.you && sea.placed[i].p.kind !== 'dog') { out.push({ p: sea.placed[i].p, row: sea.placed[i].row }); } }
+    for (i = 0; i < sea.unseated.length; i++) { if (!sea.unseated[i].you) { out.push({ p: sea.unseated[i], row: 0 }); } }
     return out;
   }
 
@@ -1584,8 +1695,11 @@ var VVY = (function () {
     }
     o.push('<p class="vvy-room gen">' + esc(genTxt) + '</p>');
 
-    if (people.length) {
-      a = assignRows(cfg, people);
+    if (people.length || party.dogs) {
+      /* dogs take seats too, so seat them first: the guidance is about the seats people actually get */
+      var seaAll = seatEveryone(cfg, party); a = [];
+      for (i = 0; i < seaAll.placed.length; i++) { if (!seaAll.placed[i].p.you && seaAll.placed[i].p.kind !== 'dog') { a.push({ p: seaAll.placed[i].p, row: seaAll.placed[i].row }); } }
+      for (i = 0; i < seaAll.unseated.length; i++) { if (!seaAll.unseated[i].you) { a.push({ p: seaAll.unseated[i], row: 0 }); } }
       o.push('<ul class="vvy-room list">');
       for (i = 0; i < a.length; i++) {
         r = a[i]; who = 'Your ' + esc(personLabel(r.p.h, metric)) + (r.p.kind === 'kid' ? ' kid' : ' adult');
@@ -1602,6 +1716,13 @@ var VVY = (function () {
         else if (b.band === 'tight') { txt = who + ' will be tight in the ' + rowLabel(r.row) + ' of this one' + (why.length ? ' (' + why.join(', ') + ')' : '') + ' — fine for short trips.'; cls = 'warn'; }
         else { txt = who + ' will be cramped in the ' + rowLabel(r.row) + (why.length ? ' (' + why.join(', ') + ')' : '') + '.'; cls = 'no'; }
         o.push('<li class="' + cls + '">' + txt + '</li>');
+      }
+      for (i = 0; i < seaAll.dogs.length; i++) {
+        var dg = seaAll.dogs[i], dwho = 'Your dog' + (seaAll.dogs.length > 1 ? ' ' + (i + 1) : '');
+        if (dg.place === 'seat') { o.push('<li class="ok">' + dwho + ' takes a seat' + (dg.row === 1 ? (dg.seat === 2 ? ' — the front bench middle' : ' up front') : ' in the ' + rowLabel(dg.row)) + '.</li>'); }
+        else if (dg.place === 'cargo') { o.push('<li class="ok">' + dwho + ' rides in the cargo bay behind the last row (' + seaAll.space.cuft + ' cu ft).</li>'); }
+        else if (dg.place === 'bed') { o.push('<li class="ok">' + dwho + ' rides in the bed — no seat left inside.</li>'); }
+        else { o.push('<li class="no">' + dwho + ' has nowhere to ride: no seat left and ' + (seaAll.space.kind === 'none' ? 'a trunk is no place for a dog' : (seaAll.space.kind === 'unknown' ? 'the cargo space is not on file' : 'the cargo bay only takes ' + seaAll.space.dogs)) + '.</li>'); }
       }
       o.push('</ul>');
     }
@@ -1644,10 +1765,10 @@ var VVY = (function () {
   }
   /* party fit per row for the rankings: tallest rider assigned to each row, or null when nobody sits there */
   function partyRows(cfg, party) {
-    var people = [{ h: party.person || 70, kind: 'adult', you: true }].concat(party.people || []);
-    var a = assignRows(cfg, people.slice(1)), i, tall = { 1: people[0].h, 2: null, 3: null };
-    for (i = 0; i < a.length; i++) {
-      if (a[i].row >= 1 && (tall[a[i].row] === null || a[i].p.h > tall[a[i].row])) { tall[a[i].row] = a[i].p.h; }
+    var sea = seatEveryone(cfg, party), i, tall = { 1: null, 2: null, 3: null }, pl;
+    for (i = 0; i < sea.placed.length; i++) {
+      pl = sea.placed[i]; if (pl.p.kind === 'dog') { continue; }
+      if (tall[pl.row] === null || pl.p.h > tall[pl.row]) { tall[pl.row] = pl.p.h; }
     }
     return { 1: tall[1] === null ? null : rowFit(cfg, 1, tall[1]), 2: tall[2] === null ? null : rowFit(cfg, 2, tall[2]), 3: tall[3] === null ? null : rowFit(cfg, 3, tall[3]), tall: tall };
   }
@@ -1845,8 +1966,8 @@ var VVY = (function () {
     /* ---- riders ---- */
     var callouts = [];
     var you = { h: personIn, kind: 'adult', you: true };
-    var assigned = assignRows(cfg, people), rider = [], byRow = { 1: [you], 2: [], 3: [], 0: [] }, j;
-    for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
+    var sea = seatEveryone(cfg, { person: personIn, people: people, dogs: party.dogs || 0 }), j;
+    var byRow = ridersByRow(sea);
     var bands = {};
     function faceFor(fitr, rowObj, isFront) {
       return function (hcx, hcy, crown, kneeX, kneeY) {
@@ -1885,21 +2006,35 @@ var VVY = (function () {
       nx += q.h * 0.31 + 4;
     }
 
-    /* ---- pets ---- */
-    var nD = Math.min(party.dogs || 0, 12), nC = Math.min(party.cats || 0, 12);
+    /* ---- dogs: where the shared seating model put them ---- */
+    var nC = Math.min(party.cats || 0, 12), nBed = 0, nCargo = 0, nNone = 0, dg, rowOf;
     var cargoOK = !trunk && !pickup && !wedge && (cargoR - cargoF) > 16 && rows >= 2;
-    for (i = 0; i < nD; i++) {
-      if (pickup) {
-        /* in the bed: bed floor = published bedHeight or rail - 20 */
+    for (i = 0; i < sea.dogs.length; i++) {
+      dg = sea.dogs[i];
+      if (dg.place === 'seat') {
+        rowOf = null; for (k = 0; k < R.length; k++) { if (R[k].n === dg.row) { rowOf = R[k]; } }
+        if (rowOf) { o.push(groundShadow(rowOf.hx - 4, Y(rowOf.cush + 0.5) + 0.4, 9, 0.9, 0.2) + sittingDogSvg(rowOf.hx - 4 + dg.seat * 2, rowOf.cush + 0.5, Y, 20, dx)); }
+      } else if (dg.place === 'bed') {
+        /* rear of the bed, clearly behind the cab; the near bed wall is drawn over its lower body below */
         var bedY = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20);
-        o.push(sittingDogSvg(vx + L * 0.86 - i * 14, bedY, Y, 22, dx));
-      } else if (cargoOK) {
-        o.push(sittingDogSvg(Math.min(cargoR - 10, cargoF + 8 + i * 12), floor, Y, 22, dx));
+        var bx = vx + L * 0.955 - 9 - nBed * 15; nBed++;
+        o.push(groundShadow(bx - 1, Y(bedY) + 0.6, 12, 1.1, 0.22) + sittingDogSvg(bx, bedY, Y, 22, dx));
+      } else if (dg.place === 'cargo' && cargoOK) {
+        o.push(groundShadow(Math.min(cargoR - 10, cargoF + 8 + nCargo * 12) - 1, Y(floor) + 0.6, 12, 1.1, 0.2) + sittingDogSvg(Math.min(cargoR - 10, cargoF + 8 + nCargo * 12), floor, Y, 22, dx)); nCargo++;
+      } else if (dg.place === 'cargo') {
+        o.push(sittingDogSvg(lastR.hx + 14 + nCargo * 10, floor, Y, 20, dx)); nCargo++;
       } else {
-        /* footwell of the last row (or front passenger footwell when single-row) */
-        var fw = lastR.n === 1 ? lastR.hx - 20 : lastR.hx - 14 - i * 6;
-        o.push(sittingDogSvg(fw, floor, Y, 17, dx));
+        /* nowhere to ride: beside the vehicle, labelled */
+        var nxd = vx + L + 8 + nNone * 26; nNone++;
+        o.push(groundShadow(nxd - 2, Y(0) + 0.6, 14, 1.2, 0.18) + sittingDogSvg(nxd, 0, Y, 22, dx));
+        o.push('<text x="' + r1(nxd) + '" y="' + r1(Y(0) + 6) + '" text-anchor="middle" font-size="3.4" fill="#8a1c14" font-family="' + FONT + '">no room</text>');
       }
+    }
+    if (nBed) {
+      /* near bed side wall in front of the dog: from the bed floor up to the rail, bed front to tailgate */
+      var railY = body.pts[9][1] * H0 + rise, bedFloorY = has(e.bedHeight) ? e.bedHeight : railY - 20;
+      o.push('<rect x="' + r1(vx + L * body.pts[8][0]) + '" y="' + Y(railY) + '" width="' + r1(L * (0.995 - body.pts[8][0])) + '" height="' + r1(Y(bedFloorY) - Y(railY)) + '" fill="' + pal.body + '" opacity="0.55"/>');
+      o.push('<line x1="' + r1(vx + L * body.pts[8][0]) + '" y1="' + Y(railY) + '" x2="' + r1(vx + L * 0.995) + '" y2="' + Y(railY) + '" stroke="' + pal.stroke + '" stroke-width="0.5"/>');
     }
     var catSpots = [];
     /* lap of the first rear rider, dashboard, parcel shelf / rear seat top, cargo floor */
@@ -1984,7 +2119,7 @@ var VVY = (function () {
     var ref = opts.ref || { L: L, W: Wd };
     var party = opts.party || {}, people = party.people || [];
     var KY = OV.KY, KZ = OV.KZ;
-    var m = 6, mT = 20, mB = 12, mLab = 26;   /* mLab: left column for row labels */
+    var m = 6, mT = 20, mB = 6, mLab = 26;   /* mLab: left column for row labels */
     /* the hood faces the viewer almost square-on, so it is foreshortened harder than the cabin */
     var body0 = body, glz = body0.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
     var hoodU = glz[0][0] * L, KYH = 0.26;
@@ -1994,7 +2129,8 @@ var VVY = (function () {
     var cx = mLab + m + ref.W * 0.58, y0 = SH - mB;
     var dx = new Defs((opts.idPrefix || 'vvy') + 'o' + role), o = [], i, k, j;
     function sc(u) { return 1 - OV.PERSP * (u / ref.L); }
-    function P(u, v, z) { var s = sc(u); return [r1(cx + (v - Wd / 2) * s), r1(y0 - uy(u) - (z || 0) * KZ * s)]; }
+    /* seen from the hood end of a left-hand-drive car the driver's side is on the RIGHT: v grows leftward */
+    function P(u, v, z) { var s = sc(u); return [r1(cx - (v - Wd / 2) * s), r1(y0 - uy(u) - (z || 0) * KZ * s)]; }
     function pts(list) { var a = [], q; for (q = 0; q < list.length; q++) { var p = P(list[q][0], list[q][1], list[q][2]); a.push(p[0] + ',' + p[1]); } return a.join(' '); }
     var nm = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle');
     o.push('<svg class="vvy-svg vvy-inside" viewBox="0 0 ' + r1(W) + ' ' + r1(SH) + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the ' + esc(nm) + ': who sits where. Headroom is judged in the profile view.">');
@@ -2022,10 +2158,9 @@ var VVY = (function () {
     /* ---- assign riders to seats (same row assignment as everywhere else; seat order: driver,
             far side, middle) ---- */
     var you = { h: personIn, kind: 'adult', you: true };
-    var assigned = assignRows(cfg, people), byRow = { 1: [you], 2: [], 3: [], 0: [] };
-    for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
-    for (k = 0; k < R.length; k++) { R[k].riders = byRow[R[k].n].slice(0, R[k].vs.length); }
-    var noSeat = byRow[0];
+    var sea = seatEveryone(cfg, { person: personIn, people: people, dogs: party.dogs || 0 });
+    for (k = 0; k < R.length; k++) { R[k].occ = sea.occ[R[k].n] || []; }
+    var noSeat = sea.unseated;
     /* ---- body plan ---- */
     var shadowP = P(L / 2, Wd / 2, 0);
     o.push('<ellipse cx="' + shadowP[0] + '" cy="' + r1(y0 - uy(L) * 0.5 + 4) + '" rx="' + r1(Wd * 0.56) + '" ry="' + r1(uy(L) * 0.52) + '" fill="#1f2933" opacity="0.08"/>');
@@ -2085,6 +2220,17 @@ var VVY = (function () {
         '<path d="M' + r1(hp[0] - hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + ' Q' + hp[0] + ' ' + r1(hp[1] + hw * 0.75) + ' ' + r1(hp[0] + hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hw * 0.12)) + '" stroke-linecap="round"/></g>');
       return '<g class="vvy-seated-top' + (p.you ? ' vvy-you' : '') + '">' + s.join('') + '</g>';
     }
+    function dogTop(u, v, h) {
+      /* sitting dog facing the viewer: body, head with ears, happy face */
+      var s = [], b = P(u, v, 0), hp = P(u, v, 0.9 * h), w = 0.55 * h * sc(u), hr = 0.3 * h * sc(u);
+      s.push('<ellipse cx="' + b[0] + '" cy="' + r1(b[1] - 0.25 * h * KZ) + '" rx="' + r1(w * 0.6) + '" ry="' + r1(0.45 * h * KZ) + '" fill="url(#' + dx.vgrad('dogo', '#6b4f3a', 0.22, -0.3) + ')"/>');
+      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hr) + '" fill="#6b4f3a"/>');
+      s.push('<ellipse cx="' + r1(hp[0] - hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/><ellipse cx="' + r1(hp[0] + hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/>');
+      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + r1(hp[0] + hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.25) + '" r="' + r1(Math.max(0.4, hr * 0.16)) + '" fill="#1f2933"/>' +
+        '<path d="M' + r1(hp[0] - hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + ' Q' + hp[0] + ' ' + r1(hp[1] + hr * 0.85) + ' ' + r1(hp[0] + hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hr * 0.13)) + '" stroke-linecap="round"/></g>');
+      s.push('<ellipse cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.78) + '" rx="' + r1(hr * 0.2) + '" ry="' + r1(hr * 0.3) + '" fill="#e8848f"/>');
+      return '<g class="vvy-dog vvy-dog-top">' + s.join('') + '</g>';
+    }
     for (k = R.length - 1; k >= 0; k--) {
       var rr = R[k], sw = rr.sw, worst = null;
       /* cushions */
@@ -2101,38 +2247,32 @@ var VVY = (function () {
         o.push('<polygon points="' + pts([[rr.u + 3, segs[q][0], 0], [rr.u + 3, segs[q][1], 0], [rr.u + 6, segs[q][1], 24], [rr.u + 6, segs[q][0], 24]]) + '" fill="' + backFill + '" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>');
       }
       for (j = 0; j < rr.vs.length; j++) { o.push('<polygon points="' + pts([[rr.u + 5, rr.vs[j] - 5, 25], [rr.u + 5, rr.vs[j] + 5, 25], [rr.u + 6, rr.vs[j] + 5, 31], [rr.u + 6, rr.vs[j] - 5, 31]]) + '" fill="' + shade(seatCol, -0.1) + '" rx="1"/>'); }
-      /* riders in their seats */
-      for (j = 0; j < rr.riders.length; j++) {
-        var fr = rowFit(cfg, rr.n, rr.riders[j].h);
+      /* occupants in their seats (seat index = position across the row); dogs on seats too */
+      var nRiders = 0;
+      for (j = 0; j < rr.occ.length && j < rr.vs.length; j++) {
+        var oc = rr.occ[j]; if (!oc) { continue; }
+        if (oc.kind === 'dog') { o.push(dogTop(rr.u - 4, rr.vs[j], 20)); continue; }
+        nRiders++;
+        var fr = rowFit(cfg, rr.n, oc.h);
         var wv = fr.band === 'unknown' ? null : (fr.hs === null ? fr.ls : (fr.ls === null ? fr.hs : Math.min(fr.hs, fr.ls)));
         if (wv !== null && (worst === null || wv < worst)) { worst = wv; }
-        o.push(riderSvg(rr.riders[j], rr.u, rr.vs[j], fr));
+        o.push(riderSvg(oc, rr.u, rr.vs[j], fr));
       }
-      /* cats on empty seats */
-      var bandR = worst === null ? (rr.riders.length ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
+      var bandR = worst === null ? (nRiders ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
       chips.push({ row: rr, band: bandR });
     }
     /* ---- pets ---- */
-    var nD = Math.min(party.dogs || 0, 12), nC = Math.min(party.cats || 0, 12), last = R[R.length - 1];
-    function dogTop(u, v, h) {
-      /* sitting dog facing the viewer: body, head with ears, happy face */
-      var s = [], b = P(u, v, 0), hp = P(u, v, 0.9 * h), w = 0.55 * h * sc(u), hr = 0.3 * h * sc(u);
-      s.push('<ellipse cx="' + b[0] + '" cy="' + r1(b[1] - 0.25 * h * KZ) + '" rx="' + r1(w * 0.6) + '" ry="' + r1(0.45 * h * KZ) + '" fill="url(#' + dx.vgrad('dogo', '#6b4f3a', 0.22, -0.3) + ')"/>');
-      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hr) + '" fill="#6b4f3a"/>');
-      s.push('<ellipse cx="' + r1(hp[0] - hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/><ellipse cx="' + r1(hp[0] + hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/>');
-      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + r1(hp[0] + hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.25) + '" r="' + r1(Math.max(0.4, hr * 0.16)) + '" fill="#1f2933"/>' +
-        '<path d="M' + r1(hp[0] - hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + ' Q' + hp[0] + ' ' + r1(hp[1] + hr * 0.85) + ' ' + r1(hp[0] + hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hr * 0.13)) + '" stroke-linecap="round"/></g>');
-      s.push('<ellipse cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.78) + '" rx="' + r1(hr * 0.2) + '" ry="' + r1(hr * 0.3) + '" fill="#e8848f"/>');
-      return '<g class="vvy-dog vvy-dog-top">' + s.join('') + '</g>';
-    }
+    var nC = Math.min(party.cats || 0, 12), last = R[R.length - 1], nb = 0, nc2 = 0, nn = 0;
     var cargoOK = !trunk && !wedge && !pickup && (cabR - (last.u + 10)) > 14;
-    for (i = 0; i < nD; i++) {
-      if (pickup) { o.push(dogTop(uR + 16 + i * 14, Wd * (i % 2 ? 0.7 : 0.35), 22)); }
-      else if (cargoOK) { o.push(dogTop(last.u + 12 + Math.min(cabR - last.u - 20, 6) , Wd * (i % 2 ? 0.68 : 0.36), 22)); }
-      else { /* footwell of the last row's far-side seat */ o.push(dogTop(last.u - 22, Wd * 0.72 + (i % 2) * 4, 16)); }
+    for (i = 0; i < sea.dogs.length; i++) {
+      var dgo = sea.dogs[i];
+      if (dgo.place === 'seat') { continue; }   /* drawn with its row above */
+      if (dgo.place === 'bed') { o.push(dogTop(L - 24 - nb * 13, Wd * (nb % 2 ? 0.68 : 0.36), 22)); nb++; }
+      else if (dgo.place === 'cargo') { o.push(dogTop(Math.min(cabR - 8, last.u + 14 + nc2 * 6), Wd * (nc2 % 2 ? 0.68 : 0.36), 22)); nc2++; }
+      else { o.push(dogTop(L * 0.3 + nn * 14, -12, 20)); var nl = P(L * 0.3 + nn * 14, -12, 0); o.push('<text x="' + nl[0] + '" y="' + r1(nl[1] + 5) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no room</text>'); nn++; }
     }
     var emptySeats = [];
-    for (k = 0; k < R.length; k++) { for (j = R[k].riders.length; j < R[k].vs.length; j++) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } }
+    for (k = 0; k < R.length; k++) { for (j = 0; j < R[k].vs.length; j++) { if (!R[k].occ[j]) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } } }
     for (i = 0; i < nC; i++) {
       var cp = emptySeats.length ? emptySeats[i % emptySeats.length] : [uH + 6, Wd * 0.5];
       var cpp = P(cp[0], cp[1], 2);
@@ -2157,7 +2297,7 @@ var VVY = (function () {
     /* ---- row labels (left) + fit chips (right) ---- */
     var halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"';
     for (k = 0; k < chips.length; k++) {
-      var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, 0, 0), rp = P(rl.u - 6, Wd, 0);
+      var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, Wd, 0), rp = P(rl.u - 6, 0, 0);
       var name = rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row');
       var kind = rl.seats === 0 ? 'no seats' : (rl.bench ? 'bench · ' + rl.seats : (rl.seats === 1 ? '1 seat' : (rl.n === 1 ? '2 buckets' : (rl.seats === 2 ? "2 captain's chairs" : rl.seats + ' seats'))));
       o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"' + halo + '>' + esc(name) + '</text>');
@@ -2166,7 +2306,6 @@ var VVY = (function () {
       var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
       o.push('<text x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"' + halo + '>' + esc(ctext) + '</text>');
     }
-    o.push('<text x="' + r1(W / 2) + '" y="' + r1(SH - 3) + '" text-anchor="middle" font-size="3.8" fill="#7b8794" font-family="' + FONT + '">who sits where · room is measured in the profile view</text>');
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -2189,6 +2328,8 @@ var VVY = (function () {
     renderInside: renderInside,
     rowFit: rowFit,
     partyRows: partyRows,
+    seatEveryone: seatEveryone,
+    seatLayout: seatLayout,
     SEAT: SEAT,
     specsHtml: specsHtml,
     compsHtml: compsHtml,
@@ -2754,6 +2895,7 @@ window.__rf_filters = true;
        Comparing: one control flips BOTH panes — profile = A and B side by side at one scale in a
        single pane; cutaway / overhead = A in pane A, B in pane B, drawn at a shared scale. */
     view: 'profile',
+    fold: false,   /* the seats fold under the profile pane (alone only) */
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
@@ -2972,10 +3114,14 @@ window.__rf_filters = true;
         htmlB = VVY.renderInside(eB, state.person, state.metric, { party: state.party, role: 'B', idPrefix: 'pb', ref: ref });
       }
     }
-    scene.className = 'scene ' + (htmlB ? 'two' : 'one');
+    /* alone: primary profile pane + collapsible seats fold; comparing in an inside view: A | B split */
+    var split = !!(eB && state.view !== 'profile');
+    scene.className = 'scene' + (split ? ' two' : (state.fold ? ' open' : ''));
     paneA.innerHTML = htmlA;
     paneB.innerHTML = htmlB;
-    paneB.style.display = htmlB ? '' : 'none';
+    paneB.style.display = (split || !eB) ? '' : 'none';
+    byId('foldBtn').style.display = (split || eB) ? 'none' : '';
+    byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false');
     if (changed && !reduceMotion) {
       paneA.className = 'pane a'; void paneA.offsetWidth; paneA.className = 'pane a vvy-anim';
       paneB.className = 'pane b'; void paneB.offsetWidth; paneB.className = 'pane b vvy-anim';
@@ -3583,6 +3729,7 @@ window.__rf_filters = true;
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
     byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
+    byId('foldBtn').onclick = safe(function () { state.fold = !state.fold; crumb('fold: ' + state.fold); byId('scene').className = 'scene' + (state.fold ? ' open' : ''); byId('foldBtn').setAttribute('aria-expanded', state.fold ? 'true' : 'false'); });
     byId('viewCtl').onclick = safe(onViewCtl);
     byId('viewCtl2').onclick = safe(onViewCtl);
     byId('clearBtn').onclick = safe(clearB);
