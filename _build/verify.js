@@ -24,9 +24,24 @@ setTimeout(function () {
   check(st2 && (st2[1].match(/vvy-seated-top/g) || []).length === 4 && (st2[1].match(/vvy-dog-top/g) || []).length === 1, 'static overhead shows 4 seated riders + the dog on a seat');
   check(st2 && !/<text[^>]*>[^<]*who sits where/.test(st2[1]) && !/<text[^>]*>[^<]*measured in the profile/.test(st2[1]), 'no caption text under the overhead view');
   /* seating order in the static first paint: you (driver) + adult 65 up front, kids in row 2, dog on the spare row-2 seat */
-  var seaS = w.VVY.seatEveryone(w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.identity.brand === 'Ram' && v.identity.model === '1500' && v.identity.config.indexOf('Crew Cab') === 0; })[0]), { person: 70, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 50 }, { kind: 'kid', h: 43 }], dogs: 1 });
+  var ramCfg = w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.identity.brand === 'Ram' && v.identity.model === '1500' && v.identity.config.indexOf('Crew Cab') === 0; })[0]);
+  var seaS = w.VVY.seatEveryone(ramCfg, { person: 70, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 58 }, { kind: 'kid', h: 40 }], dogs: 1 });
   var occS = function (r) { return seaS.occ[r].map(function (x) { return x ? (x.you ? 'you' : x.kind + x.h) : '-'; }).join(','); };
-  check(occS(1) === 'you,adult65,-' && occS(2) === 'kid50,kid43,dog22', 'seating order: driver you, 2nd adult front, kids rear, dog takes the spare rear seat, bench middle last (' + occS(1) + ' | ' + occS(2) + ')');
+  check(occS(1) === 'you,adult65,-' && occS(2) === 'kid58,kid40,dog22', 'seating order: driver you, 2nd adult front, kids rear, dog takes the spare rear seat, bench middle last (' + occS(1) + ' | ' + occS(2) + ')');
+  var kidHs = (function () { var m = /people: \[\{ kind: 'adult', h: 65 \}, \{ kind: 'kid', h: (\d+) \}, \{ kind: 'kid', h: (\d+) \}\]/.exec(html); return m ? [+m[1], +m[2]] : null; })();
+  check(kidHs && kidHs[0] === 58 && kidHs[1] === 40 && /2 kids/.test(st[1]), 'default crew: tall kid 58 in (age ~12) + small kid 40 in (age ~4) in app state and static paint');
+  /* car seats + strollers + ceiling */
+  var LIM = w.RIDEFIT_LIMITS; check(LIM && LIM.maxCarSeats >= 1 && /\S/.test(LIM.bestVehicle) && LIM.strollerCuFt === w.VVY.STROLLER_CUFT, 'build-time ceiling from data: max ' + (LIM && LIM.maxCarSeats) + ' car seats, best ' + (LIM && LIM.bestVehicle));
+  var maxRt = 0, gi0; for (gi0 = 0; gi0 < w.RIDEFIT_VEHICLES.vehicles.length; gi0++) { var cc = w.VVY.carSeatCapacity(w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles[gi0])); if (cc > maxRt) { maxRt = cc; } }
+  check(maxRt === LIM.maxCarSeats, 'ceiling recomputed at runtime matches the build (' + maxRt + ')');
+  var civ = w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.identity.brand === 'Honda' && v.identity.model === 'CR-V'; })[0]);
+  var fcs = w.VVY.fit(civ, { person: 70, people: [{ kind: 'kid', h: 34, carseat: true, stroller: true }, { kind: 'kid', h: 34, carseat: true, stroller: true }], dogs: 2 });
+  check(fcs.fits === true && /2 strollers \(~10 cu ft, assumed\)/.test(fcs.text) && /2 by dogs/.test(fcs.text), 'CR-V: 2 car seats + 2 strollers (10 cu ft assumed) + 2 dogs on seats: ' + fcs.text);
+  var fcs2 = w.VVY.fit(civ, { person: 70, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 34, carseat: true, stroller: true }, { kind: 'kid', h: 34, carseat: true, stroller: true }, { kind: 'kid', h: 34, carseat: true, stroller: true }], dogs: 3 });
+  check(fcs2.fits === false && /dog/.test(fcs2.text), 'CR-V: 3 car seats + 3 dogs overflows (strollers eat cargo): ' + fcs2.text.slice(0, 120));
+  var two = w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles.filter(function (v) { return v.capacity && v.capacity.seats === 2; })[0]);
+  var f2c = w.VVY.fit(two, { person: 70, people: [{ kind: 'kid', h: 34, carseat: true }], dogs: 0 });
+  check(f2c.fits === false && /car seat needs a rear seat/.test(f2c.text), 'two-seater: car seat cannot go up front: ' + f2c.text.slice(0, 100));
   check(/\.pane\.a \{[^}]*height: 34vh/.test(html) && /\.pane\.b \{ height: 0; \}/.test(html) && /body\.live \{ height: 100vh; height: 100dvh; overflow: hidden; \}/.test(html) && /body\.live \.scrollarea \{[^}]*overflow: auto/.test(html) && /padding-bottom: 100px/.test(html), 'vertical budget: pinned 100dvh body, profile pane reserved, scroll area is the only scroller, sheet peek = 100px padding');
   check(/<div id="scene" class="scene open">/.test(html) && /aria-expanded="true"/.test(html) && /id="foldBtn"[^>]*>[^<]*<span class="fchev">&#9652;<\/span> See the specs</.test(html), 'static first paint: seats fold open, button offers the specs');
   check(/RideFitNote = function/.test(html) && /#extnote \{/.test(html) && /It is not from Ride Fit/.test(html), 'outside errors: quiet closable note channel exists');
@@ -68,6 +83,17 @@ setTimeout(function () {
   click($('addAdult')); click($('addKid')); click(d.querySelector('[data-step="dogs"][data-d="1"]')); click(d.querySelector('[data-step="cats"][data-d="1"]'));
   check(d.querySelectorAll('#paneA .vvy-fam').length === 5 && d.querySelectorAll('#paneA .vvy-dog').length === 2 && d.querySelectorAll('#paneA .vvy-cat').length === 1 && d.querySelectorAll('#paneA .vvy-tail animateTransform').length === 2, 'crew drawn: default 3 + 2 riders, 2 dogs (tails wagging), 1 cat');
   check(/dog/.test($('fitLine').textContent) && /seat/.test($('fitLine').textContent), 'fit verdict counts dogs: ' + $('fitLine').textContent.slice(0, 110));
+  /* car-seat UI: add toddlers up to the ceiling + 1, then the friendly explanation */
+  var LIM2 = w.RIDEFIT_LIMITS, added = 0, tries;
+  for (tries = 0; tries < LIM2.maxCarSeats + 3; tries++) { var before = d.querySelectorAll('#people .prow').length; click($('addToddler')); if (d.querySelectorAll('#people .prow').length > before) { added++; } }
+  check(added === LIM2.maxCarSeats + 1 && /more than any vehicle here can carry/.test($('ceilMsg').textContent) && $('ceilMsg').textContent.indexOf(LIM2.bestVehicle) >= 0 && $('addToddler').disabled, 'ceiling: added ' + added + ' toddlers (= max ' + LIM2.maxCarSeats + ' + 1), explanation names the number and the best vehicle, button disabled');
+  check(/Assumption, not a manufacturer figure/.test($('assumeNote').textContent) && new RegExp(w.VVY.STROLLER_CUFT + ' cu ft').test($('assumeNote').textContent), 'stroller volume shown as a labelled assumption: ' + $('assumeNote').textContent.slice(0, 80));
+  check(/car seat/.test($('room').textContent) && d.querySelectorAll('#paneA .vvy-carseat').length >= 0, 'guidance mentions car seats');
+  var strollerBox = d.querySelector('#people input[data-str]'); check(!!strollerBox && strollerBox.checked, 'stroller toggle shown for a car-seat toddler, on by default');
+  /* remove the toddlers again */
+  for (tries = 0; tries < 20; tries++) { var rmsT = d.querySelectorAll('#people .prow'), hit = null, ri; for (ri = rmsT.length - 1; ri >= 0; ri--) { if (/Toddler/.test(rmsT[ri].textContent)) { hit = rmsT[ri]; break; } } if (!hit) { break; } click(hit.querySelector('[data-rm]')); }
+  check(d.querySelectorAll('#people .prow').length === 6 && !$('ceilMsg').textContent, 'toddlers removed, ceiling message cleared');
+  w.RideFitView.set('cutaway'); click($('addToddler')); check(d.querySelectorAll('#paneA .vvy-carseat').length === 1 && d.querySelectorAll('#paneB .vvy-carseat-top').length === 1, 'car seat drawn in the cutaway and the overhead'); var rm2 = d.querySelectorAll('#people .prow'); click(rm2[rm2.length - 1].querySelector('[data-rm]')); w.RideFitView.set('profile');
   check(/Your dog/.test($('room').textContent), 'room guidance places the dogs');
   /* fold */
   check($('scene').className.indexOf('open') >= 0 && /\bfoldopen\b/.test(d.body.className) && $('foldBtn').style.display !== 'none', 'seats fold OPEN by default, body.foldopen set, button shown');

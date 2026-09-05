@@ -17,9 +17,10 @@
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
-    /* default crew: you 5'10" (US adult median), an adult 5'5", a kid 4'2" (typical at 8) and a
-       kid 3'7" (typical at 5), one dog — the same party the static first paint is built with */
-    party: { adults: 0, kids: 0, dogs: 1, cats: 0, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 50 }, { kind: 'kid', h: 43 }] }, fitOnly: false, shortlist: []
+    /* default crew: you 5'10" (US adult median), an adult 5'5", a TALL kid 4'10" (58 in, typical at
+       12) and a SMALL kid 3'4" (40 in, typical at 4), one dog — the same party the static first paint
+       is built with (build.py DEFAULT_PARTY), chosen so the back-seat logic is visibly exercised */
+    party: { adults: 0, kids: 0, dogs: 1, cats: 0, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 58 }, { kind: 'kid', h: 40 }] }, fitOnly: false, shortlist: []
   };
   var reduceMotion = false;
   try {
@@ -160,13 +161,18 @@
     o.push(prowHtml('you', 'You', 'reference figure · adult', state.person, true));
     for (i = 0; i < state.party.people.length; i++) {
       p = state.party.people[i];
-      o.push(prowHtml(i, p.kind === 'kid' ? 'Kid ' + (kidIndex(i)) : 'Adult ' + (adultIndex(i)), p.kind === 'kid' ? 'child · 3\'7" is typical at 5, 4\'2" at 8' : 'adult', p.h, false));
+      o.push(prowHtml(i, p.kind === 'kid' ? (p.carseat ? 'Toddler ' + (kidIndex(i)) : 'Kid ' + (kidIndex(i))) : 'Adult ' + (adultIndex(i)), p.kind === 'kid' ? (p.carseat ? 'in a car seat · takes a rear seat' : 'child · 3\'4" is typical at 4, 4\'10" at 12') : 'adult', p.h, false, p));
     }
     return o.join('');
   }
   function adultIndex(i) { var n = 1, k; for (k = 0; k <= i; k++) { if (state.party.people[k].kind !== 'kid') { n++; } } return n; }
   function kidIndex(i) { var n = 0, k; for (k = 0; k <= i; k++) { if (state.party.people[k].kind === 'kid') { n++; } } return n; }
-  function prowHtml(id, who, sub, h, isYou) {
+  function prowHtml(id, who, sub, h, isYou, p) {
+    var tog = '';
+    if (p && p.kind === 'kid') {
+      tog = '<div class="tog"><label><input type="checkbox" data-cs="1"' + (p.carseat ? ' checked' : '') + '> in a car seat</label>' +
+        (p.carseat ? '<label><input type="checkbox" data-str="1"' + (p.stroller ? ' checked' : '') + '> has a stroller</label>' : '') + '</div>';
+    }
     return '<div class="prow' + (isYou ? ' you' : '') + '" data-pid="' + id + '">' +
       '<div class="who">' + esc(who) + '<small>' + esc(sub) + '</small></div>' +
       '<div class="hctl">' +
@@ -176,7 +182,23 @@
       (isYou ? '<button type="button" class="rm" disabled title="You are the reference figure and can\'t be removed">&#215;</button>' : '<button type="button" class="rm" data-rm="1" title="Remove">&#215;</button>') +
       '</div>' +
       '<input type="range" class="hrange" min="' + (isYou ? 48 : 30) + '" max="84" step="1" value="' + Math.round(h) + '" aria-label="Height">' +
+      tog +
       '</div>';
+  }
+  /* ---- car-seat ceiling: derived from the data at build time (RIDEFIT_LIMITS), recomputed here as a
+     fallback. The app lets you add up to the ceiling PLUS ONE, then explains instead of blocking. ---- */
+  function limits() {
+    if (window.RIDEFIT_LIMITS && typeof window.RIDEFIT_LIMITS.maxCarSeats === 'number') { return window.RIDEFIT_LIMITS; }
+    var best = null, i, n;
+    for (i = 0; i < FLAT.length; i++) { n = VVY.carSeatCapacity(FLAT[i]); if (best === null || n > best.maxCarSeats) { best = { maxCarSeats: n, bestVehicle: FLAT[i].brand + ' ' + FLAT[i].model + ' ' + FLAT[i].name, bestCargoCuFt: VVY.has(FLAT[i].cargo3) ? FLAT[i].cargo3 : FLAT[i].cargo2, strollerCuFt: VVY.STROLLER_CUFT }; } }
+    return best || { maxCarSeats: 0, bestVehicle: '', strollerCuFt: VVY.STROLLER_CUFT };
+  }
+  function carSeatCount() { var i, n = 0; for (i = 0; i < state.party.people.length; i++) { if (state.party.people[i].carseat) { n++; } } return n; }
+  function canAddCarSeat() { return carSeatCount() < limits().maxCarSeats + 1; }
+  function ceilHtml() {
+    var L = limits(), n = carSeatCount();
+    if (n <= L.maxCarSeats) { return ''; }
+    return '<div class="ceil">' + n + ' toddlers in car seats is more than any vehicle here can carry: the most is <b>' + L.maxCarSeats + '</b>, in the ' + esc(L.bestVehicle) + ' (' + L.maxCarSeats + ' rear seats' + (VVY.has(L.bestCargoCuFt) ? ', ' + L.bestCargoCuFt + ' cu ft behind the last row for strollers' : '') + '). Nothing in the database fits this crew, so no more can be added.</div>';
   }
   function personAt(pid) { return pid === 'you' ? null : state.party.people[parseInt(pid, 10)]; }
   function getH(pid) { var p = personAt(pid); return p ? p.h : state.person; }
@@ -192,6 +214,13 @@
     var pid = row.getAttribute('data-pid');
     if (t.getAttribute('data-hd')) { setH(pid, getH(pid) + parseInt(t.getAttribute('data-hd'), 10)); render(); return; }
     if (t.getAttribute('data-rm')) { state.party.people.splice(parseInt(pid, 10), 1); render(); return; }
+    if (t.getAttribute('data-cs')) {
+      var pc = personAt(pid); if (!pc) { return; }
+      if (!pc.carseat && !canAddCarSeat()) { t.checked = false; byId('ceilMsg').innerHTML = ceilHtml() || '<div class="ceil">No vehicle here carries another car seat.</div>'; return; }
+      pc.carseat = !!t.checked; if (!pc.carseat) { pc.stroller = false; } else if (pc.stroller === undefined) { pc.stroller = true; }
+      render(); return;
+    }
+    if (t.getAttribute('data-str')) { var ps = personAt(pid); if (ps) { ps.stroller = !!t.checked; render(); } return; }
     if (t.getAttribute('data-toggle')) {
       var open = row.className.indexOf('open') >= 0;
       var rows = document.querySelectorAll('#people .prow'), i;
@@ -282,6 +311,9 @@
     byId('room').innerHTML = VVY.roomHtml(A, state.party, state.metric);
     byId('roomBox').innerHTML = VVY.roomHtml(A, state.party, state.metric);
     byId('people').innerHTML = peopleHtml();
+    byId('ceilMsg').innerHTML = ceilHtml();
+    byId('addToddler').disabled = !canAddCarSeat();
+    byId('assumeNote').innerHTML = 'Assumption, not a manufacturer figure: a folded stroller is counted as <b>' + VVY.STROLLER_CUFT + ' cu ft</b> of cargo (about 33 &#215; 20 &#215; 13 in); a dog needs ' + VVY.CARGO_PER_DOG + ' cu ft of what is left. Ceiling from the data: at most <b>' + limits().maxCarSeats + '</b> car seats with strollers (' + esc(limits().bestVehicle) + ').';
     byId('dogsVal').innerHTML = state.party.dogs;
     byId('catsVal').innerHTML = state.party.cats;
     Cats.start(paneA);
@@ -864,6 +896,11 @@
     byId('people').oninput = safe(onPeopleInput); byId('people').onchange = safe(onPeopleInput);
     byId('addAdult').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'adult', h: 66 }); render(); } });
     byId('addKid').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 50 }); render(); } });
+    /* toddler: 2'10" (34 in, typical at 2), in a car seat, with a stroller by default */
+    byId('addToddler').onclick = safe(function () {
+      if (!canAddCarSeat()) { byId('ceilMsg').innerHTML = ceilHtml(); return; }
+      if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 34, carseat: true, stroller: true }); render(); }
+    });
     byId('unitBtn').onclick = safe(function () { state.metric = !state.metric; render(); });
 
     byId('lift').oninput = safe(onLift); byId('lift').onchange = safe(onLift);

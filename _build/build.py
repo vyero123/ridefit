@@ -66,10 +66,13 @@ cfg['fullName'] = '%s %s — %s' % (brand['name'], model['name'], cfg['name'])
 count = sum(len(m['configs']) for b in data['brands'] for m in b['models'])
 
 # --- static render via node (same geometry code the browser runs) ----------
+ALL_TMP = os.path.join(tempfile.gettempdir(), 'ridefit_all_configs.json')
+with open(ALL_TMP, 'w', encoding='utf-8') as _f:
+    json.dump([dict(c, brand=b['name'], model=m['name']) for b in data['brands'] for m in b['models'] for c in m['configs']], _f)
 # Default crew for the static first paint — MUST match state.party / state.person in app.js:
-# you 5'10" (70 in), an adult 5'5" (65), a kid 4'2" (50, typical at 8), a kid 3'7" (43, typical at 5), one dog.
+# you 5'10" (70 in), an adult 5'5" (65), a tall kid 4'10" (58 in, typical at 12), a small kid 3'4" (40 in, typical at 4), one dog.
 DEFAULT_PERSON = 70
-DEFAULT_PARTY = {'person': DEFAULT_PERSON, 'people': [{'kind': 'adult', 'h': 65}, {'kind': 'kid', 'h': 50}, {'kind': 'kid', 'h': 43}], 'dogs': 1, 'cats': 0, 'adults': 2, 'kids': 2}
+DEFAULT_PARTY = {'person': DEFAULT_PERSON, 'people': [{'kind': 'adult', 'h': 65}, {'kind': 'kid', 'h': 58}, {'kind': 'kid', 'h': 40}], 'dogs': 1, 'cats': 0, 'adults': 2, 'kids': 2}
 node_src = """
 var VVY = require(%s);
 var cfg = %s, party = %s, person = %s;
@@ -83,8 +86,13 @@ var out = {
   room: VVY.roomHtml(cfg, party, false),
   fit: VVY.fitHtml(cfg, party)
 };
+/* fleet ceiling for car-seat toddlers with strollers, from the data */
+var all = JSON.parse(require('fs').readFileSync(%s, 'utf8')), best = null, i, n;
+for (i = 0; i < all.length; i++) { n = VVY.carSeatCapacity(all[i]); if (best === null || n > best.max) { best = { max: n, vehicle: all[i].brand + ' ' + all[i].model + ' ' + all[i].name, rearSeats: null, cargo: (all[i].cargo3 !== undefined ? all[i].cargo3 : all[i].cargo2) }; } }
+out.limits = { maxCarSeats: best.max, bestVehicle: best.vehicle, bestCargoCuFt: best.cargo, strollerCuFt: VVY.STROLLER_CUFT, basis: 'rear seats limited by cargo behind the last row / stroller allowance' };
 process.stdout.write(JSON.stringify(out));
-""" % (json.dumps(os.path.join(HERE, 'geom.js')), json.dumps(cfg), json.dumps(DEFAULT_PARTY), DEFAULT_PERSON)
+""" % (json.dumps(os.path.join(HERE, 'geom.js')), json.dumps(cfg), json.dumps(DEFAULT_PARTY), DEFAULT_PERSON,
+       json.dumps(ALL_TMP))
 
 res = subprocess.run(['node', '-e', node_src], capture_output=True, text=True)
 if res.returncode != 0:
@@ -107,6 +115,7 @@ repl = {
     '{{STATIC_SVG}}': static['svg'],
     '{{STATIC_INSIDE}}': static['inside'],
     '{{STATIC_FIT}}': static['fit'],
+    '{{LIMITS_JSON}}': json.dumps(static['limits']),
     '{{STATIC_SPECS}}': static['specs'],
     '{{STATIC_COMPS}}': static['comps'],
     '{{STATIC_SRC}}': static['src'],

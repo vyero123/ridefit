@@ -244,9 +244,12 @@ try {
         <div class="chips">
           <button type="button" class="chipbtn" id="addAdult" data-live disabled>+ adult</button>
           <button type="button" class="chipbtn" id="addKid" data-live disabled>+ kid</button>
+          <button type="button" class="chipbtn" id="addToddler" data-live disabled>+ toddler in a car seat</button>
         </div>
         <button type="button" id="unitBtn" class="chipbtn" data-live disabled>Imperial (ft-in / lb)</button>
       </div>
+      <div id="ceilMsg"></div>
+      <p class="assume" id="assumeNote"></p>
       <div class="steppers pets">
         <div class="stepper"><label>Dogs</label><div class="steprow"><button type="button" class="stepbtn" data-step="dogs" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="dogsVal">0</span><button type="button" class="stepbtn" data-step="dogs" data-d="1" data-live disabled>+</button></div></div>
         <div class="stepper"><label>Cats</label><div class="steprow"><button type="button" class="stepbtn" data-step="cats" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="catsVal">0</span><button type="button" class="stepbtn" data-step="cats" data-d="1" data-live disabled>+</button></div></div>
@@ -255,7 +258,7 @@ try {
       <span id="heightOut" style="display:none"></span><span id="adultsVal" style="display:none"></span><span id="kidsVal" style="display:none"></span>
       <div id="fitBox"></div>
       <div id="roomBox"></div>
-      <p class="hint">One seat per rider — and per dog: a dog takes a seat like a passenger. When the seats run out it rides in the cargo bay (if the published space is big enough) or the bed of a pickup; a sedan's trunk doesn't count. Seating order: you drive, the second adult rides up front, everyone else fills the rear rows, and a front bench middle seat is used last (by a dog before a person). Cats, as everyone knows, take nothing and go wherever they please. Seat counts are the standard seating for the trim shown.</p>
+      <p class="hint">One seat per rider — and per dog: a dog takes a seat like a passenger. A toddler in a car seat takes a rear seat (never the front); a stroller rides folded in the trunk, cargo bay or bed and comes out of the space dogs could use. When the seats run out it rides in the cargo bay (if the published space is big enough) or the bed of a pickup; a sedan's trunk doesn't count. Seating order: you drive, the second adult rides up front, everyone else fills the rear rows, and a front bench middle seat is used last (by a dog before a person). Cats, as everyone knows, take nothing and go wherever they please. Seat counts are the standard seating for the trim shown.</p>
     </section>
 
     <!-- ---- Card: Find (one filter state shared with search, fit, rankings, compare) ---- -->
@@ -350,6 +353,9 @@ window.__rf_data = true;
 /* Inlined at build time from vehicles.json so the page works offline. With RideFitData.MODE set to
    'endpoint' this block becomes unnecessary and the same document is fetched over HTTP instead. */
 var RIDEFIT_VEHICLES = {{DATA_JSON}};
+/* derived at build time from the vehicles above (build.py): the most car-seat toddlers with strollers
+   any vehicle in the set can carry, and which one. The app refuses to add more than this + 1. */
+var RIDEFIT_LIMITS = {{LIMITS_JSON}};
 window.__rf_json = true;
 </script>
 <script>if (!window.__rf_json) { window.RideFitReport(new Error('inlined vehicles.json block failed to parse'), 'load'); }</script>

@@ -685,19 +685,21 @@ var VVY = (function () {
 
     /* dimension lines run edge to edge; the label sits on the line at the right edge, haloed so it
        reads over the body, the ghost "?" or the sky alike; alternating above/below avoids stacking */
-    var gx1 = r1(W - 2);
-    function guide(yIn, label, color, below) {
-      var ty = below ? (Y(yIn) + 4.4) : (Y(yIn) - 1.1);
-      o.push('<line x1="2" y1="' + Y(yIn) + '" x2="' + gx1 + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/>');
-      o.push(haloText(' x="' + gx1 + '" y="' + r1(ty) + '" text-anchor="end" font-size="' + GF + '" font-weight="700" fill="' + color + '" font-family="' + FONT + '"', esc(label), 1.6));
+    /* dimension lines stop at the vehicle's rear bumper and their labels sit ON the vehicle (roof /
+       trunk / bed area), never in the space beside it where the ghost "?" lives */
+    function guide(yIn, label, color, below, xEnd) {
+      var ty = below ? (Y(yIn) + 4.4) : (Y(yIn) - 1.1), gx = r1(xEnd - 1.5);
+      o.push('<line x1="2" y1="' + Y(yIn) + '" x2="' + r1(xEnd) + '" y2="' + Y(yIn) + '" stroke="' + color + '" stroke-width="0.45" stroke-dasharray="3 2" opacity="0.85"/>');
+      o.push(haloText(' x="' + gx + '" y="' + r1(ty) + '" text-anchor="end" font-size="' + GF + '" font-weight="700" fill="' + color + '" font-family="' + FONT + '"', esc(label), 1.6));
     }
-    guide(A.height, shortDim(A.height, metric) + ' roof', PAL.A.guide, false);
+    var endA = vxA + LA, endB = B ? vxB + LB : endA;
+    guide(A.height, shortDim(A.height, metric) + ' roof', PAL.A.guide, false, endA);
     /* hood / bed labels go below their lines so they never sit on the roof label when heights are close */
-    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood', '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7); }
-    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed', '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true); }
+    if (has(A.hoodHeight)) { guide(A.hoodHeight, shortDim(A.hoodHeight, metric) + ' hood', '#7b5ea7', Math.abs(A.height - A.hoodHeight) < 7, endA); }
+    if (has(A.bedHeight)) { guide(A.bedHeight, shortDim(A.bedHeight, metric) + ' bed', '#0b7285', has(A.hoodHeight) && Math.abs(A.hoodHeight - A.bedHeight) < 7 ? false : true, endA); }
     if (B) {
-      guide(B.height, shortDim(B.height, metric) + ' roof', PAL.B.guide, true);
-      if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed', PAL.B.guide, true); }
+      guide(B.height, shortDim(B.height, metric) + ' roof', PAL.B.guide, true, endB);
+      if (has(B.bedHeight)) { guide(B.bedHeight, shortDim(B.bedHeight, metric) + ' bed', PAL.B.guide, true, endB); }
     }
 
     if (inter) { o.push(hitOpen('crew', 'Your height and crew', px - Math.max(pw / 2, 9) - 3, Y(personIn) - 4, Math.max(pw, 18) + 6, personIn + 6)); }
@@ -917,13 +919,29 @@ var VVY = (function () {
     if (rows >= 3) { out.push({ n: 3, seats: Math.min(3, r3), bench: r3 >= 2 }); }
     return out;
   }
-  function dogSpace(cfg) {
-    var t = cfg.template || 'sedan';
-    if (/^pickup/.test(t) || has(cfg.bedLen)) { return { kind: 'bed', dogs: 99 }; }
-    if (t === 'sedan' || t === 'coupe' || t === 'wedge') { return { kind: 'none', dogs: 0 }; }
+  /* ASSUMPTION, not a manufacturer figure: a folded full-size stroller is taken as 5 cu ft
+     (roughly 33 x 20 x 13 in). Shown in the UI as an assumption wherever it is used. */
+  var STROLLER_CUFT = 5;
+  /* cargo behind the last row (published) with strollers taken out first; dogs get what is left.
+     kind: 'bed' (pickup: open bed, strollers and dogs both fine), 'cargo' (hatch/crossover/SUV/
+     minivan/wagon/van), 'trunk' (sedan/coupe/wedge: strollers yes, dogs no), 'unknown' (no figure) */
+  function cargoSpace(cfg, strollers) {
+    strollers = strollers || 0;
+    var t = cfg.template || 'sedan', closed = (t === 'sedan' || t === 'coupe' || t === 'wedge');
+    if (/^pickup/.test(t) || has(cfg.bedLen)) { return { kind: 'bed', dogs: 99, strollersFit: strollers, strollersNeed: strollers * STROLLER_CUFT }; }
     var c = has(cfg.cargo3) ? cfg.cargo3 : (has(cfg.cargo2) ? cfg.cargo2 : null);
-    if (c === null) { return { kind: 'unknown', dogs: 0 }; }
-    return { kind: 'cargo', dogs: Math.floor(c / CARGO_PER_DOG), cuft: c };
+    if (c === null) { return { kind: 'unknown', dogs: 0, strollersFit: null, strollersNeed: strollers * STROLLER_CUFT }; }
+    var need = strollers * STROLLER_CUFT, fitS = Math.min(strollers, Math.floor(c / STROLLER_CUFT)), left = Math.max(0, c - need);
+    return { kind: closed ? 'trunk' : 'cargo', cuft: c, dogs: closed ? 0 : Math.floor(left / CARGO_PER_DOG), left: left, strollersFit: fitS, strollersNeed: need };
+  }
+  function dogSpace(cfg) { return cargoSpace(cfg, 0); }
+  /* how many car-seat toddlers WITH strollers a vehicle can carry: rear seats (car seats never go up
+     front) limited by stroller space; the build derives the fleet ceiling from this */
+  function carSeatCapacity(cfg) {
+    var lay = seatLayout(cfg), rear = 0, k;
+    for (k = 0; k < lay.length; k++) { if (lay[k].n > 1) { rear += lay[k].seats; } }
+    var sp = cargoSpace(cfg, 0), byCargo = sp.kind === 'bed' ? 99 : (sp.kind === 'unknown' ? 0 : Math.floor(sp.cuft / STROLLER_CUFT));
+    return Math.max(0, Math.min(rear, byCargo));
   }
   function seatEveryone(cfg, party) {
     party = party || {};
@@ -940,9 +958,16 @@ var VVY = (function () {
     var rest = people.slice(), ai = -1;
     for (i = 0; i < rest.length; i++) { if (rest[i].kind !== 'kid') { ai = i; break; } }
     if (ai >= 0 && occ[1] && occ[1].length > 1) { put(rest[ai], 1, 1); rest.splice(ai, 1); }
-    /* 3. rear rows in the order given: window seats first, middle last */
+    /* 3. rear rows in the order given: window seats first, middle last. Car seats go FIRST and
+       only ever in a rear row (never up front); everyone else follows. */
     var order = [];
     for (k = 0; k < lay.length; k++) { if (lay[k].n > 1) { var n = lay[k].seats; if (n >= 1) { order.push([lay[k].n, 0]); } if (n >= 2) { order.push([lay[k].n, 1]); } if (n >= 3) { order.push([lay[k].n, 2]); } } }
+    var cs = [], others = [], strollers = 0;
+    for (i = 0; i < rest.length; i++) { if (rest[i].carseat) { cs.push(rest[i]); if (rest[i].stroller) { strollers++; } } else { others.push(rest[i]); } }
+    var noRear = [];
+    while (cs.length && order.length) { put(cs.shift(), order[0][0], order[0][1]); order.shift(); }
+    while (cs.length) { var lost = cs.shift(); lost.why = 'car seat needs a rear seat'; noRear.push(lost); }
+    rest = others;
     /* then the front passenger seat if still free; the front bench middle is kept for last */
     if (occ[1] && occ[1].length > 1 && !occ[1][1]) { order.push([1, 1]); }
     var oi = 0;
@@ -952,7 +977,7 @@ var VVY = (function () {
     for (k = lay.length - 1; k >= 0; k--) { for (i = 0; i < occ[lay[k].n].length; i++) { if (!occ[lay[k].n][i] && !(lay[k].n === 1 && i === 2)) { free.push([lay[k].n, i]); } } }
     free.sort(function (x, y) { return (x[0] === 1 ? 1 : 0) - (y[0] === 1 ? 1 : 0) || x[0] - y[0] || x[1] - y[1]; });
     if (occ[1] && occ[1].length > 2 && !occ[1][2]) { free.push([1, 2]); }
-    var space = dogSpace(cfg), spaceLeft = space.dogs;
+    var space = cargoSpace(cfg, strollers), spaceLeft = space.dogs;
     for (i = 0; i < nDogs; i++) {
       var dog = { kind: 'dog', h: 22, i: i };
       if (free.length) { var f = free.shift(); put(dog, f[0], f[1]); dogsOut.push({ dog: dog, place: 'seat', row: f[0], seat: f[1] }); }
@@ -987,7 +1012,8 @@ var VVY = (function () {
       if (spaceLeft > 0) { spaceLeft--; dE.place = space.kind; } else { dE.place = 'none'; }
       delete dE.row; delete dE.seat;
     }
-    return { layout: lay, occ: occ, placed: placed, unseated: unseated, dogs: dogsOut, space: space, rows: rowsN, seats: seatsN, you: you };
+    for (i = 0; i < noRear.length; i++) { unseated.push(noRear[i]); }
+    return { layout: lay, occ: occ, placed: placed, unseated: unseated, dogs: dogsOut, space: space, strollers: strollers, rows: rowsN, seats: seatsN, you: you };
   }
   /* row -> riders (people only, in seat order) for the drawing code */
   function ridersByRow(sea) {
@@ -1008,13 +1034,19 @@ var VVY = (function () {
     var sea = seatEveryone(cfg, party), i, seatedDogs = 0, cargoDogs = 0, bedDogs = 0, lostDogs = 0;
     for (i = 0; i < sea.dogs.length; i++) { if (sea.dogs[i].place === 'seat') { seatedDogs++; } else if (sea.dogs[i].place === 'cargo') { cargoDogs++; } else if (sea.dogs[i].place === 'bed') { bedDogs++; } else { lostDogs++; } }
     var used = (people - sea.unseated.length) + seatedDogs, spare = seats - used;
-    var fits = sea.unseated.length === 0 && lostDogs === 0;
+    var strollersOK = sea.strollers === 0 || sea.space.kind === 'bed' || (sea.space.strollersFit !== null && sea.space.strollersFit >= sea.strollers);
+    var strollersUnknown = sea.strollers > 0 && sea.space.kind === 'unknown';
+    var fits = sea.unseated.length === 0 && lostDogs === 0 && (strollersOK || strollersUnknown);
     var r = { fits: fits, people: people, seats: seats, spare: spare, pets: dogs, cls: fits ? 'ok' : 'no', seated: sea };
     var name = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle'), t;
     if (people === 0 && dogs === 0) { t = seats + ' seats in ' + rows + (rows === 1 ? ' row' : ' rows') + '. Add your party to check the fit.'; r.cls = 'idle'; }
     else if (!fits) {
       t = 'Does not fit: ' + people + (people === 1 ? ' person' : ' people') + (dogs ? ' and ' + dogs + (dogs === 1 ? ' dog' : ' dogs') : '') + ' need ' + (people + dogs) + ' seats and this ' + name + ' has ' + seats + '.';
-      if (sea.unseated.length) { t += ' ' + sea.unseated.length + (sea.unseated.length === 1 ? ' person' : ' people') + ' would be left behind.'; }
+      if (sea.unseated.length) {
+        var nr = 0; for (i = 0; i < sea.unseated.length; i++) { if (sea.unseated[i].why) { nr++; } }
+        t += ' ' + sea.unseated.length + (sea.unseated.length === 1 ? ' person' : ' people') + ' would be left behind' + (nr ? ' (' + nr + (nr === 1 ? ' car seat needs' : ' car seats need') + ' a rear seat)' : '') + '.';
+      }
+      if (!strollersOK && !strollersUnknown) { t += ' ' + sea.strollers + (sea.strollers === 1 ? ' stroller needs' : ' strollers need') + ' ~' + sea.space.strollersNeed + ' cu ft (assumed ' + STROLLER_CUFT + ' each) and the ' + (sea.space.kind === 'trunk' ? 'trunk' : 'cargo bay') + ' has ' + sea.space.cuft + '.'; }
       if (lostDogs) {
         t += ' ' + lostDogs + (lostDogs === 1 ? ' dog has' : ' dogs have') + ' no seat and ' + (sea.space.kind === 'none' ? 'a ' + (cfg.template === 'wedge' ? 'closed bed' : 'trunk') + ' is no place for a dog' : (sea.space.kind === 'unknown' ? 'the cargo space is not on file' : 'the cargo bay (' + sea.space.cuft + ' cu ft) is only big enough for ' + sea.space.dogs + (sea.space.dogs === 1 ? ' dog' : ' dogs'))) + '.';
       }
@@ -1022,7 +1054,9 @@ var VVY = (function () {
       t = 'Fits: ' + used + ' of ' + seats + ' seats used' + (seatedDogs ? ' (' + seatedDogs + ' by ' + (seatedDogs === 1 ? 'a dog' : 'dogs') + ')' : '') + (spare > 0 ? ', ' + spare + ' spare' : ', every seat taken') + '.';
       if (cargoDogs) { t += ' ' + cargoDogs + (cargoDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the cargo bay (' + sea.space.cuft + ' cu ft behind the last row).'; }
       if (bedDogs) { t += ' ' + bedDogs + (bedDogs === 1 ? ' dog rides' : ' dogs ride') + ' in the bed.'; }
+      if (sea.strollers) { t += ' ' + sea.strollers + (sea.strollers === 1 ? ' stroller' : ' strollers') + (strollersUnknown ? ': cargo space is not on file, so not checked.' : ' (~' + sea.space.strollersNeed + ' cu ft, assumed) ' + (sea.space.kind === 'bed' ? 'in the bed.' : 'in the ' + (sea.space.kind === 'trunk' ? 'trunk' : 'cargo bay') + ' (' + sea.space.cuft + ' cu ft).')); }
     }
+    r.strollers = sea.strollers; r.strollersUnknown = strollersUnknown;
     r.text = t;
     return r;
   }
@@ -1087,8 +1121,9 @@ var VVY = (function () {
       for (i = 0; i < seaAll.unseated.length; i++) { if (!seaAll.unseated[i].you) { a.push({ p: seaAll.unseated[i], row: 0 }); } }
       o.push('<ul class="vvy-room list">');
       for (i = 0; i < a.length; i++) {
-        r = a[i]; who = 'Your ' + esc(personLabel(r.p.h, metric)) + (r.p.kind === 'kid' ? ' kid' : ' adult');
-        if (r.row === 0) { o.push('<li class="no">' + who + ' has no seat in this vehicle.</li>'); continue; }
+        r = a[i]; who = 'Your ' + esc(personLabel(r.p.h, metric)) + (r.p.carseat ? ' toddler (car seat)' : (r.p.kind === 'kid' ? ' kid' : ' adult'));
+        if (r.row === 0) { o.push('<li class="no">' + who + (r.p.why ? ' has no rear seat — a car seat cannot go up front.' : ' has no seat in this vehicle.') + '</li>'); continue; }
+        if (r.p.carseat) { o.push('<li class="ok">' + who + ' rides in a car seat in the ' + rowLabel(r.row) + (r.p.stroller ? ', stroller in the ' + (seaAll.space.kind === 'bed' ? 'bed' : (seaAll.space.kind === 'trunk' ? 'trunk' : 'cargo bay')) + ' (assumed ' + STROLLER_CUFT + ' cu ft folded)' : '') + '.</li>'); continue; }
         if (r.row === 1) { o.push('<li class="ok">' + who + ' rides up front' + (has(cfg.legroom1) ? ' (' + esc(shortDim(cfg.legroom1, metric)) + ' legroom)' : '') + '.</li>'); continue; }
         var head = r.row === 2 ? cfg.headroom2 : cfg.headroom3, leg = r.row === 2 ? cfg.legroom2 : cfg.legroom3;
         b = roomBand(r.p.h, head, leg);
@@ -1366,6 +1401,12 @@ var VVY = (function () {
         return s.join('');
       };
     }
+    /* dogs on seats first (behind the riders, offset like a rider in that seat) */
+    for (i = 0; i < sea.dogs.length; i++) {
+      if (sea.dogs[i].place !== 'seat') { continue; }
+      var dRow = null; for (k = 0; k < R.length; k++) { if (R[k].n === sea.dogs[i].row) { dRow = R[k]; } }
+      if (dRow) { var dxs = dRow.hx - 4 + sea.dogs[i].seat * 3.5; o.push('<g opacity="' + (sea.dogs[i].seat > 0 ? 0.7 : 1) + '">' + groundShadow(dxs, Y(dRow.cush + 0.5) + 0.4, 9, 0.9, 0.2) + sittingDogSvg(dxs, dRow.cush + 0.5, Y, 20, dx) + '</g>'); }
+    }
     for (k = 0; k < R.length; k++) {
       var rr = R[k], list = byRow[rr.n];
       for (j = 0; j < list.length; j++) {
@@ -1377,7 +1418,16 @@ var VVY = (function () {
         var kneeAnat = rr.hx - hh * SEAT.thigh, kneeX = kneeAnat;
         if (rr.n > 1 && fr.ls !== null) { var face = R[k - 1].hx + 7, kls = face + fr.ls; if (kls < kneeAnat) { kneeX = kls; } }
         if (rr.n === 1 && fr.ls !== null && fr.ls < 0) { kneeX = kneeAnat - fr.ls * 0.3; }
-        o.push(seatedSvg(hh, rr.hx + j * 3.5, rr.cush, kneeX + j * 3.5, floor, Y, col, 'vvy-seated' + (p.you ? ' vvy-you' : ''), dx, faceFor(fr, rr, rr.n === 1), j > 0));
+        if (p.carseat) {
+          /* child car seat: a bucket shell on the cushion, high back with a wing, the child sits on its
+             own cushion ~3 in above the seat */
+          var cx0 = rr.hx + j * 3.5, cb = rr.cush, shellCol = '#4b5563';
+          o.push('<g class="vvy-carseat"><path d="M' + r1(cx0 - 11) + ' ' + Y(cb + 0.5) + ' L' + r1(cx0 + 5) + ' ' + Y(cb + 0.5) + ' L' + r1(cx0 + 8) + ' ' + Y(cb + 26) + ' L' + r1(cx0 + 2) + ' ' + Y(cb + 27) + ' L' + r1(cx0 - 1) + ' ' + Y(cb + 8) + ' L' + r1(cx0 - 11) + ' ' + Y(cb + 6) + ' Z" fill="url(#' + dx.vgrad('carseat', shellCol, 0.2, -0.3) + ')" stroke="' + shade(shellCol, -0.35) + '" stroke-width="0.4"/>' +
+            '<rect x="' + r1(cx0 - 10) + '" y="' + Y(cb + 3.5) + '" width="13" height="3" rx="1.2" fill="' + shade(shellCol, 0.25) + '"/></g>');
+          o.push(seatedSvg(hh, cx0 - 1, cb + 3.5, kneeX + j * 3.5 + 3, cb + 3.5 - Math.max(6, hh * 0.285), Y, col, 'vvy-seated vvy-toddler', dx, faceFor(fr, rr, rr.n === 1), j > 0));
+        } else {
+          o.push(seatedSvg(hh, rr.hx + j * 3.5, rr.cush, kneeX + j * 3.5, floor, Y, col, 'vvy-seated' + (p.you ? ' vvy-you' : ''), dx, faceFor(fr, rr, rr.n === 1), j > 0));
+        }
         callouts.push({ row: rr, j: j, p: p, fr: fr, hx: rr.hx + j * 3.5, kneeX: kneeX + j * 3.5, crown: rr.cush + hh * SEAT.crown + SEAT.crownPad, kneeY: rr.cush + hh * 0.04, faceX: k > 0 ? R[k - 1].hx + 7 : null });
       }
     }
@@ -1396,8 +1446,7 @@ var VVY = (function () {
     for (i = 0; i < sea.dogs.length; i++) {
       dg = sea.dogs[i];
       if (dg.place === 'seat') {
-        rowOf = null; for (k = 0; k < R.length; k++) { if (R[k].n === dg.row) { rowOf = R[k]; } }
-        if (rowOf) { o.push(groundShadow(rowOf.hx - 4, Y(rowOf.cush + 0.5) + 0.4, 9, 0.9, 0.2) + sittingDogSvg(rowOf.hx - 4 + dg.seat * 2, rowOf.cush + 0.5, Y, 20, dx)); }
+        continue;   /* drawn before the riders, so it sits behind them on its own seat offset */
       } else if (dg.place === 'bed') {
         /* rear of the bed, clearly behind the cab; the near bed wall is drawn over its lower body below */
         var bedY = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20);
@@ -1640,7 +1689,14 @@ var VVY = (function () {
         var fr = rowFit(cfg, rr.n, oc.h);
         var wv = fr.band === 'unknown' ? null : (fr.hs === null ? fr.ls : (fr.ls === null ? fr.hs : Math.min(fr.hs, fr.ls)));
         if (wv !== null && (worst === null || wv < worst)) { worst = wv; }
-        o.push(riderSvg(oc, rr.u, rr.vs[j], fr));
+        if (oc.carseat) {
+          var csv = rr.vs[j], csu = rr.u, cw = 9;
+          o.push('<g class="vvy-carseat-top"><polygon points="' + pts([[csu - 12, csv - cw, 1], [csu - 12, csv + cw, 1], [csu + 4, csv + cw, 1], [csu + 4, csv - cw, 1]]) + '" fill="' + shade('#4b5563', 0.1) + '" stroke="' + shade('#4b5563', -0.35) + '" stroke-width="0.35"/>' +
+            '<polygon points="' + pts([[csu + 2, csv - cw, 0], [csu + 2, csv + cw, 0], [csu + 5, csv + cw - 1, 26], [csu + 5, csv - cw + 1, 26]]) + '" fill="url(#' + dx.vgrad('carseato', '#4b5563', 0.25, -0.25) + ')"/>' +
+            '<polygon points="' + pts([[csu - 12, csv - cw, 0], [csu - 12, csv - cw + 2.5, 0], [csu + 3, csv - cw + 2.5, 14], [csu + 3, csv - cw, 14]]) + '" fill="' + shade('#4b5563', -0.1) + '"/>' +
+            '<polygon points="' + pts([[csu - 12, csv + cw, 0], [csu - 12, csv + cw - 2.5, 0], [csu + 3, csv + cw - 2.5, 14], [csu + 3, csv + cw, 14]]) + '" fill="' + shade('#4b5563', -0.1) + '"/></g>');
+        }
+        o.push(riderSvg(oc, rr.u - (oc.carseat ? 3 : 0), rr.vs[j], fr));
       }
       var bandR = worst === null ? (nRiders ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
       chips.push({ row: rr, band: bandR });
@@ -1713,6 +1769,10 @@ var VVY = (function () {
     partyRows: partyRows,
     seatEveryone: seatEveryone,
     seatLayout: seatLayout,
+    cargoSpace: cargoSpace,
+    carSeatCapacity: carSeatCapacity,
+    STROLLER_CUFT: STROLLER_CUFT,
+    CARGO_PER_DOG: CARGO_PER_DOG,
     SEAT: SEAT,
     specsHtml: specsHtml,
     compsHtml: compsHtml,
