@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vehicles vs You — scaled height comparison</title>
+<script>
+/* Error trap installed FIRST so a parse error below still surfaces visibly. ES5 only. */
+window.onerror = function (msg, url, line, col) {
+  try {
+    var b = document.getElementById('errbar');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'errbar';
+      if (document.body) { document.body.insertBefore(b, document.body.firstChild); }
+    }
+    b.style.display = 'block';
+    b.appendChild(document.createTextNode('Script error: ' + msg + ' (line ' + line + ':' + col + '). The static comparison below is still accurate; interactive controls are disabled.'));
+  } catch (e) {}
+  return false;
+};
+</script>
+<style>
+{{CSS}}
+</style>
+</head>
+<body class="static">
+<div id="errbar"></div>
+<div class="wrap">
+
+<header>
+  <span class="vvy-live" id="liveness">Static preview — open in a browser for full interactivity</span>
+  <h1>Vehicles vs You</h1>
+  <p class="tag">A person, drawn to scale, standing in front of the vehicle. Real published dimensions; nothing estimated unless marked &#8776;.</p>
+</header>
+
+<div class="panel">
+  <div class="controls">
+    <div class="full searchwrap">
+      <label for="search">Search all vehicles (<span id="count">{{VEHICLE_COUNT}}</span> configurations)</label>
+      <input type="text" id="search" data-live disabled placeholder="e.g. Tacoma, Cybertruck, Super Duty" autocomplete="off">
+      <div class="vvy-results" id="results"></div>
+    </div>
+    <div>
+      <label for="brandSel">Brand</label>
+      <select id="brandSel" data-live disabled>{{BRAND_OPTIONS}}</select>
+    </div>
+    <div>
+      <label for="modelSel">Model</label>
+      <select id="modelSel" data-live disabled>{{MODEL_OPTIONS}}</select>
+    </div>
+    <div>
+      <label for="configSel">Configuration</label>
+      <select id="configSel" data-live disabled>{{CONFIG_OPTIONS}}</select>
+    </div>
+    <div class="full">
+      <div class="hrow">
+        <label for="hslider">Your height</label>
+        <span id="heightOut">6' 3"</span>
+      </div>
+      <input type="range" id="hslider" data-live disabled min="48" max="84" step="1" value="75">
+      <div class="hrow" style="margin-top:6px">
+        <span style="font-size:12px;color:#7b8794">4'0" &#8212; 7'0"</span>
+        <button type="button" id="unitBtn" data-live disabled>Imperial (ft-in / lb)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2 id="vehTitle">{{DEF_TITLE}}</h2>
+  <p id="vehSub">{{DEF_SUB}}</p>
+  <div id="scene">{{STATIC_SVG}}</div>
+</div>
+
+<div class="cols">
+  <div class="panel">
+    <h2 class="sec">Specifications</h2>
+    <div id="specs">{{STATIC_SPECS}}</div>
+    <div id="srcNote">{{STATIC_SRC}}</div>
+  </div>
+  <div class="panel">
+    <h2 class="sec">How it lines up with you</h2>
+    <div id="comps">{{STATIC_COMPS}}</div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== ATTRIBUTION BLOCK (single occurrence of the name placeholder) ===== -->
+<footer>
+  <p>&copy; 2026 [YOUR NAME]</p>
+  <p>Free for personal use. Not licensed for commercial use.</p>
+  <p>Data provenance: overall height, length, wheelbase, ground clearance and curb weight are taken from manufacturer-published specifications for the model year shown; figures marked &#8776; are derived and hood/bed heights are shown only where a published source exists.</p>
+</footer>
+<!-- ===== END ATTRIBUTION BLOCK ===== -->
+
+<script>
+{{GEOM_JS}}
+</script>
+<script>
+var VVY_DATA = {{DATA_JSON}};
+</script>
+<script>
+{{APP_JS}}
+</script>
+</body>
+</html>

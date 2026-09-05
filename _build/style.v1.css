@@ -1,0 +1,70 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 0 0 40px;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: #1f2933; background: #f5f7fa;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1060px; margin: 0 auto; padding: 14px; }
+header h1 { font-size: 20px; margin: 4px 0 2px; letter-spacing: -0.01em; }
+header p.tag { margin: 0 0 10px; color: #616e7c; font-size: 13px; }
+#errbar {
+  display: none; background: #b3261e; color: #fff; padding: 10px 14px;
+  font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.vvy-live {
+  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 99px;
+  background: #f0b429; color: #452b02; margin-bottom: 10px;
+}
+.vvy-live.on { background: #0b7285; color: #fff; }
+.panel {
+  background: #fff; border: 1px solid #e4e7eb; border-radius: 10px;
+  padding: 12px; margin-bottom: 12px;
+}
+.controls { display: grid; grid-template-columns: 1fr; gap: 10px; }
+label { display: block; font-size: 12px; font-weight: 600; color: #52606d; margin-bottom: 4px; }
+select, input[type=text] {
+  width: 100%; padding: 9px 10px; font-size: 15px; border: 1px solid #cbd2d9;
+  border-radius: 7px; background: #fff; color: #1f2933;
+}
+select[disabled], input[disabled], button[disabled] { opacity: .45; background: #eef1f4; cursor: not-allowed; }
+input[type=range] { width: 100%; }
+.searchwrap { position: relative; }
+.vvy-results { display: none; }
+.vvy-results.open {
+  display: block; position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+  background: #fff; border: 1px solid #cbd2d9; border-radius: 8px; margin-top: 4px;
+  max-height: 240px; overflow: auto; box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+.vvy-hit {
+  display: block; width: 100%; text-align: left; padding: 9px 10px; border: 0;
+  border-bottom: 1px solid #f0f2f5; background: #fff; font-size: 14px; cursor: pointer; color: #1f2933;
+}
+.vvy-hit span { color: #7b8794; font-size: 12px; display: block; }
+.vvy-nores { padding: 10px; margin: 0; color: #7b8794; font-size: 13px; }
+.hrow { display: flex; align-items: baseline; gap: 8px; justify-content: space-between; }
+#heightOut { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#unitBtn {
+  padding: 8px 12px; font-size: 13px; border: 1px solid #cbd2d9; border-radius: 7px;
+  background: #fff; cursor: pointer; color: #1f2933;
+}
+#vehTitle { font-size: 17px; font-weight: 700; margin: 0; }
+#vehSub { font-size: 13px; color: #616e7c; margin: 2px 0 8px; }
+.vvy-svg { width: 100%; height: auto; display: block; }
+.vvy-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; }
+.vvy-spec dt { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #7b8794; margin: 0; }
+.vvy-spec dd { margin: 1px 0 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.vvy-note { color: #9aa5b1; font-weight: 400; }
+.vvy-comps { margin: 0; padding-left: 18px; }
+.vvy-comps li { margin-bottom: 5px; }
+.vvy-comps li.vvy-missing { color: #7b8794; font-size: 13px; list-style: none; margin-left: -18px; }
+.vvy-src { font-size: 12px; color: #7b8794; margin: 10px 0 0; }
+h2.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #52606d; margin: 0 0 8px; }
+footer { max-width: 1060px; margin: 0 auto; padding: 16px 14px; font-size: 12px; color: #7b8794; }
+footer p { margin: 3px 0; }
+@media (min-width: 760px) {
+  .controls { grid-template-columns: 1fr 1fr 1fr; }
+  .controls .full { grid-column: 1 / -1; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+}

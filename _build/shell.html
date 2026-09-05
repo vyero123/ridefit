@@ -55,24 +55,36 @@ window.onerror = function (msg, url, line, col, err) {
     <div class="herohead">
       <span class="brand">Ride Fit</span>
       <span class="legend" id="legend"><span class="namepill pillA"><span class="chip chipA">A</span> {{DEF_LEGEND}}</span></span>
+      <span class="viewctl" id="viewCtl" style="display:none" role="group" aria-label="Comparison view">
+        <button type="button" class="vbtn on" data-view="profile" data-live disabled>Profile</button>
+        <button type="button" class="vbtn" data-view="cutaway" data-live disabled>Peek inside</button>
+        <button type="button" class="vbtn" data-view="overhead" data-live disabled>Seats</button>
+      </span>
     </div>
-    <div id="scene">{{STATIC_SVG}}</div>
+    <!-- The scene box has a RESERVED height (CSS) so nothing below it ever moves when the drawing
+         changes: both panes scale their SVG inside a fixed box. Pane A = profile (exterior, or the
+         "peek inside" cutaway); pane B = 45° overhead cabin view. In a comparison the same two panes
+         hold A and B and the view control flips both. -->
+    <div id="scene" class="scene two">
+      <div class="pane" id="paneA">{{STATIC_SVG}}</div>
+      <div class="pane" id="paneB">{{STATIC_INSIDE}}</div>
+    </div>
   </section>
 
   <nav class="statebar" id="statebar" aria-label="Current settings">
     <button type="button" class="stchip on" data-seg="vehicle" data-live disabled>{{DEF_CHIP}}</button>
-    <button type="button" class="stchip" data-seg="crew" data-live disabled>You 6' 3"</button>
-    <button type="button" class="stchip" data-seg="crew" data-live disabled>+ crew</button>
+    <button type="button" class="stchip" data-seg="crew" data-live disabled>You 5' 10"</button>
+    <button type="button" class="stchip ok" data-seg="crew" data-live disabled>4 riders + 1 pet · fits</button>
     <button type="button" class="stchip" data-seg="vehicle" data-live disabled>Stock</button>
     <button type="button" class="stchip" data-seg="compare" data-live disabled>+ compare</button>
     <button type="button" class="stchip" data-seg="find" data-live disabled>Find</button>
     <button type="button" class="stchip" data-seg="rank" data-live disabled>Rankings</button>
   </nav>
 
-  <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab, 6'3" person). Enable JavaScript for the controls.</p></noscript>
+  <noscript><p class="noscript">Scripts are off in this browser, so this page shows the default comparison only (Ram 1500 Crew Cab; a 5'10" driver, a 5'5" adult, two kids and a dog). Enable JavaScript for the controls.</p></noscript>
 
   <section class="facts">
-    <div id="fitLine"></div>
+    <div id="fitLine">{{STATIC_FIT}}</div>
     <h2 id="vehTitle">{{DEF_TITLE}}</h2>
     <p id="vehSub">{{DEF_SUB}}</p>
     <div id="specs">{{STATIC_SPECS}}</div>
@@ -121,10 +133,6 @@ window.onerror = function (msg, url, line, col, err) {
       </div>
       <select id="configSel" data-live disabled aria-label="Configuration">{{CONFIG_OPTIONS}}</select>
       <label class="chk"><input type="checkbox" id="fitOnly" data-live disabled> Only show vehicles that fit my crew</label>
-      <div class="chips" id="viewBtns" aria-label="View">
-        <button type="button" class="chipbtn on" data-view="exterior" data-live disabled>Outside</button>
-        <button type="button" class="chipbtn" data-view="interior" data-live disabled>Inside, crew seated</button>
-      </div>
 
       <details class="exp" id="modsExp">
         <summary>Lift &amp; tires <span class="vvy-note" id="modsSummary">stock</span></summary>
@@ -157,7 +165,7 @@ window.onerror = function (msg, url, line, col, err) {
     <section class="card" data-pane="crew" style="display:none">
       <h2 class="q">Who's riding?</h2>
       <p class="hint" style="margin:0 0 8px">Everyone is drawn to scale. You are the reference figure; add riders and set each one's height with the &minus; / + or by tapping the number.</p>
-      <div class="people" id="people"><div class="prow you"><div class="who">You<small>reference figure &#183; adult</small></div><div class="hctl"><button type="button" class="hbtn" disabled>&#8722;</button><button type="button" class="hval" disabled>6' 3"</button><button type="button" class="hbtn" disabled>+</button><button type="button" class="rm" disabled>&#215;</button></div></div></div>
+      <div class="people" id="people"><div class="prow you"><div class="who">You<small>reference figure &#183; adult</small></div><div class="hctl"><button type="button" class="hbtn" disabled>&#8722;</button><button type="button" class="hval" disabled>5' 10"</button><button type="button" class="hbtn" disabled>+</button><button type="button" class="rm" disabled>&#215;</button></div></div></div>
       <div class="hrow" style="margin-top:8px">
         <div class="chips">
           <button type="button" class="chipbtn" id="addAdult" data-live disabled>+ adult</button>
@@ -169,7 +177,7 @@ window.onerror = function (msg, url, line, col, err) {
         <div class="stepper"><label>Dogs</label><div class="steprow"><button type="button" class="stepbtn" data-step="dogs" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="dogsVal">0</span><button type="button" class="stepbtn" data-step="dogs" data-d="1" data-live disabled>+</button></div></div>
         <div class="stepper"><label>Cats</label><div class="steprow"><button type="button" class="stepbtn" data-step="cats" data-d="-1" data-live disabled>&#8722;</button><span class="stepval" id="catsVal">0</span><button type="button" class="stepbtn" data-step="cats" data-d="1" data-live disabled>+</button></div></div>
       </div>
-      <input type="range" id="hslider" data-live disabled min="48" max="84" step="1" value="75" style="display:none" aria-hidden="true">
+      <input type="range" id="hslider" data-live disabled min="48" max="84" step="1" value="70" style="display:none" aria-hidden="true">
       <span id="heightOut" style="display:none"></span><span id="adultsVal" style="display:none"></span><span id="kidsVal" style="display:none"></span>
       <div id="fitBox"></div>
       <div id="roomBox"></div>
@@ -219,13 +227,16 @@ window.onerror = function (msg, url, line, col, err) {
         </div>
       </div>
       <div id="shortlist" class="shortlist"></div>
-      <div class="chips" id="layoutBtns" style="margin-top:10px">
-        <button type="button" class="chipbtn on" data-layout="overlay" data-live disabled>Overlay</button>
-        <button type="button" class="chipbtn" data-layout="side" data-live disabled>Side by side</button>
+      <div class="chips" style="margin-top:10px">
         <button type="button" class="chipbtn" id="clearBtn" data-live disabled>Clear B</button>
         <button type="button" class="chipbtn" id="rankBtn2" data-live disabled>Pick from rankings</button>
       </div>
-      <p class="hint">Vehicle A is solid blue; vehicle B is translucent amber with a dashed outline. In overlay mode both share the same front bumper and ground line so the roof, hood and bed lines compare directly. The comparison table appears under the drawing.</p>
+      <div class="chips" id="viewCtl2" style="margin-top:8px" role="group" aria-label="Comparison view">
+        <button type="button" class="chipbtn on" data-view="profile" data-live disabled>Profile</button>
+        <button type="button" class="chipbtn" data-view="cutaway" data-live disabled>Peek inside</button>
+        <button type="button" class="chipbtn" data-view="overhead" data-live disabled>Seats</button>
+      </div>
+      <p class="hint">Vehicle A is blue, vehicle B amber, drawn side by side at the same scale with the same crew. One control flips both to the inside views: the cutaway measures headroom and knee room, the seats view shows who sits where. The comparison table appears under the drawing.</p>
     </section>
 
     <!-- ---- Card: Rankings ---- -->

@@ -6,14 +6,19 @@
   var FLAT = [];
   var state = {
     a: null, b: null,
-    person: 75, metric: false,
+    person: 70, metric: false,
     lift: 0, tireMode: 'stock', tireCustom: 35,
-    layout: 'overlay',
-    view: 'exterior',   /* 'exterior' | 'interior' (cutaway with the crew seated) */
+    /* view: 'profile' (exterior) | 'cutaway' (peek inside, measured) | 'overhead' (seats).
+       Alone: pane A shows profile or cutaway, pane B always the overhead view.
+       Comparing: one control flips BOTH panes — profile = A and B side by side at one scale in a
+       single pane; cutaway / overhead = A in pane A, B in pane B, drawn at a shared scale. */
+    view: 'profile',
     pickTarget: 'A',
     tab: 'vehicle',
     rankSort: 'height', rankDir: -1, rankFilter: '', rankClass: '',
-    party: { adults: 0, kids: 0, dogs: 0, cats: 0, people: [] }, fitOnly: false, shortlist: []
+    /* default crew: you 5'10" (US adult median), an adult 5'5", a kid 4'2" (typical at 8) and a
+       kid 3'7" (typical at 5), one dog — the same party the static first paint is built with */
+    party: { adults: 0, kids: 0, dogs: 1, cats: 0, people: [{ kind: 'adult', h: 65 }, { kind: 'kid', h: 50 }, { kind: 'kid', h: 43 }] }, fitOnly: false, shortlist: []
   };
   var reduceMotion = false;
   try {
@@ -130,7 +135,7 @@
     o.push(prowHtml('you', 'You', 'reference figure · adult', state.person, true));
     for (i = 0; i < state.party.people.length; i++) {
       p = state.party.people[i];
-      o.push(prowHtml(i, p.kind === 'kid' ? 'Kid ' + (kidIndex(i)) : 'Adult ' + (adultIndex(i)), p.kind === 'kid' ? 'default 3\'9" (about age 6)' : 'default 5\'6" (typical adult)', p.h, false));
+      o.push(prowHtml(i, p.kind === 'kid' ? 'Kid ' + (kidIndex(i)) : 'Adult ' + (adultIndex(i)), p.kind === 'kid' ? 'child · 3\'7" is typical at 5, 4\'2" at 8' : 'adult', p.h, false));
     }
     return o.join('');
   }
@@ -207,17 +212,39 @@
     var changed = (state.a !== lastKeyA) || (state.b !== lastKeyB);
     lastKeyA = state.a; lastKeyB = state.b;
 
-    var vehicles = [eA]; if (eB) { vehicles.push(eB); }
-    var scene = byId('scene');
-    if (state.view === 'interior') {
-      scene.innerHTML = VVY.renderInterior(eA, state.person, state.metric, { party: state.party, interactive: true });
+    var scene = byId('scene'), paneA = byId('paneA'), paneB = byId('paneB');
+    var sopts = { animate: changed && !reduceMotion, party: state.party, interactive: true, wag: !reduceMotion };
+    var htmlA, htmlB = '';
+    if (!eB) {
+      htmlA = state.view === 'cutaway' ? VVY.renderInterior(eA, state.person, state.metric, { party: state.party, interactive: true, idPrefix: 'pa' })
+                                      : VVY.renderScene([eA], state.person, state.metric, sopts);
+      htmlB = VVY.renderInside(eA, state.person, state.metric, { party: state.party, role: 'A', idPrefix: 'pb' });
+    } else if (state.view === 'profile') {
+      htmlA = VVY.renderScene([eA, eB], state.person, state.metric, sopts);
     } else {
-      scene.innerHTML = VVY.renderScene(vehicles, state.person, state.metric, { layout: state.layout, animate: changed && !reduceMotion, party: state.party, interactive: true });
+      var ref = { L: Math.max(eA.length, eB.length), W: Math.max(eA.width || 76, eB.width || 76), H: Math.max(eA.height, eB.height) };
+      if (state.view === 'cutaway') {
+        htmlA = VVY.renderInterior(eA, state.person, state.metric, { party: state.party, interactive: true, idPrefix: 'pa', ref: ref });
+        htmlB = VVY.renderInterior(eB, state.person, state.metric, { party: state.party, interactive: true, idPrefix: 'pb', role: 'B', ref: ref });
+      } else {
+        htmlA = VVY.renderInside(eA, state.person, state.metric, { party: state.party, role: 'A', idPrefix: 'pa', ref: ref });
+        htmlB = VVY.renderInside(eB, state.person, state.metric, { party: state.party, role: 'B', idPrefix: 'pb', ref: ref });
+      }
     }
+    scene.className = 'scene ' + (htmlB ? 'two' : 'one');
+    paneA.innerHTML = htmlA;
+    paneB.innerHTML = htmlB;
+    paneB.style.display = htmlB ? '' : 'none';
     if (changed && !reduceMotion) {
-      scene.className = scene.className.replace(/\s*vvy-anim/g, '');
-      void scene.offsetWidth;
-      scene.className += ' vvy-anim';
+      paneA.className = 'pane a'; void paneA.offsetWidth; paneA.className = 'pane a vvy-anim';
+      paneB.className = 'pane b'; void paneB.offsetWidth; paneB.className = 'pane b vvy-anim';
+    }
+    /* comparison view control: only meaningful with a B */
+    var vcs = [byId('viewCtl'), byId('viewCtl2')], vi, vb;
+    byId('viewCtl').style.display = eB ? '' : 'none';
+    for (vi = 0; vi < vcs.length; vi++) {
+      vb = vcs[vi].querySelectorAll('button');
+      for (i = 0; i < vb.length; i++) { vb[i].className = (vb[i].getAttribute('data-view') === state.view) ? vb[i].className.replace(/\s*on/g, '') + ' on' : vb[i].className.replace(/\s*on/g, ''); }
     }
 
     byId('fitLine').innerHTML = VVY.fitHtml(A, state.party);
@@ -227,7 +254,7 @@
     byId('people').innerHTML = peopleHtml();
     byId('dogsVal').innerHTML = state.party.dogs;
     byId('catsVal').innerHTML = state.party.cats;
-    Cats.start(scene);
+    Cats.start(paneA);
     state.fitOnly = !!Filters.state.must.fitsCrew;
     byId('fitOnly').checked = state.fitOnly;
     byId('fitOnlyRank').checked = state.fitOnly;
@@ -300,12 +327,6 @@
 
     /* compare tab readouts */
     byId('cmpSel').innerHTML = B ? '' : '(none selected)';
-    var vb = document.querySelectorAll('#viewBtns button');
-    for (i = 0; i < vb.length; i++) { vb[i].className = (vb[i].getAttribute('data-view') === state.view) ? 'chipbtn on' : 'chipbtn'; }
-    var lay = document.querySelectorAll('#layoutBtns button');
-    for (i = 0; i < lay.length; i++) {
-      lay[i].className = (lay[i].getAttribute('data-layout') === state.layout) ? 'chipbtn on' : 'chipbtn';
-    }
 
     renderRank();
   }
@@ -366,11 +387,11 @@
     renderRank();
   }
   function setView(v) {
-    state.view = v === 'interior' ? 'interior' : 'exterior';
+    state.view = (v === 'cutaway' || v === 'overhead') ? v : 'profile';
+    if (!state.b && state.view === 'overhead') { state.view = 'profile'; }   /* alone, the overhead pane is always there */
     crumb('view: ' + state.view);
     render();
-    var sc = byId('scene');
-    if (!reduceMotion) { sc.className = sc.className.replace(/\s*vvy-anim/g, ''); void sc.offsetWidth; sc.className += ' vvy-anim'; }
+    if (!reduceMotion) { var pa = byId('paneA'); pa.className = 'pane a'; void pa.offsetWidth; pa.className = 'pane a vvy-anim'; }
   }
   window.RideFitView = { set: function (v) { setView(v); }, get: function () { return state.view; } };
   function setA(k) { state.a = k; fillSelects(); render(); }
@@ -810,7 +831,7 @@
     byId('people').onclick = safe(onPeopleClick);
     byId('people').oninput = safe(onPeopleInput); byId('people').onchange = safe(onPeopleInput);
     byId('addAdult').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'adult', h: 66 }); render(); } });
-    byId('addKid').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 45 }); render(); } });
+    byId('addKid').onclick = safe(function () { if (state.party.people.length < 23) { state.party.people.push({ kind: 'kid', h: 50 }); render(); } });
     byId('unitBtn').onclick = safe(function () { state.metric = !state.metric; render(); });
 
     byId('lift').oninput = safe(onLift); byId('lift').onchange = safe(onLift);
@@ -821,14 +842,8 @@
     byId('tireCustom').oninput = safe(onTireCustom); byId('tireCustom').onchange = safe(onTireCustom);
     byId('resetMods').onclick = safe(function () { state.lift = 0; state.tireMode = 'stock'; byId('lift').value = 0; render(); });
 
-    byId('layoutBtns').onclick = safe(function (e) {
-      var t = e.target || e.srcElement;
-      if (t && t.getAttribute && t.getAttribute('data-layout')) { state.layout = t.getAttribute('data-layout'); render(); }
-    });
-    byId('viewBtns').onclick = safe(function (e) {
-      var t = e.target || e.srcElement;
-      if (t && t.getAttribute && t.getAttribute('data-view')) { setView(t.getAttribute('data-view')); }
-    });
+    byId('viewCtl').onclick = safe(onViewCtl);
+    byId('viewCtl2').onclick = safe(onViewCtl);
     byId('clearBtn').onclick = safe(clearB);
     byId('swapBtn').onclick = safe(swapAB);
 
@@ -853,7 +868,7 @@
         safeTimer(unpress, 220);
         if (kind === 'crew') { Sheet.open('crew'); }
         else if (kind === 'vehicle') { Sheet.open('vehicle'); }
-        else if (kind === 'view') { setView(state.view === 'interior' ? 'exterior' : 'interior'); }
+        else if (kind === 'view') { setView(state.view === 'cutaway' ? 'profile' : 'cutaway'); }
         else if (kind === 'compare') {
           Sheet.open('compare');
           /* focus the search box only after the segment is visible and layout has flushed —
@@ -926,6 +941,10 @@
     document.body.className = document.body.className.replace(/\bstatic\b/g, '') + ' live';
   }
 
+  function onViewCtl(e) {
+    var t = e.target || e.srcElement;
+    if (t && t.getAttribute && t.getAttribute('data-view')) { setView(t.getAttribute('data-view')); }
+  }
   function onSlider() { state.person = parseInt(byId('hslider').value, 10); render(); }
   function onLift() { state.lift = parseFloat(byId('lift').value) || 0; render(); }
   function onTireCustom() { state.tireCustom = byId('tireCustom').value; if (state.tireMode === 'custom') { render(); } }

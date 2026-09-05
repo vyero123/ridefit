@@ -17,8 +17,13 @@ setTimeout(function () {
   check(/\blive\b/.test(d.body.className) && d.querySelectorAll('[data-live][disabled]').length === 0, 'boot: live, controls enabled, ' + w.RIDEFIT_VEHICLES.count + ' records');
   check($('errbar').style.display !== 'block', 'error bar hidden: ' + $('errbar').textContent);
   /* static first paint */
-  var st = /<div id="scene">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html);
-  check(!!st && st[1].indexOf('vvy-veh-A') > 0 && html.indexOf('Ram 1500') > 0, 'static first paint: prerendered SVG present');
+  var st = /<div class="pane" id="paneA">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html), st2 = /<div class="pane" id="paneB">(<svg[\s\S]*?<\/svg>)<\/div>/.exec(html);
+  check(!!st && st[1].indexOf('vvy-veh-A') > 0 && html.indexOf('Ram 1500') > 0 && !!st2 && st2[1].indexOf('vvy-inside') > 0, 'static first paint: profile + overhead panes prerendered');
+  var fam = st ? (st[1].match(/class="vvy-fam/g) || []).length : 0, dogs = st ? (st[1].match(/class="vvy-dog"/g) || []).length : 0;
+  check(fam === 3 && dogs === 1 && st[1].indexOf("You &#183; 5' 10&quot;") > 0 && st[1].indexOf('animateTransform') < 0, 'static first paint crew: you 5\'10" + 3 riders + 1 dog, no animation (' + fam + ' riders, ' + dogs + ' dogs)');
+  check(st2 && (st2[1].match(/vvy-seated-top/g) || []).length === 4, 'static overhead shows 4 seated riders');
+  check(/\.scene \{[^}]*height: 44vh[^}]*contain: strict/.test(html), 'scene box has a reserved fixed height (contain: strict)');
+  check(html.indexOf('data-layout=') < 0 && html.indexOf('overlay') < 0, 'no overlay mode left in the markup/scripts');
   check((html.match(/Vadim Yerokhin/g) || []).length === 1, 'attribution exactly once');
   /* sweep every config through the selectors, exterior + interior */
   /* jsdom re-parses ~700 KB of markup per render, so the DOM sweep samples every STEP-th config
@@ -34,7 +39,8 @@ setTimeout(function () {
         cs.value = ci; ev(cs, 'change'); n++;
         s = $('scene').innerHTML;
         if (!/<svg/.test(s) || /NaN|undefined/.test(s) || /NaN|undefined/.test($('specs').textContent) || /NaN|undefined/.test($('room').textContent)) { bad.push($('vehTitle').textContent); }
-        if (w.RideFitView) { w.RideFitView.set('interior'); s = $('scene').innerHTML; if (!/<svg/.test(s) || /NaN|undefined/.test(s)) { bad.push('interior ' + $('vehTitle').textContent); } w.RideFitView.set('exterior'); }
+        if (!/vvy-inside/.test(s)) { bad.push('no overhead pane ' + $('vehTitle').textContent); }
+        if (w.RideFitView) { w.RideFitView.set('cutaway'); s = $('scene').innerHTML; if (!/vvy-interior/.test(s) || /NaN|undefined/.test(s)) { bad.push('cutaway ' + $('vehTitle').textContent); } w.RideFitView.set('profile'); }
       }
     }
   }
@@ -43,13 +49,13 @@ setTimeout(function () {
   var V = w.VVY, gbad = 0, gi, rec, cfgs = [], gparty = { people: [{ kind: 'adult', h: 72 }, { kind: 'kid', h: 45 }, { kind: 'adult', h: 66 }], dogs: 1, cats: 2 };
   for (gi = 0; gi < w.RIDEFIT_VEHICLES.vehicles.length; gi++) { rec = w.RideFitData.toFlat(w.RIDEFIT_VEHICLES.vehicles[gi]); cfgs.push(rec); }
   for (gi = 0; gi < cfgs.length; gi++) {
-    var e1 = V.effective(cfgs[gi], null), s1 = V.renderScene([e1], 75, false, { party: gparty, interactive: true }), s2 = V.renderInterior(e1, 75, false, { party: gparty });
-    if (!/<svg/.test(s1) || /NaN|undefined/.test(s1) || !/<svg/.test(s2) || /NaN|undefined/.test(s2) || /<filter/.test(s1 + s2)) { gbad++; }
+    var e1 = V.effective(cfgs[gi], null), s1 = V.renderScene([e1], 75, false, { party: gparty, interactive: true, wag: true }), s2 = V.renderInterior(e1, 75, false, { party: gparty }), s3 = V.renderInside(e1, 75, false, { party: gparty });
+    if (!/<svg/.test(s1) || /NaN|undefined/.test(s1) || !/<svg/.test(s2) || /NaN|undefined/.test(s2) || !/<svg/.test(s3) || /NaN|undefined/.test(s3) || /<filter/.test(s1 + s2 + s3)) { gbad++; if (gbad < 3) { console.log('   bad: ' + cfgs[gi].brand + ' ' + cfgs[gi].model); } }
   }
-  check(gbad === 0 && cfgs.length === w.RIDEFIT_VEHICLES.count, 'geometry sweep: ' + cfgs.length + ' configs x (exterior + interior), no NaN/undefined/filters, ' + gbad + ' bad');
+  check(gbad === 0 && cfgs.length === w.RIDEFIT_VEHICLES.count, 'geometry sweep: ' + cfgs.length + ' configs x (profile + cutaway + overhead), no NaN/undefined/filters, ' + gbad + ' bad');
   /* crew */
   click($('addAdult')); click($('addKid')); click(d.querySelector('[data-step="dogs"][data-d="1"]')); click(d.querySelector('[data-step="cats"][data-d="1"]'));
-  check(d.querySelectorAll('#scene .vvy-fam').length === 2 && d.querySelectorAll('#scene .vvy-dog').length === 1 && d.querySelectorAll('#scene .vvy-cat').length === 1, 'crew drawn: 2 riders, 1 dog, 1 cat');
+  check(d.querySelectorAll('#paneA .vvy-fam').length === 5 && d.querySelectorAll('#paneA .vvy-dog').length === 2 && d.querySelectorAll('#paneA .vvy-cat').length === 1 && d.querySelectorAll('#paneA .vvy-tail animateTransform').length === 2, 'crew drawn: default 3 + 2 riders, 2 dogs (tails wagging), 1 cat');
   check($('room').textContent.indexOf('Your') >= 0, 'room guidance mentions riders');
   /* find */
   click($('statebar').querySelector('[data-seg="find"]'));
@@ -69,6 +75,12 @@ setTimeout(function () {
   /* compare via shortlist */
   click($('rankTable').querySelector('[data-heart]')); click($('shortlist').querySelector('[data-slb]'));
   check($('legend').querySelector('.pillB') !== null && $('cmpBody').querySelectorAll('tbody tr').length > 5, 'compare: ' + $('legend').textContent.replace(/\s+/g, ' ').slice(0, 70) + ' | ' + $('cmpBody').querySelectorAll('tbody tr').length + ' rows');
+  check($('scene').className.indexOf('one') >= 0 && d.querySelectorAll('#paneA .vvy-veh-B').length === 1 && $('viewCtl').style.display !== 'none', 'compare profile: A and B in one pane, view control shown');
+  click($('viewCtl').querySelector('[data-view="overhead"]'));
+  check(d.querySelectorAll('#paneA .vvy-inside').length === 1 && d.querySelectorAll('#paneB .vvy-inside').length === 1 && $('scene').className.indexOf('two') >= 0, 'compare seats: overhead A | overhead B');
+  click($('viewCtl2').querySelector('[data-view="cutaway"]'));
+  check(d.querySelectorAll('#paneA .vvy-interior').length === 1 && d.querySelectorAll('#paneB .vvy-interior.vvy-role-B').length === 1, 'compare peek inside: cutaway A | cutaway B, one control');
+  click($('viewCtl').querySelector('[data-view="profile"]'));
   /* scene hits */
   var hitC = d.querySelector('#scene [data-hit="crew"]'); click(hitC);
   check($('sheet').getAttribute('data-pos') !== 'peek' && d.querySelector('.segbtn.on').getAttribute('data-seg') === 'crew', 'tap people -> Crew');
@@ -77,7 +89,9 @@ setTimeout(function () {
   /* interior toggle */
   var tog = d.querySelector('#scene [data-hit="view"]');
   check(!!tog, 'interior toggle present in scene');
-  if (tog) { click(tog); check(d.querySelector('#scene .vvy-interior') !== null, 'interior view renders'); console.log('     ' + ($('scene').querySelector('svg').getAttribute('aria-label') || '').slice(0, 100)); click(d.querySelector('#scene [data-hit="view"]')); check(d.querySelector('#scene .vvy-veh-A') !== null, 'back to exterior'); }
+  if (tog) { click(tog); check(d.querySelector('#paneA .vvy-interior') !== null && d.querySelector('#paneB .vvy-inside') !== null, 'peek inside: cutaway in pane A, overhead stays in pane B'); var cal = d.querySelectorAll('#paneA .vvy-interior text').length; console.log('     ' + ($('paneA').querySelector('svg').getAttribute('aria-label') || '').slice(0, 90) + ' | text nodes ' + cal); check(/head/.test($('paneA').textContent) && /knee|leg/.test($('paneA').textContent), 'cutaway callouts mention head + knee'); click(d.querySelector('#scene [data-hit="view"]')); check(d.querySelector('#paneA .vvy-veh-A') !== null && d.querySelector('#paneA .vvy-interior') === null, 'back to profile'); }
+  /* stable box: the scene element keeps the same class/height contract across states */
+  var scBox = $('scene'); check(scBox.className.indexOf('scene') === 0 && scBox.querySelectorAll('.pane').length === 2, 'scene keeps its two reserved panes');
   /* ES5: no arrow/let/const/template literals in inline scripts */
   var scripts = html.match(/<script>[\s\S]*?<\/script>/g) || [];
   var es6 = 0; for (i = 0; i < scripts.length; i++) { if (/=>|\blet\b |\bconst\b |`/.test(scripts[i].replace(/RIDEFIT_VEHICLES=[\s\S]*$/, ''))) { es6++; } }

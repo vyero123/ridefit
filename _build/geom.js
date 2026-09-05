@@ -24,7 +24,7 @@ var VVY = (function () {
 
   var PAL = {
     A: { body: '#3f6285', stroke: '#24405c', glass: '#a9c0d3', wheel: '#20272e', hub: '#98a3ae', guide: '#1f4e79', op: 1 },
-    B: { body: '#f1b93f', stroke: '#9a6a12', glass: '#f8e6b8', wheel: '#5c4a1e', hub: '#e9d7a8', guide: '#b7791f', op: 0.55 }
+    B: { body: '#f1b93f', stroke: '#9a6a12', glass: '#f8e6b8', wheel: '#5c4a1e', hub: '#e9d7a8', guide: '#b7791f', op: 1 }
   };
 
   function r1(n) { return Math.round(n * 10) / 10; }
@@ -322,9 +322,11 @@ var VVY = (function () {
     [-0.098, 0.530], [-0.076, 0.600], [-0.082, 0.640], [-0.106, 0.760],
     [-0.112, 0.820], [-0.055, 0.845]
   ];
+  /* arms hang a little away from the body (relaxed, cheerful stance) — this widens the figure but
+     touches no vertical proportion, so nothing that is measured changes */
   var ARM = [
-    [0.112, 0.818], [0.150, 0.788], [0.148, 0.620], [0.140, 0.478],
-    [0.108, 0.476], [0.098, 0.620], [0.096, 0.778]
+    [0.112, 0.818], [0.152, 0.788], [0.166, 0.620], [0.178, 0.478],
+    [0.146, 0.476], [0.118, 0.620], [0.096, 0.778]
   ];
   var LEG = [
     [0.012, 0.460], [0.102, 0.468], [0.098, 0.330], [0.080, 0.140],
@@ -361,18 +363,30 @@ var VVY = (function () {
     o.push('<polygon points="' + polyPts(ARM, h, cx, Y, false) + '"/>');
     o.push('<ellipse cx="' + r1(cx) + '" cy="' + r1(Y(0.9345 * h)) + '" rx="' + r1(0.0435 * h) + '" ry="' + r1(0.0655 * h) + '"/>');
     if (dx) {
-      /* rim light on the head and shoulder, neck shadow under the chin */
-      o.push('<ellipse cx="' + r1(cx - 0.014 * h) + '" cy="' + r1(Y(0.955 * h)) + '" rx="' + r1(0.016 * h) + '" ry="' + r1(0.026 * h) + '" fill="#fff" opacity="0.22"/>');
+      /* rim light on the head, neck shadow under the chin */
+      o.push('<ellipse cx="' + r1(cx - 0.018 * h) + '" cy="' + r1(Y(0.965 * h)) + '" rx="' + r1(0.014 * h) + '" ry="' + r1(0.02 * h) + '" fill="#fff" opacity="0.2"/>');
       o.push('<ellipse cx="' + r1(cx) + '" cy="' + r1(Y(0.872 * h)) + '" rx="' + r1(0.03 * h) + '" ry="' + r1(0.012 * h) + '" fill="#000" opacity="0.18"/>');
     }
+    o.push(faceSvg(cx, Y, 0.9345 * h, h, 1));
     o.push('</g>');
     return o.join('');
+  }
+  /* cheerful face on a silhouette head: two eyes and a smile, in light paint. (cx, yc) = head
+     centre (yc in inches above ground), h = the figure's height, k = size factor */
+  function faceSvg(cx, Y, yc, h, k) {
+    k = k || 1;
+    var ex = 0.015 * h * k, ey = yc + 0.012 * h * k, er = Math.max(0.35, 0.0055 * h * k);
+    var sy = yc - 0.012 * h * k, sw = 0.02 * h * k;
+    return '<g class="vvy-face" fill="#fff" opacity="0.9">' +
+      '<circle cx="' + r1(cx - ex) + '" cy="' + r1(Y(ey)) + '" r="' + r1(er) + '"/><circle cx="' + r1(cx + ex) + '" cy="' + r1(Y(ey)) + '" r="' + r1(er) + '"/>' +
+      '<path d="M' + r1(cx - sw) + ' ' + r1(Y(sy)) + ' Q' + r1(cx) + ' ' + r1(Y(sy - 0.018 * h * k)) + ' ' + r1(cx + sw) + ' ' + r1(Y(sy)) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, 0.006 * h * k)) + '" stroke-linecap="round"/></g>';
   }
 
   /* ---------------- pets ----------------
      dogSvg: side-view dog, h = shoulder height in inches, standing at ground x = cx.
      catSvg: side-view cat sprite centred on (0,0) at ground level, ~10 in tall; placed via transform. */
-  function dogSvg(h, cx, Y, fill, dx) {
+  /* wag: true -> the tail eases side to side (SMIL, slow, smooth); omitted in static / reduced motion */
+  function dogSvg(h, cx, Y, fill, dx, wag) {
     var u = h / 22;  /* 22 in shoulder height reference */
     function X(x) { return r1(cx + x * u); }
     function YY(y) { return r1(Y(y * u)); }
@@ -390,7 +404,8 @@ var VVY = (function () {
     o.push('<path d="M' + X(-14) + ' ' + YY(19) + ' L' + X(6) + ' ' + YY(21) + ' L' + X(8) + ' ' + YY(14) + ' L' + X(-12) + ' ' + YY(12) + ' Z"/>');
     o.push('<path d="M' + X(6) + ' ' + YY(21) + ' L' + X(9) + ' ' + YY(27) + ' L' + X(16) + ' ' + YY(25) + ' L' + X(15) + ' ' + YY(20) + ' L' + X(10) + ' ' + YY(18) + ' Z"/>');
     o.push('<path d="M' + X(9) + ' ' + YY(27) + ' L' + X(7) + ' ' + YY(31) + ' L' + X(11) + ' ' + YY(28) + ' Z"/>');
-    o.push('<path d="M' + X(-14) + ' ' + YY(19) + ' L' + X(-19) + ' ' + YY(26) + ' L' + X(-17) + ' ' + YY(27) + ' L' + X(-12) + ' ' + YY(20) + ' Z"/>');
+    o.push('<g class="vvy-tail"><path d="M' + X(-14) + ' ' + YY(19) + ' L' + X(-19) + ' ' + YY(26) + ' L' + X(-17) + ' ' + YY(27) + ' L' + X(-12) + ' ' + YY(20) + ' Z"/>' +
+      (wag ? '<animateTransform attributeName="transform" type="rotate" values="-14 ' + X(-13) + ' ' + YY(19.5) + ';12 ' + X(-13) + ' ' + YY(19.5) + ';-14 ' + X(-13) + ' ' + YY(19.5) + '" dur="2.8s" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1" repeatCount="indefinite"/>' : '') + '</g>');
     o.push('<rect x="' + X(-6) + '" y="' + YY(12) + '" width="' + r1(3 * u) + '" height="' + r1(12 * u) + '"/>');
     o.push('<rect x="' + X(5) + '" y="' + YY(12) + '" width="' + r1(3 * u) + '" height="' + r1(12 * u) + '"/>');
     if (dx) {
@@ -398,6 +413,9 @@ var VVY = (function () {
       o.push('<path d="M' + X(-12) + ' ' + YY(18.4) + ' L' + X(5) + ' ' + YY(20.3) + '" stroke="#fff" stroke-width="' + r1(0.9 * u) + '" stroke-linecap="round" opacity="0.18" fill="none"/>');
       o.push('<circle cx="' + X(12.5) + '" cy="' + YY(24) + '" r="' + r1(0.7 * u) + '" fill="#1f2933"/>');
     }
+    /* happy: smile along the muzzle + a tongue */
+    o.push('<path d="M' + X(11.5) + ' ' + YY(21.2) + ' Q' + X(13.8) + ' ' + YY(19.6) + ' ' + X(15.6) + ' ' + YY(21) + '" fill="none" stroke="#fff" stroke-width="' + r1(0.55 * u) + '" stroke-linecap="round" opacity="0.85"/>');
+    o.push('<ellipse cx="' + X(14) + '" cy="' + YY(19.6) + '" rx="' + r1(0.9 * u) + '" ry="' + r1(1.3 * u) + '" fill="#e8848f"/>');
     o.push('</g>');
     return o.join('');
   }
@@ -474,7 +492,7 @@ var VVY = (function () {
   }
 
   /* e = effective cfg; vx = x of front bumper (inches); Y = y mapper; dx = Defs collector (optional) */
-  function vehicleSvg(e, vx, Y, role, animate, solid, spots, dx) {
+  function vehicleSvg(e, vx, Y, role, animate, spots, dx) {
     var pal = PAL[role] || PAL.A;
     var cfg = e.stock || e;
     var body = buildBody(cfg);
@@ -535,11 +553,10 @@ var VVY = (function () {
       clipB = dx.clip('cb' + role + (dx.n++), '<path d="' + path + '"/>');
       if (gp.length) { clipG = dx.clip('cg' + role + (dx.n++), '<polygon points="' + gp.join(' ') + '"/>'); }
       /* contact shadow on the ground, before anything else */
-      o.push(groundShadow(vx + L / 2, Y(0) + 0.8, L * 0.47, 2.0, solid || role === 'A' ? 0.2 : 0.1));
+      o.push(groundShadow(vx + L / 2, Y(0) + 0.8, L * 0.47, 2.0, 0.2));
     }
-    o.push('<g class="vvy-veh vvy-veh-' + role + '" opacity="' + (solid ? 0.92 : pal.op) + '">');
-    o.push('<path d="' + path + '" fill="' + bodyFill + '" stroke="' + pal.stroke + '" stroke-width="0.45" stroke-linejoin="round"' +
-      (role === 'B' ? ' stroke-dasharray="2.2 1.4"' : '') + '/>');
+    o.push('<g class="vvy-veh vvy-veh-' + role + '">');
+    o.push('<path d="' + path + '" fill="' + bodyFill + '" stroke="' + pal.stroke + '" stroke-width="0.45" stroke-linejoin="round"/>');
     if (dx) {
       var topY = YY(1.0), botY = YY(body.gc), bodyH = botY - topY;
       o.push('<g clip-path="url(#' + clipB + ')">');
@@ -593,12 +610,13 @@ var VVY = (function () {
     return o.join('');
   }
 
-  /* ---------------- scene ----------------
-     vehicles: [effA, effB?]   opts: { layout:'overlay'|'side', animate:bool } */
+  /* ---------------- profile scene ----------------
+     vehicles: [effA] or [effA, effB] (B drawn beside A at the same scale — the only comparison mode)
+     opts: { animate, party, interactive, idPrefix } */
   function renderScene(vehicles, personIn, metric, opts) {
     opts = opts || {};
     var A = vehicles[0], B = vehicles.length > 1 ? vehicles[1] : null;
-    var side = B && opts.layout === 'side';
+    var side = !!B;
     var pw = personIn * 0.31;
     var gap = 16;
     var mL = 30, mR = 42, mT = 14 + ((opts.party && opts.party.cats) ? 14 : 0), mB = 16;   /* extra headroom for a cat's speech bubble on the roof */
@@ -649,10 +667,10 @@ var VVY = (function () {
 
     var spots = [];
     if (inter) { o.push(hitOpen('vehicle', 'Change the vehicle', vxA - 4, Y(A.height) - 5, LA + 8, A.height + 8)); }
-    o.push(vehicleSvg(A, vxA, Y, 'A', !!opts.animate, false, spots, dx));
+    o.push(vehicleSvg(A, vxA, Y, 'A', !!opts.animate, spots, dx));
     if (inter) { o.push('</g>'); }
     if (inter && !B) { o.push(qmarkSvg(vxA + LA + gap, 0, A.height, Y)); }
-    if (B) { o.push(vehicleSvg(B, vxB, Y, 'B', !!opts.animate, side, null, dx)); }
+    if (B) { o.push(vehicleSvg(B, vxB, Y, 'B', !!opts.animate, null, dx)); }
 
     function guide(yIn, label, color, below) {
       var ty = below ? (Y(yIn) + 4.6) : (Y(yIn) - 1.2);
@@ -674,7 +692,7 @@ var VVY = (function () {
     var fx0 = mL + pw + 4, fc;
     for (i = 0; i < fam.length; i++) {
       fc = fx0 + fam[i].w / 2;
-      if (fam[i].kind === 'dog') { o.push('<g pointer-events="none">' + dogSvg(fam[i].h, fc, Y, '#6b4f3a', dx) + '</g>'); }
+      if (fam[i].kind === 'dog') { o.push('<g pointer-events="none">' + dogSvg(fam[i].h, fc, Y, '#6b4f3a', dx, !!opts.wag) + '</g>'); }
       else {
         if (inter) { o.push(hitOpen('crew', 'Edit this rider', fc - Math.max(fam[i].w / 2, 9) - 3, Y(fam[i].h) - 4, Math.max(fam[i].w, 18) + 6, fam[i].h + 6)); }
         o.push(personSvg(fam[i].h, fc, Y, fam[i].kind === 'kid' ? '#5f7d95' : '#3d4f60', 'vvy-fam vvy-' + fam[i].kind, dx));
@@ -1074,6 +1092,9 @@ var VVY = (function () {
     o.push('<rect x="' + r1(headCx - 0.02 * h) + '" y="' + Y(headCy) + '" width="' + r1(0.04 * h) + '" height="' + r1(shY < headCy ? headCy - shY + 1 : 1) + '" fill="' + paint + '"/>');
     o.push('<ellipse cx="' + r1(headCx) + '" cy="' + Y(headCy) + '" rx="' + r1(0.0435 * h) + '" ry="' + r1(headR) + '" fill="' + paint + '"/>');
     if (dx) { o.push('<ellipse cx="' + r1(headCx - 0.014 * h) + '" cy="' + Y(headCy + 0.02 * h) + '" rx="' + r1(0.014 * h) + '" ry="' + r1(0.024 * h) + '" fill="#fff" opacity="0.22"/>'); }
+    /* cheerful profile: eye + smile on the front of the head (rider faces -x) */
+    o.push('<g fill="#fff" opacity="0.9"><circle cx="' + r1(headCx - 0.022 * h) + '" cy="' + Y(headCy + 0.012 * h) + '" r="' + r1(Math.max(0.35, 0.006 * h)) + '"/>' +
+      '<path d="M' + r1(headCx - 0.036 * h) + ' ' + Y(headCy - 0.018 * h) + ' Q' + r1(headCx - 0.02 * h) + ' ' + Y(headCy - 0.036 * h) + ' ' + r1(headCx + 0.002 * h) + ' ' + Y(headCy - 0.028 * h) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, 0.006 * h)) + '" stroke-linecap="round"/></g>');
     if (face) { o.push(face(headCx, headCy, crown, kneeX, kneeY)); }
     o.push('</g>');
     return o.join('');
@@ -1091,6 +1112,8 @@ var VVY = (function () {
     o.push('<path d="M' + X(6) + ' ' + YY(1) + ' Q' + X(13) + ' ' + YY(2) + ' ' + X(12) + ' ' + YY(9) + '" fill="none" stroke="' + col + '" stroke-width="' + r1(2 * u) + '" stroke-linecap="round"/>');
     o.push('<rect x="' + X(-9) + '" y="' + YY(9) + '" width="' + r1(3 * u) + '" height="' + r1(9 * u) + '"/>');
     o.push('<circle cx="' + X(-6) + '" cy="' + YY(25) + '" r="' + r1(0.7 * u) + '" fill="#1f2933"/>');
+    o.push('<path d="M' + X(-8) + ' ' + YY(22.6) + ' Q' + X(-6.5) + ' ' + YY(21.4) + ' ' + X(-4.6) + ' ' + YY(22.4) + '" fill="none" stroke="#fff" stroke-width="' + r1(0.5 * u) + '" stroke-linecap="round" opacity="0.85"/>');
+    o.push('<ellipse cx="' + X(-6.4) + '" cy="' + YY(21.4) + '" rx="' + r1(0.8 * u) + '" ry="' + r1(1.1 * u) + '" fill="#e8848f"/>');
     o.push('</g>');
     return o.join('');
   }
@@ -1100,17 +1123,21 @@ var VVY = (function () {
     var body = buildBody(cfg);
     var L = cfg.length, H0 = cfg.height, rise = e.rise || 0, H = e.height;
     var party = opts.party || {}, people = party.people || [];
-    var pal = PAL.A;
+    var pal = PAL[opts.role || 'A'] || PAL.A;
+    var refL = opts.ref ? Math.max(opts.ref.L, L) : L, refH = opts.ref ? Math.max(opts.ref.H || H, H) : H;   /* shared scale for A/B */
     var rowsN = has(cfg.rows) ? cfg.rows : 2;
-    var mL = 18, mR = 18, mT = 10 + 5 * Math.max(1, Math.min(3, rowsN)), mB = 18;
-    var W = mL + L + mR, SH = mT + H + mB;
+    var CAL = 7.5;   /* callout font size: the numbers are the point of this view, so they are big */
+    var nSeated = 1 + Math.min((party.people || []).length, has(cfg.seats) ? cfg.seats - 1 : 4);
+    var mL = 18, mR = 18, mT = 8 + nSeated * (CAL + 1.2), mB = 18;
+    var W = mL + refL + mR, SH = mT + refH + mB;
     function Y(y) { return r1(SH - mB - y); }
     var vx = mL;
     function X(xf) { return r1(vx + xf * L); }
     function YY(yf) { return Y(yf * H0 + rise); }
+    function P2(x, yIn) { return [r1(x), Y(yIn)]; }
     var o = [], dx = new Defs((opts.idPrefix || 'vvy') + 'i'), i;
     var nm = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle');
-    o.push('<svg class="vvy-svg vvy-interior" viewBox="0 0 ' + r1(W) + ' ' + r1(SH) + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Inside the ' + esc(nm) + ': the crew seated to scale against the published headroom and legroom">');
+    o.push('<svg class="vvy-svg vvy-interior vvy-role-' + (opts.role || 'A') + '" viewBox="0 0 ' + r1(W) + ' ' + r1(SH) + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Inside the ' + esc(nm) + ': the crew seated to scale against the published headroom and legroom">');
     var defsAt = o.length;
     o.push('<rect x="0" y="' + Y(0) + '" width="' + r1(W) + '" height="' + r1(mB) + '" fill="url(#' + dx.vgrad('ground', '#e4e7eb', -0.06, 0.35) + ')" opacity="0.7"/>');
     o.push('<line x1="0" y1="' + Y(0) + '" x2="' + r1(W) + '" y2="' + Y(0) + '" stroke="#9aa5b1" stroke-width="0.6"/>');
@@ -1197,6 +1224,7 @@ var VVY = (function () {
     o.push('</g>');   /* end clip */
 
     /* ---- riders ---- */
+    var callouts = [];
     var you = { h: personIn, kind: 'adult', you: true };
     var assigned = assignRows(cfg, people), rider = [], byRow = { 1: [you], 2: [], 3: [], 0: [] }, j;
     for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
@@ -1226,6 +1254,7 @@ var VVY = (function () {
         if (rr.n > 1 && fr.ls !== null) { var face = R[k - 1].hx + 7, kls = face + fr.ls; if (kls < kneeAnat) { kneeX = kls; } }
         if (rr.n === 1 && fr.ls !== null && fr.ls < 0) { kneeX = kneeAnat - fr.ls * 0.3; }
         o.push(seatedSvg(hh, rr.hx + j * 3.5, rr.cush, kneeX + j * 3.5, floor, Y, col, 'vvy-seated' + (p.you ? ' vvy-you' : ''), dx, faceFor(fr, rr, rr.n === 1), j > 0));
+        callouts.push({ row: rr, j: j, p: p, fr: fr, hx: rr.hx + j * 3.5, kneeX: kneeX + j * 3.5, crown: rr.cush + hh * SEAT.crown + SEAT.crownPad, kneeY: rr.cush + hh * 0.04, faceX: k > 0 ? R[k - 1].hx + 7 : null });
       }
     }
     /* riders with no seat: standing outside behind the vehicle */
@@ -1266,19 +1295,259 @@ var VVY = (function () {
       o.push('<g class="vvy-cat vvy-cat-in" pointer-events="none" transform="translate(' + r1(cs.x) + ' ' + Y(cs.y) + ')' + (cs.flip ? ' scale(-1 1)' : '') + '">' + catSprite(i % 3 === 0 ? '#4a4a52' : (i % 3 === 1 ? '#8a6d4b' : '#b8b2a7'), dx, i % 3) + '</g>');
     }
 
-    /* ---- labels: per-row figures in the top margin, verdict colours ---- */
-    var lab = [];
-    for (k = 0; k < R.length; k++) {
-      var rl = R[k], lk = R.length - 1 - k, txt = (rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row')) + ': ' +
-        (has(rl.head) ? shortDim(rl.head, metric) + ' head' : 'head n/a') + ' · ' + (has(rl.leg) ? shortDim(rl.leg, metric) + ' leg' : 'leg n/a');
-      var bc = bands[rl.n] === 'cramped' ? '#8a1c14' : (bands[rl.n] === 'tight' ? '#7a5410' : '#52606d');
-      lab.push('<text x="' + r1(rl.hx - 4) + '" y="' + r1(Y(H) - 3.5 - lk * 5) + '" text-anchor="middle" font-size="3.6" fill="' + bc + '" font-family="' + FONT + '">' + esc(txt) + '</text>');
-      lab.push('<line x1="' + r1(rl.hx - 4) + '" y1="' + r1(Y(H) - 2.2 - lk * 5) + '" x2="' + r1(rl.hx - 4) + '" y2="' + r1(Y(H) + 0.5) + '" stroke="' + bc + '" stroke-width="0.35"/>');
+    /* ---- measured callouts: THE point of this view. One per seated rider: inches above the head
+       to the headliner and inches of knee clearance to the seat ahead (front row: legroom margin),
+       colour-coded fine / tight / cramped; "not on file" when the row has no published figure. ---- */
+    var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx, halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"';
+    function bandColor(bnd) { return bnd === 'cramped' ? '#b3261e' : (bnd === 'tight' ? '#9a6a12' : (bnd === 'unknown' ? '#7b8794' : '#0b5b32')); }
+    function sgn(v) { var x = metric ? v * 2.54 : v; return (x >= 0 ? '+' : '\u2212') + (Math.round(Math.abs(x) * 10) / 10); }
+    for (ci = 0; ci < callouts.length; ci++) {
+      co = callouts[ci]; colr = bandColor(co.fr.band);
+      var hlY = has(co.row.head) ? co.row.cush + co.row.head : null;
+      /* dimension line: crown -> headliner (or the overshoot when the head is through it) */
+      if (hlY !== null) {
+        var dxl = co.hx + 0.075 * co.p.h;
+        o.push('<line x1="' + r1(dxl) + '" y1="' + Y(co.crown) + '" x2="' + r1(dxl) + '" y2="' + Y(hlY) + '" stroke="' + colr + '" stroke-width="0.6"/>');
+        o.push('<line x1="' + r1(dxl - 1.5) + '" y1="' + Y(co.crown) + '" x2="' + r1(dxl + 1.5) + '" y2="' + Y(co.crown) + '" stroke="' + colr + '" stroke-width="0.6"/>');
+        o.push('<line x1="' + r1(dxl - 1.5) + '" y1="' + Y(hlY) + '" x2="' + r1(dxl + 1.5) + '" y2="' + Y(hlY) + '" stroke="' + colr + '" stroke-width="0.6"/>');
+        headTxt = sgn(co.fr.hs) + ' head';
+      } else { headTxt = 'headroom not on file'; }
+      /* knee clearance: knee front -> seatback ahead (rows 2/3); front row: legroom margin */
+      if (co.fr.ls !== null && co.faceX !== null) {
+        o.push('<line x1="' + r1(co.kneeX) + '" y1="' + Y(co.kneeY) + '" x2="' + r1(co.faceX) + '" y2="' + Y(co.kneeY) + '" stroke="' + colr + '" stroke-width="0.6"/>');
+        o.push('<line x1="' + r1(co.faceX) + '" y1="' + Y(co.kneeY - 1.5) + '" x2="' + r1(co.faceX) + '" y2="' + Y(co.kneeY + 1.5) + '" stroke="' + colr + '" stroke-width="0.6"/>');
+        kneeTxt = sgn(co.fr.ls) + ' knee';
+      } else if (co.fr.ls !== null) { kneeTxt = sgn(co.fr.ls) + ' leg'; }
+      else { kneeTxt = 'legroom not on file'; }
+      /* numbered marker on the rider's head; the numbers are listed in the top margin */
+      var mk = P2(co.hx - 0.01 * co.p.h, co.crown + 3.2);
+      o.push('<circle cx="' + mk[0] + '" cy="' + mk[1] + '" r="3.2" fill="' + colr + '" stroke="#fff" stroke-width="0.6"/><text x="' + mk[0] + '" y="' + r1(mk[1] + 1.6) + '" text-anchor="middle" font-size="4.4" font-weight="700" fill="#fff" font-family="' + FONT + '">' + (ci + 1) + '</text>');
+      var who = co.p.you ? 'You' : (co.p.kind === 'kid' ? 'Kid' : 'Adult'), rowName = co.row.n === 1 ? 'front' : (co.row.n === 2 ? '2nd row' : '3rd row');
+      ty = 6 + ci * (CAL + 1.2);
+      lab.push('<circle cx="' + r1(mL - 7) + '" cy="' + r1(ty - 2.6) + '" r="3.4" fill="' + colr + '"/><text x="' + r1(mL - 7) + '" y="' + r1(ty - 1) + '" text-anchor="middle" font-size="4.6" font-weight="700" fill="#fff" font-family="' + FONT + '">' + (ci + 1) + '</text>');
+      lab.push('<text x="' + r1(mL) + '" y="' + r1(ty) + '" font-size="' + CAL + '" font-weight="700" fill="' + colr + '" font-family="' + FONT + '"' + halo + '>' + esc(who + ' ' + personLabel(co.p.h, metric) + ', ' + rowName + ': ') + esc(headTxt) + ' \u00b7 ' + esc(kneeTxt) + '</text>');
     }
     o.push(lab.join(''));
-    o.push('<text x="2" y="' + r1(Y(0) + 6) + '" font-size="3.3" fill="#7b8794" font-family="' + FONT + '">seated ≈ 0.52 × standing height · published room is indicative; seat position varies</text>');
+    o.push('<text x="2" y="' + r1(Y(0) + 6) + '" font-size="3.3" fill="#7b8794" font-family="' + FONT + '">' + (metric ? 'cm' : 'inches') + ' of room above the head and in front of the knee · guidance, not a verdict: seated ≈ 0.52 × standing; published figures are indicative — seat position varies</text>');
     o.push('</g>');
     var bf2 = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vx + L - 24 * bf2, Y(0) + 11, true, bf2));
+    o.push('</svg>');
+    o.splice(defsAt, 0, dx.html());
+    return o.join('');
+  }
+
+  /* ---------------- 45° overhead cabin view ----------------
+     Looking down into the cabin from above the hood at roughly 45°: every seat is individually
+     visible in its true plan position (rows, seats across), riders sit in their assigned seats.
+     HONEST LIMIT: this angle shows SEATING and OCCUPANCY clearly, but vertical headroom cannot be
+     read from it — fit is only signalled through the colour states (fine / tight / cramped) and the
+     row chips; the numbers live in the profile "peek inside" cutaway.
+     opts: { party, ref:{L,W} (shared scale for A/B), role:'A'|'B', idPrefix } */
+  var OV = { KY: 0.47, KZ: 0.8, PERSP: 0.28 };
+  function seatPlan(cfg) {
+    /* seats per row and whether each row is a bench or individual chairs, from seats/rows/cab */
+    var rows = has(cfg.rows) ? Math.max(1, Math.min(3, cfg.rows)) : 2, seats = has(cfg.seats) ? cfg.seats : 5;
+    var front = (seats >= 6 && rows <= 2 && cfg.bedLen) ? 3 : 2;
+    if (rows < 2) { front = Math.min(3, seats); }
+    var r2 = rows < 2 ? 0 : (rows >= 3 ? Math.min(3, seats - front - 2) : seats - front);
+    if (r2 < 0) { r2 = 0; }
+    var r3 = rows >= 3 ? Math.max(0, seats - front - r2) : 0;
+    var out = [{ n: 1, seats: front, bench: front === 3 }];
+    if (rows >= 2) { out.push({ n: 2, seats: r2, bench: r2 >= 3 }); }
+    if (rows >= 3) { out.push({ n: 3, seats: Math.min(3, r3), bench: r3 >= 2 }); }
+    return out;
+  }
+  function renderInside(e, personIn, metric, opts) {
+    opts = opts || {};
+    var cfg = e.stock || e, role = opts.role || 'A', pal = PAL[role] || PAL.A;
+    var body = buildBody(cfg);
+    var L = cfg.length, Wd = has(cfg.width) ? cfg.width : Math.max(66, Math.min(84, L * 0.42));
+    var ref = opts.ref || { L: L, W: Wd };
+    var party = opts.party || {}, people = party.people || [];
+    var KY = OV.KY, KZ = OV.KZ;
+    var m = 6, mT = 20, mB = 12, mLab = 26;   /* mLab: left column for row labels */
+    /* the hood faces the viewer almost square-on, so it is foreshortened harder than the cabin */
+    var body0 = body, glz = body0.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
+    var hoodU = glz[0][0] * L, KYH = 0.26;
+    function uy(u) { return u <= hoodU ? u * KYH : hoodU * KYH + (u - hoodU) * KY; }
+    var refHood = (opts.ref && opts.ref.hood !== undefined) ? opts.ref.hood : hoodU;
+    var W = mLab + ref.W * 1.12 + 2 * m + 22, SH = mT + (refHood * KYH + (ref.L - refHood) * KY) + mB;
+    var cx = mLab + m + ref.W * 0.58, y0 = SH - mB;
+    var dx = new Defs((opts.idPrefix || 'vvy') + 'o' + role), o = [], i, k, j;
+    function sc(u) { return 1 - OV.PERSP * (u / ref.L); }
+    function P(u, v, z) { var s = sc(u); return [r1(cx + (v - Wd / 2) * s), r1(y0 - uy(u) - (z || 0) * KZ * s)]; }
+    function pts(list) { var a = [], q; for (q = 0; q < list.length; q++) { var p = P(list[q][0], list[q][1], list[q][2]); a.push(p[0] + ',' + p[1]); } return a.join(' '); }
+    var nm = (cfg.brand ? cfg.brand + ' ' : '') + (cfg.model || 'vehicle');
+    o.push('<svg class="vvy-svg vvy-inside" viewBox="0 0 ' + r1(W) + ' ' + r1(SH) + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looking down into the ' + esc(nm) + ': who sits where. Headroom is judged in the profile view.">');
+    var defsAt = o.length;
+    /* ---- layout in inches ---- */
+    var t = cfg.template || 'sedan', pickup = /^pickup/.test(t), trunk = (t === 'sedan' || t === 'coupe'), wedge = (t === 'wedge');
+    var gl = body.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
+    var uH = gl[0][0] * L, uW = gl[1][0] * L;
+    var uR = pickup ? body.pts[7][0] * L : (trunk ? (gl[3][0] + 0.05) * L : 0.955 * L);
+    if (wedge) { uR = 0.64 * L; }
+    var plan = seatPlan(cfg), R = [], u1 = uW + 12, prev;
+    if (u1 < uH + 22) { u1 = uH + 22; }
+    for (k = 0; k < plan.length; k++) {
+      var legN = plan[k].n === 1 ? cfg.legroom1 : (plan[k].n === 2 ? cfg.legroom2 : cfg.legroom3);
+      var u = k === 0 ? u1 : prev.u + (has(legN) ? legN : (plan[k].n === 2 ? 37 : 32)) - 10.9;
+      if (u > uR - 6) { u = uR - 6; }
+      /* seat centres across the cabin */
+      var vs = [], n = plan[k].seats, inner = Wd - 10, v0 = 5;
+      if (n >= 3) { vs = [v0 + inner * 0.18, v0 + inner * 0.82, v0 + inner * 0.5]; }
+      else if (n === 2) { vs = [v0 + inner * 0.26, v0 + inner * 0.74]; }
+      else if (n === 1) { vs = [v0 + inner * 0.26]; }
+      R.push({ n: plan[k].n, u: u, seats: n, bench: plan[k].bench, vs: vs, sw: n >= 3 ? inner / 3 - 1 : 21, riders: [] });
+      prev = R[R.length - 1];
+    }
+    /* ---- assign riders to seats (same row assignment as everywhere else; seat order: driver,
+            far side, middle) ---- */
+    var you = { h: personIn, kind: 'adult', you: true };
+    var assigned = assignRows(cfg, people), byRow = { 1: [you], 2: [], 3: [], 0: [] };
+    for (i = 0; i < assigned.length; i++) { byRow[assigned[i].row].push(assigned[i].p); }
+    for (k = 0; k < R.length; k++) { R[k].riders = byRow[R[k].n].slice(0, R[k].vs.length); }
+    var noSeat = byRow[0];
+    /* ---- body plan ---- */
+    var shadowP = P(L / 2, Wd / 2, 0);
+    o.push('<ellipse cx="' + shadowP[0] + '" cy="' + r1(y0 - uy(L) * 0.5 + 4) + '" rx="' + r1(Wd * 0.56) + '" ry="' + r1(uy(L) * 0.52) + '" fill="#1f2933" opacity="0.08"/>');
+    /* wheels peeking out at the corners */
+    var WB = cfg.wheelbase, fxw, rxw;
+    if (has(cfg.frontOverhang) && WB) { fxw = cfg.frontOverhang; rxw = fxw + WB; }
+    else if (WB) { var ohw = L - WB; if (ohw < 0) { ohw = L * 0.34; } fxw = ohw * body.foSplit; rxw = fxw + WB; }
+    else { fxw = L * 0.175; rxw = L * 0.805; }
+    var wl = 26, ww = 9;
+    var corners = [[fxw, -3], [fxw, Wd - 6], [rxw, -3], [rxw, Wd - 6]];
+    for (i = 0; i < corners.length; i++) {
+      o.push('<polygon points="' + pts([[corners[i][0] - wl / 2, corners[i][1]], [corners[i][0] - wl / 2, corners[i][1] + ww], [corners[i][0] + wl / 2, corners[i][1] + ww], [corners[i][0] + wl / 2, corners[i][1]]]) + '" fill="' + pal.wheel + '" rx="2"/>');
+    }
+    var bodyPts = [[0, 0.12 * Wd], [0, 0.88 * Wd], [0.05 * L, Wd], [0.94 * L, Wd], [L, 0.9 * Wd], [L, 0.1 * Wd], [0.94 * L, 0], [0.05 * L, 0]];
+    var bodyFill = 'url(#' + dx.hgrad('bodyo', pal.body, cx - Wd * 0.55, cx + Wd * 0.55) + ')';
+    o.push('<g class="vvy-veh vvy-veh-' + role + '">');
+    o.push('<polygon points="' + pts(bodyPts) + '" fill="' + bodyFill + '" stroke="' + pal.stroke + '" stroke-width="0.5" stroke-linejoin="round"/>');
+    /* rear: trunk deck (sedan/coupe) or pickup bed */
+    if (pickup) {
+      var bedF = uR + 2;
+      o.push('<polygon points="' + pts([[bedF, 4], [bedF, Wd - 4], [L - 3, Wd - 4], [L - 3, 4]]) + '" fill="' + shade(pal.body, -0.5) + '"/>');
+      for (i = 1; i < 6; i++) { var bu = bedF + (L - 3 - bedF) * i / 6; o.push('<polyline points="' + pts([[bu, 4], [bu, Wd - 4]]) + '" fill="none" stroke="' + shade(pal.body, -0.62) + '" stroke-width="0.5"/>'); }
+    } else if (trunk) {
+      o.push('<polygon points="' + pts([[uR, 3], [uR, Wd - 3], [L - 2, Wd - 6], [L - 2, 6]]) + '" fill="' + shade(pal.body, -0.12) + '" opacity="0.8"/>');
+      /* rear glass */
+      o.push('<polygon points="' + pts([[uR - 8, 8], [uR - 8, Wd - 8], [uR + 4, Wd - 5], [uR + 4, 5]]) + '" fill="' + pal.glass + '" opacity="0.6"/>');
+    }
+    /* cabin tub: void + side walls */
+    var cabF = uH, cabR = uR;
+    o.push('<polygon points="' + pts([[cabF, 4], [cabF, Wd - 4], [cabR, Wd - 4], [cabR, 4]]) + '" fill="#f3eee4"/>');
+    o.push('<polygon points="' + pts([[cabF, 0], [cabF, 5], [cabR, 5], [cabR, 0]]) + '" fill="' + shade(pal.body, -0.35) + '"/>');
+    o.push('<polygon points="' + pts([[cabF, Wd - 5], [cabF, Wd], [cabR, Wd], [cabR, Wd - 5]]) + '" fill="' + shade(pal.body, -0.2) + '"/>');
+    if (!pickup && !trunk) { /* cargo floor behind the last row */
+      var lastU = R[R.length - 1].u + 10;
+      if (cabR - lastU > 8) { o.push('<polygon points="' + pts([[lastU, 5], [lastU, Wd - 5], [cabR, Wd - 5], [cabR, 5]]) + '" fill="#d9d2c6"/>'); }
+    }
+    /* ---- rows, rear to front ---- */
+    var seatCol = '#8b7e72', seatFill = 'url(#' + dx.vgrad('seato', seatCol, 0.22, -0.28) + ')', backFill = 'url(#' + dx.vgrad('backo', seatCol, 0.32, -0.12) + ')';
+    var chips = [];
+    function riderSvg(p, u, v, fr) {
+      var h = p.h, col = p.you ? '#1f2933' : (p.kind === 'kid' ? '#5f7d95' : '#3d4f60');
+      if (fr.band === 'tight') { col = '#b7791f'; } else if (fr.band === 'cramped') { col = '#b3261e'; }
+      var paint = 'url(#' + dx.hgrad('r' + (dx.n++), col, cx + (v - Wd / 2) * sc(u) - 0.14 * h, cx + (v - Wd / 2) * sc(u) + 0.14 * h) + ')';
+      var s = [], sh = 0.37 * h, hw = 0.062 * h * sc(u);
+      /* thighs forward from the cushion */
+      s.push('<polygon points="' + pts([[u, v - 0.09 * h, 2], [u, v + 0.09 * h, 2], [u - 0.245 * h, v + 0.08 * h, 4], [u - 0.245 * h, v - 0.08 * h, 4]]) + '" fill="' + shade(col, -0.15) + '"/>');
+      /* torso */
+      s.push('<polygon points="' + pts([[u, v - 0.10 * h, 1], [u, v + 0.10 * h, 1], [u, v + 0.125 * h, sh], [u, v - 0.125 * h, sh]]) + '" fill="' + paint + '"/>');
+      /* arms */
+      s.push('<polygon points="' + pts([[u, v - 0.125 * h, sh - 0.02 * h], [u, v - 0.16 * h, sh - 0.05 * h], [u - 0.1 * h, v - 0.14 * h, 0.12 * h], [u - 0.1 * h, v - 0.11 * h, 0.12 * h]]) + '" fill="' + shade(col, -0.2) + '"/>');
+      s.push('<polygon points="' + pts([[u, v + 0.125 * h, sh - 0.02 * h], [u, v + 0.16 * h, sh - 0.05 * h], [u - 0.1 * h, v + 0.14 * h, 0.12 * h], [u - 0.1 * h, v + 0.11 * h, 0.12 * h]]) + '" fill="' + shade(col, -0.2) + '"/>');
+      /* head + face (front-facing, so the smile shows) */
+      var hp = P(u, v, 0.45 * h);
+      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hw) + '" fill="' + paint + '"/>');
+      s.push('<circle cx="' + r1(hp[0] - hw * 0.3) + '" cy="' + r1(hp[1] - hw * 0.35) + '" r="' + r1(hw * 0.28) + '" fill="#fff" opacity="0.2"/>');
+      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hw * 0.32) + '" cy="' + r1(hp[1] - hw * 0.05) + '" r="' + r1(Math.max(0.35, hw * 0.11)) + '"/><circle cx="' + r1(hp[0] + hw * 0.32) + '" cy="' + r1(hp[1] - hw * 0.05) + '" r="' + r1(Math.max(0.35, hw * 0.11)) + '"/>' +
+        '<path d="M' + r1(hp[0] - hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + ' Q' + hp[0] + ' ' + r1(hp[1] + hw * 0.75) + ' ' + r1(hp[0] + hw * 0.4) + ' ' + r1(hp[1] + hw * 0.3) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hw * 0.12)) + '" stroke-linecap="round"/></g>');
+      return '<g class="vvy-seated-top' + (p.you ? ' vvy-you' : '') + '">' + s.join('') + '</g>';
+    }
+    for (k = R.length - 1; k >= 0; k--) {
+      var rr = R[k], sw = rr.sw, worst = null;
+      /* cushions */
+      if (rr.bench) {
+        o.push('<polygon points="' + pts([[rr.u - 17, 5], [rr.u - 17, Wd - 5], [rr.u + 3, Wd - 5], [rr.u + 3, 5]]) + '" fill="' + seatFill + '" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>');
+        for (j = 1; j < rr.seats; j++) { var sv = 5 + (Wd - 10) * j / rr.seats; o.push('<polyline points="' + pts([[rr.u - 17, sv], [rr.u + 3, sv]]) + '" fill="none" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>'); }
+      } else {
+        for (j = 0; j < rr.vs.length; j++) { o.push('<polygon points="' + pts([[rr.u - 17, rr.vs[j] - sw / 2], [rr.u - 17, rr.vs[j] + sw / 2], [rr.u + 3, rr.vs[j] + sw / 2], [rr.u + 3, rr.vs[j] - sw / 2]]) + '" fill="' + seatFill + '" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>'); }
+      }
+      /* backrests (vertical faces) + headrests */
+      var segs = rr.bench ? [[5, Wd - 5]] : [], q;
+      if (!rr.bench) { for (j = 0; j < rr.vs.length; j++) { segs.push([rr.vs[j] - sw / 2, rr.vs[j] + sw / 2]); } }
+      for (q = 0; q < segs.length; q++) {
+        o.push('<polygon points="' + pts([[rr.u + 3, segs[q][0], 0], [rr.u + 3, segs[q][1], 0], [rr.u + 6, segs[q][1], 24], [rr.u + 6, segs[q][0], 24]]) + '" fill="' + backFill + '" stroke="' + shade(seatCol, -0.3) + '" stroke-width="0.35"/>');
+      }
+      for (j = 0; j < rr.vs.length; j++) { o.push('<polygon points="' + pts([[rr.u + 5, rr.vs[j] - 5, 25], [rr.u + 5, rr.vs[j] + 5, 25], [rr.u + 6, rr.vs[j] + 5, 31], [rr.u + 6, rr.vs[j] - 5, 31]]) + '" fill="' + shade(seatCol, -0.1) + '" rx="1"/>'); }
+      /* riders in their seats */
+      for (j = 0; j < rr.riders.length; j++) {
+        var fr = rowFit(cfg, rr.n, rr.riders[j].h);
+        var wv = fr.band === 'unknown' ? null : (fr.hs === null ? fr.ls : (fr.ls === null ? fr.hs : Math.min(fr.hs, fr.ls)));
+        if (wv !== null && (worst === null || wv < worst)) { worst = wv; }
+        o.push(riderSvg(rr.riders[j], rr.u, rr.vs[j], fr));
+      }
+      /* cats on empty seats */
+      var bandR = worst === null ? (rr.riders.length ? 'unknown' : 'empty') : (worst >= 2.5 ? 'roomy' : (worst >= 0 ? 'ok' : (worst >= -2.5 ? 'tight' : 'cramped')));
+      chips.push({ row: rr, band: bandR });
+    }
+    /* ---- pets ---- */
+    var nD = Math.min(party.dogs || 0, 12), nC = Math.min(party.cats || 0, 12), last = R[R.length - 1];
+    function dogTop(u, v, h) {
+      /* sitting dog facing the viewer: body, head with ears, happy face */
+      var s = [], b = P(u, v, 0), hp = P(u, v, 0.9 * h), w = 0.55 * h * sc(u), hr = 0.3 * h * sc(u);
+      s.push('<ellipse cx="' + b[0] + '" cy="' + r1(b[1] - 0.25 * h * KZ) + '" rx="' + r1(w * 0.6) + '" ry="' + r1(0.45 * h * KZ) + '" fill="url(#' + dx.vgrad('dogo', '#6b4f3a', 0.22, -0.3) + ')"/>');
+      s.push('<circle cx="' + hp[0] + '" cy="' + hp[1] + '" r="' + r1(hr) + '" fill="#6b4f3a"/>');
+      s.push('<ellipse cx="' + r1(hp[0] - hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/><ellipse cx="' + r1(hp[0] + hr * 0.95) + '" cy="' + r1(hp[1] - hr * 0.2) + '" rx="' + r1(hr * 0.32) + '" ry="' + r1(hr * 0.6) + '" fill="#4e3727"/>');
+      s.push('<g fill="#fff" opacity="0.92"><circle cx="' + r1(hp[0] - hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + r1(hp[0] + hr * 0.35) + '" cy="' + r1(hp[1] - hr * 0.15) + '" r="' + r1(Math.max(0.35, hr * 0.12)) + '"/><circle cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.25) + '" r="' + r1(Math.max(0.4, hr * 0.16)) + '" fill="#1f2933"/>' +
+        '<path d="M' + r1(hp[0] - hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + ' Q' + hp[0] + ' ' + r1(hp[1] + hr * 0.85) + ' ' + r1(hp[0] + hr * 0.4) + ' ' + r1(hp[1] + hr * 0.45) + '" fill="none" stroke="#fff" stroke-width="' + r1(Math.max(0.4, hr * 0.13)) + '" stroke-linecap="round"/></g>');
+      s.push('<ellipse cx="' + hp[0] + '" cy="' + r1(hp[1] + hr * 0.78) + '" rx="' + r1(hr * 0.2) + '" ry="' + r1(hr * 0.3) + '" fill="#e8848f"/>');
+      return '<g class="vvy-dog vvy-dog-top">' + s.join('') + '</g>';
+    }
+    var cargoOK = !trunk && !wedge && !pickup && (cabR - (last.u + 10)) > 14;
+    for (i = 0; i < nD; i++) {
+      if (pickup) { o.push(dogTop(uR + 16 + i * 14, Wd * (i % 2 ? 0.7 : 0.35), 22)); }
+      else if (cargoOK) { o.push(dogTop(last.u + 12 + Math.min(cabR - last.u - 20, 6) , Wd * (i % 2 ? 0.68 : 0.36), 22)); }
+      else { /* footwell of the last row's far-side seat */ o.push(dogTop(last.u - 22, Wd * 0.72 + (i % 2) * 4, 16)); }
+    }
+    var emptySeats = [];
+    for (k = 0; k < R.length; k++) { for (j = R[k].riders.length; j < R[k].vs.length; j++) { emptySeats.push([R[k].u - 6, R[k].vs[j]]); } }
+    for (i = 0; i < nC; i++) {
+      var cp = emptySeats.length ? emptySeats[i % emptySeats.length] : [uH + 6, Wd * 0.5];
+      var cpp = P(cp[0], cp[1], 2);
+      o.push('<g class="vvy-cat vvy-cat-top" pointer-events="none" transform="translate(' + cpp[0] + ' ' + cpp[1] + ') scale(' + r2(0.9 * sc(cp[0])) + ')">' + catSprite(i % 3 === 0 ? '#4a4a52' : (i % 3 === 1 ? '#8a6d4b' : '#b8b2a7'), dx, i % 3) + '</g>');
+    }
+    /* ---- dash, windshield, hood: nearest, drawn last ---- */
+    o.push('<polygon points="' + pts([[cabF, 4, 0], [cabF, Wd - 4, 0], [cabF + 8, Wd - 4, 13], [cabF + 8, 4, 13]]) + '" fill="' + shade(pal.body, -0.55) + '"/>');
+    /* steering wheel on the driver side */
+    var swp = P(u1 - 12, R[0].vs[0], 16);
+    o.push('<ellipse cx="' + swp[0] + '" cy="' + swp[1] + '" rx="' + r1(7.5 * sc(u1)) + '" ry="' + r1(4 * sc(u1)) + '" fill="none" stroke="' + shade(pal.body, -0.65) + '" stroke-width="1.4"/>');
+    /* windshield: cut away like the roof, left as a faint pane so the front row stays readable */
+    o.push('<polygon points="' + pts([[uH, 3, 0], [uH, Wd - 3, 0], [uW, Wd - 6, 26], [uW, 6, 26]]) + '" fill="url(#' + dx.vgrad('glasso', pal.glass, 0.35, -0.05, 0.1) + ')" opacity="0.18" stroke="' + pal.stroke + '" stroke-width="0.4" stroke-opacity="0.5"/>');
+    o.push('<polygon points="' + pts([[0, 0.12 * Wd], [0, 0.88 * Wd], [0.05 * L, Wd], [uH, Wd], [uH, 0], [0.05 * L, 0]]) + '" fill="' + bodyFill + '" stroke="' + pal.stroke + '" stroke-width="0.45" stroke-linejoin="round"/>');
+    o.push('<polyline points="' + pts([[uH * 0.35, 0.16 * Wd], [uH * 0.35, 0.84 * Wd]]) + '" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.22"/>');
+    o.push('</g>');
+    /* riders without a seat: beside the vehicle */
+    for (i = 0; i < noSeat.length; i++) {
+      var ns = P(L * 0.5 + i * 12, Wd + 14, 0);
+      o.push('<g transform="translate(' + ns[0] + ' ' + ns[1] + ')">' + personSvg(noSeat[i].h * 0.35, 0, function (yy) { return r1(-yy); }, '#9aa5b1', 'vvy-fam vvy-noseat', dx) + '</g>');
+      o.push('<text x="' + ns[0] + '" y="' + r1(ns[1] + 6) + '" text-anchor="middle" font-size="4" fill="#8a1c14" font-family="' + FONT + '">no seat</text>');
+    }
+    /* ---- row labels (left) + fit chips (right) ---- */
+    var halo = ' paint-order="stroke" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"';
+    for (k = 0; k < chips.length; k++) {
+      var ch = chips[k], rl = ch.row, lp = P(rl.u - 6, 0, 0), rp = P(rl.u - 6, Wd, 0);
+      var name = rl.n === 1 ? 'Front' : (rl.n === 2 ? '2nd row' : '3rd row');
+      var kind = rl.seats === 0 ? 'no seats' : (rl.bench ? 'bench · ' + rl.seats : (rl.seats === 1 ? '1 seat' : (rl.n === 1 ? '2 buckets' : (rl.seats === 2 ? "2 captain's chairs" : rl.seats + ' seats'))));
+      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"' + halo + '>' + esc(name) + '</text>');
+      o.push('<text x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"' + halo + '>' + esc(kind) + '</text>');
+      var ctext = ch.band === 'empty' ? 'empty' : (ch.band === 'unknown' ? 'room n/a' : (ch.band === 'cramped' ? 'cramped' : (ch.band === 'tight' ? 'tight' : 'fine')));
+      var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
+      o.push('<text x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"' + halo + '>' + esc(ctext) + '</text>');
+    }
+    o.push('<text x="' + r1(W / 2) + '" y="' + r1(SH - 3) + '" text-anchor="middle" font-size="3.8" fill="#7b8794" font-family="' + FONT + '">who sits where · room is measured in the profile view</text>');
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1298,6 +1567,7 @@ var VVY = (function () {
   return {
     renderScene: renderScene,
     renderInterior: renderInterior,
+    renderInside: renderInside,
     rowFit: rowFit,
     partyRows: partyRows,
     SEAT: SEAT,
