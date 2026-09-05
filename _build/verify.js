@@ -53,6 +53,9 @@ setTimeout(function () {
   check(/<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml;base64,/.test(html) && /<link rel="apple-touch-icon" sizes="180x180" href="data:image\/png;base64,/.test(html), 'favicon (svg, scheme-aware) + apple-touch-icon (png) inlined as data URIs');
   check(d.querySelectorAll('.brand svg.lockup-light').length === 1 && d.querySelectorAll('.brand svg.lockup-dark').length === 1 && /\.brand \.lockup \{ height: 30px; width: auto/.test(html) && /@media \(max-width: 339px\) \{ \.brand \.lockup \{ display: none !important; \}/.test(html), 'header lockup inline at a fixed 30px, text wordmark fallback below 340px');
   check(!/(src|href)="https?:/.test(html.replace(/<footer[\s\S]*?<\/footer>/, '')), 'no external requests (data URIs only)');
+  /* palette aligned to the logo: old accents gone, navy/orange present, tight stays yellow (not orange) */
+  check(!/#3f6285|#1f4e79|#e3a437|#f1b93f|#b7791f|#fff4d6/i.test(html) && /#1C3040/.test(html) && /#C4661A/.test(html) && /#9A4F12/.test(html), 'palette: old steel-blue/amber accents removed, logo navy + burnt orange in use');
+  check(/#C9A400/.test(html) && /#6B5200/.test(html) && /#FFF3B8/.test(html) && /#EAE4F6/.test(html), 'fit states: tight = yellow family (#C9A400/#6B5200/#FFF3B8), modified badge = lavender, distinct from the orange accent');
   check(!/class="chip chip[AB]"/.test(html) && !/>A<\/button>|>B<\/button>/.test(html) && /<div class="heroctl" id="viewCtl"/.test(html) && /\.legend \{[^}]*flex-wrap: wrap/.test(html), 'header: no A/B letters anywhere, view pills on their own row, names wrap');
   /* sweep every config through the selectors, exterior + interior */
   /* jsdom re-parses ~700 KB of markup per render, so the DOM sweep samples every STEP-th config

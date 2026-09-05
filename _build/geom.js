@@ -23,8 +23,10 @@ var VVY = (function () {
   ];
 
   var PAL = {
-    A: { body: '#3f6285', stroke: '#24405c', glass: '#a9c0d3', wheel: '#20272e', hub: '#98a3ae', guide: '#1f4e79', op: 1 },
-    B: { body: '#f1b93f', stroke: '#9a6a12', glass: '#f8e6b8', wheel: '#5c4a1e', hub: '#e9d7a8', guide: '#b7791f', op: 1 }
+    /* palette aligned to the brand mark: A = logo navy family, B = logo burnt orange family. Text
+       in orange uses the darker #9A4F12 (6:1 on white); the raw #C4661A is 4:1 and only used as fill. */
+    A: { body: '#2E4F6B', stroke: '#16283A', glass: '#A9BFD3', wheel: '#20272e', hub: '#98a3ae', guide: '#1C3040', op: 1 },
+    B: { body: '#C4661A', stroke: '#7A3F0E', glass: '#F2D7BF', wheel: '#4A3018', hub: '#E8C7A9', guide: '#9A4F12', op: 1 }
   };
 
   var FONT = 'system-ui,Segoe UI,Helvetica,Arial,sans-serif';
@@ -1227,8 +1229,8 @@ var VVY = (function () {
     var w = 72 * f, h = 20 * f, label = interior ? '◂ outside' : 'peek inside ▸';
     var o = [];
     o.push(hitOpen('view', interior ? 'Show the outside of the vehicle' : 'Look inside the vehicle', cx - w / 2 - 6 * f, cy - 21 * f, w + 12 * f, 42 * f));
-    o.push('<g class="vvy-viewbadge"><rect x="' + r1(cx - w / 2) + '" y="' + r1(cy - h / 2) + '" width="' + r1(w) + '" height="' + r1(h) + '" rx="' + r1(h / 2) + '" fill="#fff" fill-opacity="0.92" stroke="#3f6285" stroke-width="' + r1(0.9 * f) + '"/>');
-    o.push('<text x="' + r1(cx) + '" y="' + r1(cy + 3.2 * f) + '" text-anchor="middle" font-size="' + r1(9 * f) + '" font-weight="700" fill="#1f4e79" font-family="' + FONT + '">' + label + '</text></g></g>');
+    o.push('<g class="vvy-viewbadge"><rect x="' + r1(cx - w / 2) + '" y="' + r1(cy - h / 2) + '" width="' + r1(w) + '" height="' + r1(h) + '" rx="' + r1(h / 2) + '" fill="#fff" fill-opacity="0.92" stroke="#2E4F6B" stroke-width="' + r1(0.9 * f) + '"/>');
+    o.push('<text x="' + r1(cx) + '" y="' + r1(cy + 3.2 * f) + '" text-anchor="middle" font-size="' + r1(9 * f) + '" font-weight="700" fill="#1C3040" font-family="' + FONT + '">' + label + '</text></g></g>');
     return o.join('');
   }
   function seatedSvg(h, hx, cushY, kneeX, floorY, Y, fill, cls, dx, face, faint) {
@@ -1416,7 +1418,7 @@ var VVY = (function () {
       for (j = 0; j < list.length; j++) {
         var p = list[j], hh = p.h, fr = rowFit(cfg, rr.n, hh);
         var col = p.you ? '#1f2933' : (p.kind === 'kid' ? '#5f7d95' : '#3d4f60');
-        if (fr.band === 'tight') { col = '#b7791f'; } else if (fr.band === 'cramped') { col = '#b3261e'; }
+        if (fr.band === 'tight') { col = '#C9A400'; } else if (fr.band === 'cramped') { col = '#b3261e'; }
         bands[rr.n] = bands[rr.n] || fr.band;
         /* knee: anatomical, or pushed forward to the seat ahead + margin when that is tighter */
         var kneeAnat = rr.hx - hh * SEAT.thigh, kneeX = kneeAnat;
@@ -1490,7 +1492,7 @@ var VVY = (function () {
        to the headliner and inches of knee clearance to the seat ahead (front row: legroom margin),
        colour-coded fine / tight / cramped; "not on file" when the row has no published figure. ---- */
     var lab = [], ci, co, colr, headTxt, kneeTxt, ty, tx;
-    function bandColor(bnd) { return bnd === 'cramped' ? '#b3261e' : (bnd === 'tight' ? '#9a6a12' : (bnd === 'unknown' ? '#7b8794' : '#0b5b32')); }
+    function bandColor(bnd) { return bnd === 'cramped' ? '#b3261e' : (bnd === 'tight' ? '#6B5200' : (bnd === 'unknown' ? '#7b8794' : '#0b5b32')); }
     function sgn(v) { var x = metric ? v * 2.54 : v; return (x >= 0 ? '+' : '\u2212') + (Math.round(Math.abs(x) * 10) / 10); }
     for (ci = 0; ci < callouts.length; ci++) {
       co = callouts[ci]; colr = bandColor(co.fr.band);
@@ -1639,7 +1641,7 @@ var VVY = (function () {
     var chips = [];
     function riderSvg(p, u, v, fr) {
       var h = p.h, col = p.you ? '#1f2933' : (p.kind === 'kid' ? '#5f7d95' : '#3d4f60');
-      if (fr.band === 'tight') { col = '#b7791f'; } else if (fr.band === 'cramped') { col = '#b3261e'; }
+      if (fr.band === 'tight') { col = '#C9A400'; } else if (fr.band === 'cramped') { col = '#b3261e'; }
       var paint = 'url(#' + dx.hgrad('r' + (dx.n++), col, cx + (v - Wd / 2) * sc(u) - 0.14 * h, cx + (v - Wd / 2) * sc(u) + 0.14 * h) + ')';
       var s = [], sh = 0.37 * h, hw = 0.062 * h * sc(u);
       /* thighs forward from the cushion */
@@ -1746,7 +1748,7 @@ var VVY = (function () {
       o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1]) + '" text-anchor="end" font-size="5" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', esc(name), 1.4));
       o.push(haloText(' x="' + r1(lp[0] - 3) + '" y="' + r1(lp[1] + 5.5) + '" text-anchor="end" font-size="4" fill="#52606d" font-family="' + FONT + '"', esc(kind), 1.2));
       var ctext = ch.band === 'empty' ? 'empty' : (ch.band === 'unknown' ? 'room n/a' : (ch.band === 'cramped' ? 'cramped' : (ch.band === 'tight' ? 'tight' : 'fine')));
-      var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#9a6a12' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
+      var ccol = ch.band === 'cramped' ? '#b3261e' : (ch.band === 'tight' ? '#6B5200' : (ch.band === 'empty' || ch.band === 'unknown' ? '#7b8794' : '#0b5b32'));
       o.push(haloText(' x="' + r1(rp[0] + 3) + '" y="' + r1(rp[1] + 1) + '" font-size="5" font-weight="700" fill="' + ccol + '" font-family="' + FONT + '"', esc(ctext), 1.4));
     }
     o.push('</svg>');
