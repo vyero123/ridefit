@@ -628,7 +628,7 @@ var VVY = (function () {
     var pw = personIn * 0.31;
     var gap = 16;
     /* minimum buffers: labels are drawn INLINE over the artwork (haloed), not in reserved margins */
-    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = 13;   /* mT: roof label / a cat's speech bubble */
+    var mL = 9, mR = 4, mT = 9 + ((opts.party && opts.party.cats) ? 12 : 0), mB = opts.interactive ? 30 : 13;   /* mT: roof label / a cat's speech bubble; mB: room for the peek-inside pill when live */
     /* label size scales with the scene width so it lands at ~9-10 px on a 375 px phone */
     /* family: adults and kids drawn between the reference person and the vehicle.
        Adults 66 in (US average adult), kids 45 in; the reference person stays the tallest anchor. */
@@ -750,7 +750,9 @@ var VVY = (function () {
     o.push('<line x1="1" y1="' + Y(0) + '" x2="5" y2="' + Y(0) + '" stroke="#1f2933" stroke-width="0.5"/>');
     o.push(haloText(' x="' + r1(Math.max(px, 16)) + '" y="' + r1(Y(0) + 5.8) + '" text-anchor="middle" font-size="' + GF + '" font-weight="700" fill="#1f2933" font-family="' + FONT + '"', 'You &#183; ' + esc(personLabel(personIn, metric)), 1.6));
 
-    if (inter) { var bf = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vxA + LA - 24 * bf, Y(0) + 6.5, false, bf)); }
+    /* pill scale follows the scene width so the hit area stays ≈ 44 px on a 375 px phone (the scene is
+       width-bound there); the hit box bottom lands inside the bottom margin */
+    if (inter) { var bf = Math.max(1, Math.min(1.6, W / 330)); o.push(viewBadge(vxA + LA - 44 * bf, Y(0) + 30 - 22 * bf, false, bf)); }
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');
@@ -1217,14 +1219,16 @@ var VVY = (function () {
     return best === null ? 1 : best;
   }
   function viewBadge(cx, cy, interior, f) {
-    /* the in-drawing toggle: a pill under the vehicle that reads like a door handle / tab.
-       f scales it with the scene width so it stays thumb-sized on a phone. */
+    /* the in-drawing toggle: a pill under the vehicle that reads like a tab on the drawing.
+       Sized for thumbs: on a 375 px phone the profile scene is ~1.06 px per unit, so the visible pill
+       is ~72 x 20 units (≈ 76 x 21 px, 9.5 px label) and the transparent hit area 84 x 42 units
+       (≈ 45 px tall). f grows it further on wide scenes. */
     f = f || 1;
-    var w = 40 * f, h = 8 * f, label = interior ? '◂ outside' : 'peek inside ▸';
+    var w = 72 * f, h = 20 * f, label = interior ? '◂ outside' : 'peek inside ▸';
     var o = [];
-    o.push(hitOpen('view', interior ? 'Show the outside of the vehicle' : 'Look inside the vehicle', cx - w / 2 - 4, cy - h / 2 - 3, w + 8, h + 6));
-    o.push('<g class="vvy-viewbadge"><rect x="' + r1(cx - w / 2) + '" y="' + r1(cy - h / 2) + '" width="' + r1(w) + '" height="' + r1(h) + '" rx="' + r1(h / 2) + '" fill="#fff" stroke="#3f6285" stroke-width="' + r1(0.5 * f) + '"/>');
-    o.push('<text x="' + r1(cx) + '" y="' + r1(cy + 1.5 * f) + '" text-anchor="middle" font-size="' + r1(4 * f) + '" font-weight="700" fill="#1f4e79" font-family="' + FONT + '">' + label + '</text></g></g>');
+    o.push(hitOpen('view', interior ? 'Show the outside of the vehicle' : 'Look inside the vehicle', cx - w / 2 - 6 * f, cy - 21 * f, w + 12 * f, 42 * f));
+    o.push('<g class="vvy-viewbadge"><rect x="' + r1(cx - w / 2) + '" y="' + r1(cy - h / 2) + '" width="' + r1(w) + '" height="' + r1(h) + '" rx="' + r1(h / 2) + '" fill="#fff" fill-opacity="0.92" stroke="#3f6285" stroke-width="' + r1(0.9 * f) + '"/>');
+    o.push('<text x="' + r1(cx) + '" y="' + r1(cy + 3.2 * f) + '" text-anchor="middle" font-size="' + r1(9 * f) + '" font-weight="700" fill="#1f4e79" font-family="' + FONT + '">' + label + '</text></g></g>');
     return o.join('');
   }
   function seatedSvg(h, hx, cushY, kneeX, floorY, Y, fill, cls, dx, face, faint) {
@@ -1287,7 +1291,7 @@ var VVY = (function () {
     var rowsN = has(cfg.rows) ? cfg.rows : 2;
     var CAL = 7.5;   /* callout font size: the numbers are the point of this view, so they are big */
     var nSeated = 1 + Math.min((party.people || []).length, has(cfg.seats) ? cfg.seats - 1 : 4);
-    var mL = 18, mR = 18, mT = 8 + nSeated * (CAL + 1.2), mB = 18;
+    var mL = 18, mR = 18, mT = 8 + nSeated * (CAL + 1.2), mB = 32;
     var W = mL + refL + mR, SH = mT + refH + mB;
     function Y(y) { return r1(SH - mB - y); }
     var vx = mL;
@@ -1517,7 +1521,7 @@ var VVY = (function () {
     o.push(lab.join(''));
     o.push('<text x="2" y="' + r1(Y(0) + 6) + '" font-size="3.3" fill="#7b8794" font-family="' + FONT + '">' + (metric ? 'cm' : 'inches') + ' of room above the head and in front of the knee · guidance, not a verdict: seated ≈ 0.52 × standing; published figures are indicative — seat position varies</text>');
     o.push('</g>');
-    var bf2 = Math.max(1, Math.min(1.8, W / 380)); o.push(viewBadge(vx + L - 24 * bf2, Y(0) + 11, true, bf2));
+    var bf2 = Math.max(1, Math.min(1.6, W / 330)); o.push(viewBadge(vx + L - 44 * bf2, Y(0) + 32 - 22 * bf2, true, bf2));
     o.push('</svg>');
     o.splice(defsAt, 0, dx.html());
     return o.join('');

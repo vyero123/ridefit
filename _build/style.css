@@ -29,10 +29,10 @@ body {
 .pane.a { height: 34vh; min-height: 170px; max-height: 320px; background: linear-gradient(#fff, #f6f8fa); }
 .pane.b { height: 0; }
 .scene.open .pane.b { height: 240px; margin-top: 4px; }
-/* primary control: comfortably above the 44 px touch minimum */
-.fold { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 15px; font-weight: 700; color: #fff; background: #1f4e79; border: 0; border-radius: 12px; padding: 0 14px; text-align: center; cursor: pointer; height: 48px; line-height: 48px; box-shadow: 0 2px 6px rgba(31,78,121,.25); }
-.fold:active { background: #173b5c; }
-.fold .fchev { font-size: 17px; }
+/* quiet section control: 44 px tall for thumbs, no filled-primary treatment */
+.fold { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 13px; font-weight: 600; color: #1f4e79; background: #f7f9fb; border: 1px solid #e4e7eb; border-radius: 10px; padding: 0 12px; text-align: center; cursor: pointer; height: 44px; line-height: 42px; }
+.fold:active { background: #eef2f6; }
+.fold .fchev { font-size: 13px; }
 .fold .fchev { display: inline-block; margin-right: 4px; }
 body.static .fold { display: none; }
 body.static .pane.b { height: 240px; margin-top: 4px; }   /* no script: show the seats view open */
