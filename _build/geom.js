@@ -166,8 +166,7 @@ var VVY = (function () {
   function stockWheelDia(cfg) {
     var t = parseTire(cfg.tire);
     if (t) { return { dia: t.dia, approx: false, label: t.label }; }
-    var b = buildBody(cfg);
-    return { dia: b.wheelR * 2 * cfg.height, approx: true, label: null };
+    return { dia: WHEEL_FRAC[archetype(cfg)] * 2 * cfg.height, approx: true, label: null };
   }
 
   /* effective(cfg, mods) -> copy of cfg with lift / tire changes applied.
@@ -202,125 +201,177 @@ var VVY = (function () {
 
   function P(x, y) { return [x, y]; }
 
-  function buildBody(cfg) {
-    var H = cfg.height, L = cfg.length;
-    var clr = has(cfg.clearance) ? cfg.clearance : H * 0.115;
-    var gc = clr / H;
-    if (gc > 0.30) { gc = 0.30; }
-    if (gc < 0.03) { gc = 0.03; }
-    var bb = gc + 0.055;
-    if (bb > 0.36) { bb = 0.36; }
-    var t = cfg.template || 'sedan';
-    var pts = null, glass = null, wheelR = 0.20, foSplit = 0.44;
+  /* ---------------- body templates: PARAMETRIC archetype silhouettes ----------------
+     Every outline is built from the vehicle's own numbers — overall length L and height H (the
+     bounding box is exact by construction), ride height (clearance), axle positions (front
+     overhang + wheelbase, or a class split of the overhangs), tire diameter (wheel arches) and, for
+     pickups, cab and bed lengths. On top of those landmarks each archetype hand-tunes its
+     characteristic lines: hood height, cowl position, windshield rake, roof crown, C/D-pillar angle,
+     bed rail height, front-end mass, arch shape. Nothing is traced; missing landmarks fall back to
+     class defaults rather than inventing a spec.
+     Coordinates: x = fraction of L (0 = front bumper), y = fraction of H (0 = ground, 1 = roof). */
 
-    if (t === 'pickup_full' || t === 'pickup_hd' || t === 'pickup_mid' || t === 'pickup_compact') {
-      var hd = (t === 'pickup_hd');
-      var comp = (t === 'pickup_compact');
-      var rail = hd ? 0.635 : (comp ? 0.605 : 0.615);
-      var hood = hd ? 0.615 : (comp ? 0.545 : 0.575);
-      var bedFrac = (cfg.bedLen ? (cfg.bedLen / L) : 0.295) + 0.022;
-      var cabLen = cfg.cab === 'reg' ? 0.235 : (cfg.cab === 'ext' ? 0.300 : 0.340);
-      var bedFront = 1 - bedFrac;
-      var cabFront = bedFront - cabLen;
-      if (cabFront < 0.16) { cabFront = 0.16; }
-      var roofF = cabFront + 0.078;
-      var roofR = bedFront - 0.022;
-      if (roofR < roofF + 0.05) { roofR = roofF + 0.05; }
-      pts = [
-        P(0.000, bb), P(0.000, hood - 0.085), P(0.030, hood - 0.030),
-        P(cabFront * 0.55, hood - 0.014), P(cabFront, hood),
-        P(roofF, 1.000), P(roofR, 1.000),
-        P(bedFront - 0.010, rail + 0.022), P(bedFront, rail),
-        P(0.994, rail), P(1.000, rail - 0.045),
-        P(1.000, bb + 0.055), P(0.986, bb + 0.018), P(0.944, bb)
-      ];
-      glass = [
-        P(cabFront + 0.014, hood + 0.012), P(roofF + 0.012, 0.972),
-        P(roofR - 0.012, 0.972), P(roofR - 0.012, hood + 0.012)
-      ];
-      wheelR = hd ? 0.230 : (comp ? 0.205 : 0.218);
-      foSplit = 0.44;
-    } else if (t === 'wedge') {
-      pts = [
-        P(0.000, bb), P(0.000, 0.300), P(0.020, 0.345),
-        P(0.435, 1.000), P(0.640, 0.855), P(0.988, 0.605),
-        P(1.000, 0.560), P(1.000, bb + 0.050), P(0.960, bb)
-      ];
-      glass = [P(0.245, 0.590), P(0.430, 0.960), P(0.610, 0.845), P(0.612, 0.600)];
-      wheelR = 0.230; foSplit = 0.46;
-    } else if (t === 'suv') {
-      pts = [
-        P(0.000, bb), P(0.000, 0.400), P(0.040, 0.500), P(0.180, 0.545),
-        P(0.300, 0.575), P(0.410, 0.955), P(0.452, 1.000),
-        P(0.845, 1.000), P(0.905, 0.960), P(0.962, 0.735),
-        P(0.988, 0.520), P(1.000, 0.440), P(1.000, bb + 0.050), P(0.958, bb)
-      ];
-      glass = [P(0.318, 0.600), P(0.436, 0.955), P(0.885, 0.955), P(0.900, 0.600)];
-      wheelR = 0.205; foSplit = 0.45;
-    } else if (t === 'wagon') {
-      pts = [
-        P(0.000, bb), P(0.000, 0.370), P(0.045, 0.470), P(0.190, 0.520),
-        P(0.320, 0.560), P(0.440, 0.950), P(0.485, 1.000),
-        P(0.870, 1.000), P(0.930, 0.950), P(0.975, 0.700),
-        P(1.000, 0.470), P(1.000, bb + 0.050), P(0.958, bb)
-      ];
-      glass = [P(0.340, 0.585), P(0.468, 0.952), P(0.905, 0.952), P(0.920, 0.585)];
-      wheelR = 0.195; foSplit = 0.45;
-    } else if (t === 'sedan') {
-      pts = [
-        P(0.000, bb), P(0.010, 0.375), P(0.090, 0.490), P(0.270, 0.540),
-        P(0.415, 0.910), P(0.505, 1.000), P(0.690, 1.000),
-        P(0.830, 0.885), P(0.965, 0.600), P(1.000, 0.500),
-        P(1.000, bb + 0.055), P(0.955, bb)
-      ];
-      glass = [P(0.295, 0.570), P(0.430, 0.955), P(0.700, 0.955), P(0.830, 0.570)];
-      wheelR = 0.235; foSplit = 0.46;
-    } else if (t === 'coupe') {
-      pts = [
-        P(0.000, bb), P(0.008, 0.360), P(0.080, 0.470), P(0.250, 0.510),
-        P(0.400, 0.900), P(0.500, 1.000), P(0.640, 1.000),
-        P(0.880, 0.760), P(0.985, 0.585), P(1.000, 0.505),
-        P(1.000, bb + 0.050), P(0.955, bb)
-      ];
-      glass = [P(0.278, 0.545), P(0.420, 0.950), P(0.650, 0.950), P(0.845, 0.640)];
-      wheelR = 0.250; foSplit = 0.46;
-    } else if (t === 'hatchback') {
-      pts = [
-        P(0.000, bb), P(0.010, 0.380), P(0.085, 0.490), P(0.265, 0.540),
-        P(0.415, 0.915), P(0.500, 1.000), P(0.760, 1.000),
-        P(0.905, 0.940), P(0.978, 0.640), P(1.000, 0.520),
-        P(1.000, bb + 0.055), P(0.955, bb)
-      ];
-      glass = [P(0.292, 0.572), P(0.428, 0.955), P(0.775, 0.955), P(0.900, 0.645)];
-      wheelR = 0.225; foSplit = 0.46;
-    } else if (t === 'minivan') {
-      pts = [
-        P(0.000, bb), P(0.000, 0.400), P(0.045, 0.500), P(0.165, 0.545),
-        P(0.290, 0.940), P(0.350, 1.000), P(0.855, 1.000),
-        P(0.935, 0.930), P(0.985, 0.640), P(1.000, 0.520),
-        P(1.000, bb + 0.050), P(0.958, bb)
-      ];
-      glass = [P(0.192, 0.575), P(0.318, 0.955), P(0.885, 0.955), P(0.930, 0.640)];
-      wheelR = 0.200; foSplit = 0.44;
-    } else if (t === 'van') {
-      pts = [
-        P(0.000, bb), P(0.000, 0.420), P(0.030, 0.560), P(0.115, 0.930),
-        P(0.160, 1.000), P(0.985, 1.000), P(1.000, 0.960),
-        P(1.000, bb + 0.045), P(0.965, bb)
-      ];
-      glass = [P(0.052, 0.600), P(0.132, 0.950), P(0.300, 0.950), P(0.300, 0.600)];
-      wheelR = 0.180; foSplit = 0.40;
-    } else {
-      pts = [
-        P(0.000, bb), P(0.010, 0.380), P(0.090, 0.490), P(0.270, 0.540),
-        P(0.415, 0.910), P(0.505, 1.000), P(0.690, 1.000),
-        P(0.830, 0.885), P(0.965, 0.600), P(1.000, 0.500),
-        P(1.000, bb + 0.055), P(0.955, bb)
-      ];
-      wheelR = 0.230; foSplit = 0.46;
+  var ARCH = { pickup_full: 1.16, pickup_hd: 1.14, pickup_mid: 1.14, pickup_compact: 1.12, offroad_pickup: 1.2, wedge: 1.15,
+               bof_suv: 1.13, offroad: 1.2, crossover: 1.12, minivan: 1.1, sedan: 1.1, hatchback: 1.1, coupe: 1.1, wagon: 1.1, van: 1.08 };
+  /* fallback wheel size (no tire on file) and overhang split: the SAME class values the previous
+     templates used, so approximate wheels and axle positions do not move with this redraw */
+  var WHEEL_FRAC = { pickup_full: 0.218, pickup_hd: 0.23, pickup_mid: 0.218, pickup_compact: 0.205, offroad_pickup: 0.218, wedge: 0.23,
+                     bof_suv: 0.205, offroad: 0.205, crossover: 0.205, minivan: 0.2, sedan: 0.235, hatchback: 0.225, coupe: 0.25, wagon: 0.195, van: 0.18 };
+  var FO_SPLIT = { pickup_full: 0.44, pickup_hd: 0.44, pickup_mid: 0.44, pickup_compact: 0.44, offroad_pickup: 0.44, wedge: 0.46,
+                   bof_suv: 0.45, offroad: 0.45, crossover: 0.45, minivan: 0.44, sedan: 0.46, hatchback: 0.46, coupe: 0.46, wagon: 0.45, van: 0.40 };
+  var OFFROAD_RE = /wrangler|bronco(?! sport)|4runner|defender|g-class|g 550|g 63|land cruiser|lc 250|gx 550|mercedes-benz g/i;
+
+  /* archetype from template + bodyClass + a few model names */
+  function archetype(cfg) {
+    var t = cfg.template || 'sedan', bc = cfg.bodyClass || '', m = (cfg.model || '');
+    if (t === 'wedge' || bc === 'pickup-wedge') { return 'wedge'; }
+    if (t === 'pickup_mid' && /gladiator/i.test(m)) { return 'offroad_pickup'; }
+    if (/^pickup_(full|hd|mid|compact)$/.test(t)) { return t; }
+    if (t === 'suv') { if (OFFROAD_RE.test(m) && !/sport$/i.test(m)) { return 'offroad'; } return bc === 'body-on-frame-suv' ? 'bof_suv' : 'crossover'; }
+    if (t === 'hatchback' && bc === 'crossover') { return 'crossover'; }
+    if (t === 'coupe' || t === 'sedan' || t === 'hatchback' || t === 'minivan' || t === 'wagon' || t === 'van') { return t; }
+    return 'sedan';
+  }
+
+  /* sample a quadratic curve from p0 through control c to p1 (n interior points) */
+  function qcurve(out, p0, c, p1, n) {
+    var i, t, mt;
+    for (i = 1; i <= n; i++) { t = i / (n + 1); mt = 1 - t; out.push([mt * mt * p0[0] + 2 * mt * t * c[0] + t * t * p1[0], mt * mt * p0[1] + 2 * mt * t * c[1] + t * t * p1[1]]); }
+  }
+  /* roof crown from (xa,ya) to (xb,yb) whose sampled midpoint is EXACTLY y = 1.0 (the overall height) */
+  function roofCrown(out, xa, ya, xb, yb) {
+    var cy = 2 * 1.0 - (ya + yb) / 2;   /* quadratic midpoint = (ya + 2cy + yb) / 4 = 1.0 */
+    qcurve(out, [xa, ya], [(xa + xb) / 2, cy], [xb, yb], 5);
+  }
+  /* wheel arch sampled over the top of a wheel centred at (ax, wr) — all in inches; returns points
+     along the rocker from x = ax + r to ax - r (we travel the bottom edge rear -> front) */
+  function archPts(out, ax, wr, rocker, k, L, H, flat) {
+    var r = wr * k, dy = wr - rocker, i, a0, a, n = 9;
+    if (r <= dy + 0.5) { return; }
+    var half = Math.sqrt(r * r - dy * dy);
+    out.push([(ax + half) / L, rocker / H]);
+    a0 = Math.atan2(-dy, half);                     /* angle of the rear intersection point */
+    for (i = 1; i < n; i++) {
+      a = a0 + (Math.PI - 2 * a0) * i / n;          /* sweep over the top */
+      var px = ax + Math.cos(Math.PI - a) * r * -1, py = wr + Math.sin(a) * r;
+      if (flat && py > wr + r * 0.82) { py = wr + r * 0.82; }   /* squared-off truck arch */
+      out.push([px / L, py / H]);
     }
+    out.push([(ax - half) / L, rocker / H]);
+  }
+
+  function buildBody(cfg) {
+    var H = cfg.height, L = cfg.length, k = archetype(cfg);
+    var clr = has(cfg.clearance) ? cfg.clearance : H * (k === 'sedan' || k === 'coupe' || k === 'hatchback' ? 0.095 : 0.115);
+    var gc = clr / H; if (gc > 0.30) { gc = 0.30; } if (gc < 0.03) { gc = 0.03; }
+    /* wheels: from the tire, else a class fraction of H */
+    var tire = parseTire(cfg.tire), wrIn = tire ? tire.dia / 2 : WHEEL_FRAC[k] * H, wheelR = wrIn / H;
+    var WB = has(cfg.wheelbase) ? cfg.wheelbase : L * 0.6, foSplit = FO_SPLIT[k];
+    var fo = has(cfg.frontOverhang) ? cfg.frontOverhang : (L - WB) * foSplit;
+    if (fo < 8) { fo = 8; }
+    var ax1 = fo, ax2 = fo + WB; if (ax2 > L - 8) { ax2 = L - 8; }
+    var aF = ax1 / L, aR = ax2 / L, rk = wheelR * ARCH[k], rkx = rk * H / L;   /* arch radius in y and x fractions */
+    var rocker = gc + 0.055; if (rocker > 0.36) { rocker = 0.36; }             /* body bottom sits just above the lowest point */
+    var top = [], glass = null, lm = {}, pickup = /pickup|wedge/.test(k), hh;
+    var hood = has(cfg.hoodHeight) ? cfg.hoodHeight / H : null;
+
+    if (k === 'pickup_full' || k === 'pickup_hd' || k === 'pickup_mid' || k === 'pickup_compact' || k === 'offroad_pickup') {
+      var hd = k === 'pickup_hd', compact = k === 'pickup_compact', off = k === 'offroad_pickup', mid = k === 'pickup_mid';
+      hh = hood !== null ? hood : (hd ? 0.63 : (off ? 0.62 : (compact ? 0.56 : (mid ? 0.585 : 0.605))));
+      var bedIn = has(cfg.bedInnerHeight) ? cfg.bedInnerHeight : (hd ? 21.5 : (compact ? 19.5 : (mid ? 19.5 : 21.4)));
+      var rail = has(cfg.bedHeight) ? (cfg.bedHeight + bedIn) / H : (hd ? 0.665 : (compact ? 0.585 : (mid ? 0.6 : (off ? 0.6 : 0.625))));
+      if (rail > 0.8) { rail = 0.8; } if (rail < hh - 0.02) { rail = hh - 0.02; }
+      var bedFrac = has(cfg.bedLen) ? (cfg.bedLen + 3) / L : 0.31;
+      var bedFront = 1 - bedFrac;
+      /* cab length (cowl -> cab back) from the cab type, in inches; the hood absorbs the rest of the
+         length in front of it. Without a cab type the cowl sits a class distance behind the front axle. */
+      var cabIn = cfg.cab === 'reg' ? (hd ? 56 : 52) : (cfg.cab === 'ext' ? (hd ? 70 : 66) : (cfg.cab === 'crew' ? (compact ? 72 : (mid ? 74 : 80)) : null));
+      var cowl = cabIn !== null ? bedFront - cabIn / L : aF + (off ? 0.115 : (compact ? 0.06 : (mid ? 0.085 : 0.095)));
+      if (cowl < aF + 0.05) { cowl = aF + 0.05; }
+      if (cowl > bedFront - 0.19) { cowl = bedFront - 0.19; }
+      var rake = off ? 0.045 : (compact ? 0.11 : 0.085);
+      var roofF = cowl + rake, roofR = bedFront - (compact ? 0.035 : (off ? 0.012 : 0.02));
+      if (roofR < roofF + 0.06) { roofR = roofF + 0.06; }
+      /* front face: tall grille, bumper below */
+      top.push([0.0, rocker + 0.02]); top.push([0.0, hh - 0.14]); top.push([0.012, hh - 0.03]); top.push([0.035, hh]);
+      if (off) { /* flat hood with exposed fender step */ top.push([aF + 0.02, hh]); top.push([cowl, hh + 0.01]); }
+      else { qcurve(top, [0.035, hh], [cowl * 0.5, hh + 0.012], [cowl, hh + 0.035], 3); top.push([cowl, hh + 0.035]); }
+      /* windshield, roof crown, C-pillar */
+      var cowlY = off ? hh + 0.01 : hh + 0.035;
+      top.push([roofF, 0.985]);
+      roofCrown(top, roofF, 0.985, roofR, 0.985); top.push([roofR, 0.985]);
+      if (compact) { qcurve(top, [roofR, 0.985], [roofR + 0.03, 0.93], [bedFront + 0.01, rail + 0.03], 3); top.push([bedFront + 0.01, rail + 0.03]); }
+      else { top.push([bedFront - 0.004, rail + 0.06]); top.push([bedFront, rail]); }
+      /* bed rail to the tailgate */
+      top.push([0.99, rail]); top.push([1.0, rail - 0.04]); top.push([1.0, rocker + 0.1]); top.push([0.985, rocker + 0.02]);
+      glass = [[cowl + 0.012, cowlY + 0.01], [roofF + 0.012, 0.965], [roofR - 0.012, 0.965], [roofR - 0.006, cowlY + 0.01]];
+      lm = { cowl: cowl, roofF: roofF, roofR: roofR, bedFront: bedFront, rail: rail, hood: hh, cabRear: roofR + 0.01, rear: 1.0, hoodX: cowl * 0.6 };
+    } else if (k === 'wedge') {
+      /* Cybertruck: two straight facets meeting at the apex, sail panels down to the tail */
+      hh = hood !== null ? hood : 0.42;
+      var apex = has(cfg.wheelbase) ? Math.min(0.46, (fo + WB * 0.5) / L) : 0.44;
+      top.push([0.0, rocker + 0.02]); top.push([0.0, 0.30]); top.push([0.02, 0.345]); top.push([apex, 1.0]); top.push([0.99, 0.585]); top.push([1.0, 0.56]); top.push([1.0, rocker + 0.08]); top.push([0.985, rocker + 0.02]);
+      glass = [[0.245, 0.60], [apex - 0.01, 0.955], [apex + 0.17, 0.85], [apex + 0.17, 0.60]];
+      lm = { cowl: 0.245, roofF: apex, roofR: apex + 0.17, bedFront: 0.64, rail: 0.585, hood: 0.5, cabRear: 0.64, rear: 1.0, hoodX: 0.15 };
+    } else if (k === 'bof_suv' || k === 'offroad' || k === 'crossover') {
+      var bof = k === 'bof_suv', offr = k === 'offroad';
+      hh = hood !== null ? hood : (bof ? 0.575 : (offr ? 0.60 : 0.53));
+      var cowlS = aF + (bof ? 0.10 : (offr ? 0.10 : 0.12)), rakeS = offr ? 0.05 : (bof ? 0.105 : 0.14);
+      var roofFS = cowlS + rakeS, roofRS = bof ? 0.905 : (offr ? 0.93 : 0.86);
+      top.push([0.0, rocker + 0.02]); top.push([0.0, hh - 0.16]); top.push([0.015, hh - 0.05]); top.push([0.04, hh]);
+      if (offr) { top.push([aF + 0.03, hh]); top.push([cowlS, hh + 0.01]); }
+      else { qcurve(top, [0.04, hh], [cowlS * 0.55, hh + 0.01], [cowlS, hh + 0.035], 3); top.push([cowlS, hh + 0.035]); }
+      top.push([roofFS, 0.985]);
+      roofCrown(top, roofFS, 0.985, roofRS, offr ? 0.99 : 0.975); top.push([roofRS, offr ? 0.99 : 0.975]);
+      if (offr) { top.push([0.975, 0.985]); top.push([0.985, 0.7]); top.push([1.0, 0.62]); top.push([1.0, rocker + 0.12]); top.push([0.985, rocker + 0.03]); }
+      else if (bof) { top.push([0.955, 0.93]); top.push([0.99, 0.62]); top.push([1.0, 0.5]); top.push([1.0, rocker + 0.09]); top.push([0.98, rocker + 0.02]); }
+      else { qcurve(top, [roofRS, 0.975], [0.93, 0.95], [0.975, 0.72], 3); top.push([0.975, 0.72]); top.push([1.0, 0.52]); top.push([1.0, rocker + 0.09]); top.push([0.975, rocker + 0.02]); }
+      glass = [[cowlS + 0.012, hh + 0.045], [roofFS + 0.012, 0.965], [roofRS - 0.01, 0.955], [roofRS + 0.03, hh + 0.05]];
+      lm = { cowl: cowlS, roofF: roofFS, roofR: roofRS, hood: hh, rear: 1.0, hoodX: cowlS * 0.6 };
+    } else if (k === 'minivan') {
+      hh = hood !== null ? hood : 0.50;
+      var cowlM = aF + 0.03, roofFM = cowlM + 0.165, roofRM = 0.875;
+      top.push([0.0, rocker + 0.02]); top.push([0.0, hh - 0.14]); top.push([0.02, hh - 0.04]); top.push([0.05, hh]);
+      qcurve(top, [0.05, hh], [cowlM * 0.5, hh + 0.02], [cowlM, hh + 0.05], 3); top.push([cowlM, hh + 0.05]);
+      qcurve(top, [cowlM, hh + 0.05], [cowlM + 0.06, 0.93], [roofFM, 0.99], 3); top.push([roofFM, 0.99]);
+      top.push([roofRM, 1.0]); qcurve(top, [roofRM, 1.0], [0.96, 0.98], [0.99, 0.72], 3); top.push([0.99, 0.72]); top.push([1.0, 0.52]); top.push([1.0, rocker + 0.09]); top.push([0.98, rocker + 0.02]);
+      glass = [[cowlM + 0.02, hh + 0.07], [roofFM + 0.01, 0.965], [roofRM - 0.01, 0.965], [0.94, hh + 0.09]];
+      lm = { cowl: cowlM, roofF: roofFM, roofR: roofRM, hood: hh, rear: 1.0, hoodX: cowlM * 0.6 };
+    } else if (k === 'van') {
+      hh = hood !== null ? hood : 0.44;
+      var cowlV = 0.09, roofFV = 0.17;
+      top.push([0.0, rocker + 0.02]); top.push([0.0, hh - 0.12]); top.push([0.02, hh - 0.02]); top.push([cowlV, hh + 0.04]);
+      qcurve(top, [cowlV, hh + 0.04], [cowlV + 0.03, 0.94], [roofFV, 0.995], 3); top.push([roofFV, 0.995]);
+      top.push([0.985, 1.0]); top.push([1.0, 0.96]); top.push([1.0, rocker + 0.08]); top.push([0.985, rocker + 0.02]);
+      glass = [[cowlV + 0.012, hh + 0.06], [roofFV + 0.01, 0.965], [0.30, 0.965], [0.30, hh + 0.06]];
+      lm = { cowl: cowlV, roofF: roofFV, roofR: 0.985, hood: hh, rear: 1.0, hoodX: 0.05 };
+    } else {
+      /* cars: sedan / hatchback / coupe / wagon */
+      var coupe = k === 'coupe', hatch = k === 'hatchback', wagon = k === 'wagon';
+      hh = hood !== null ? hood : (coupe ? 0.50 : 0.53);
+      var cowlC = aF + (coupe ? 0.19 : 0.16), rakeC = coupe ? 0.15 : 0.15;
+      var roofFC = cowlC + rakeC, roofRC = wagon ? 0.90 : (hatch ? 0.77 : (coupe ? 0.64 : 0.69));
+      top.push([0.0, rocker + 0.02]); top.push([0.0, 0.36]); top.push([0.012, hh - 0.09]); top.push([0.05, hh - 0.02]);
+      qcurve(top, [0.05, hh - 0.02], [cowlC * 0.55, hh + 0.005], [cowlC, hh + 0.03], 3); top.push([cowlC, hh + 0.03]);
+      qcurve(top, [cowlC, hh + 0.03], [cowlC + 0.07, 0.94], [roofFC, 0.99], 3); top.push([roofFC, 0.99]);
+      roofCrown(top, roofFC, 0.99, roofRC, 0.975); top.push([roofRC, 0.975]);
+      if (wagon) { top.push([0.955, 0.94]); top.push([0.99, 0.66]); top.push([1.0, 0.5]); }
+      else if (hatch) { qcurve(top, [roofRC, 0.975], [0.9, 0.9], [0.975, 0.66], 3); top.push([0.975, 0.66]); top.push([1.0, 0.52]); }
+      else if (coupe) { qcurve(top, [roofRC, 0.975], [0.82, 0.86], [0.9, 0.66], 3); top.push([0.9, 0.66]); top.push([0.985, 0.62]); top.push([1.0, 0.52]); }
+      else { qcurve(top, [roofRC, 0.975], [0.79, 0.9], [0.855, 0.665], 3); top.push([0.855, 0.665]); top.push([0.975, 0.64]); top.push([1.0, 0.54]); }
+      top.push([1.0, rocker + 0.1]); top.push([0.975, rocker + 0.02]);
+      glass = [[cowlC + 0.02, hh + 0.05], [roofFC + 0.01, 0.965], [roofRC - 0.01, 0.955], [wagon ? 0.93 : (hatch ? 0.9 : (coupe ? 0.85 : 0.83)), hh + 0.06]];
+      lm = { cowl: cowlC, roofF: roofFC, roofR: roofRC, hood: hh, rear: 1.0, hoodX: cowlC * 0.6 };
+    }
+    /* bottom edge: rear bumper -> rear arch -> rocker -> front arch -> front bumper (travelling forward) */
+    var bot = [], rockIn = rocker * H, flatArch = /pickup|offroad|bof/.test(k);
+    archPts(bot, ax2, wrIn, rockIn, ARCH[k], L, H, flatArch);
+    archPts(bot, ax1, wrIn, rockIn, ARCH[k], L, H, flatArch);
+    var pts = top.concat(bot), i;
+    for (i = 0; i < pts.length; i++) { pts[i] = [Math.max(0, Math.min(1, pts[i][0])), Math.max(0, Math.min(1, pts[i][1]))]; }
     if (cfg.wheelR) { wheelR = cfg.wheelR; }
-    return { pts: pts, glass: glass, wheelR: wheelR, foSplit: foSplit, gc: gc };
+    lm.roofTop = 1.0;
+    return { pts: pts, glass: glass, wheelR: wheelR, foSplit: foSplit, gc: rocker, lm: lm, arch: k, aF: aF, aR: aR };
   }
 
   /* ---------------- person ---------------- */
@@ -512,25 +563,21 @@ var VVY = (function () {
     function YY(yf) { return Y(yf * H0 + rise); }
     if (spots && role === 'A') {
       /* roof: midpoint of the flat top; hood: first point after the front that sits below 0.7 H */
-      var top = [], hd = null, q;
-      for (q = 0; q < body.pts.length; q++) {
-        if (body.pts[q][1] >= 0.995) { top.push(body.pts[q]); }
-        if (!hd && q > 1 && body.pts[q][1] > 0.4 && body.pts[q][1] < 0.7 && body.pts[q][0] > 0.02 && body.pts[q][0] < 0.5) { hd = body.pts[q]; }
-      }
-      if (top.length) { spots.push({ x: X((top[0][0] + top[top.length - 1][0]) / 2), y: YY(1.0), name: 'roof' }); }
+      var lmk = body.lm, top = [[lmk.roofF, 1.0], [lmk.roofR, 1.0]], hd = [lmk.hoodX, lmk.hood], q;
+      spots.push({ x: X((lmk.roofF + lmk.roofR) / 2), y: YY(1.0), name: 'roof' });
       if (body.glass && body.glass.length >= 2) {
         spots.push({ x: X((body.glass[0][0] + body.glass[1][0]) / 2), y: YY((body.glass[0][1] + body.glass[1][1]) / 2), name: 'windshield' });
       }
       if (hd) { spots.push({ x: X(hd[0] * 0.75), y: YY(hd[1] - 0.005), name: 'hood' }); }
-      if (has(cfg.bedLen)) { spots.push({ x: X(0.82), y: YY(body.pts[9] ? body.pts[9][1] : 0.6), name: 'bed rail' }); }
+      if (has(cfg.bedLen) && lmk.rail) { spots.push({ x: X(0.82), y: YY(lmk.rail), name: 'bed rail' }); }
       /* surfaces the cat animator routes along: levels (y) and the vertical faces (x) that join them */
       var pk = /^pickup/.test(cfg.template || '');
       spots.geo = {
         front: parseFloat(X(0.03)), rear: parseFloat(X(0.985)),
         hoodY: hd ? YY(hd[1] - 0.005) : null,
-        roofY: YY(1.0), roofX0: top.length ? parseFloat(X(top[0][0])) : parseFloat(X(0.45)), roofX1: top.length ? parseFloat(X(top[top.length - 1][0])) : parseFloat(X(0.75)),
-        railY: (pk && has(cfg.bedLen) && body.pts[9]) ? YY(body.pts[9][1]) : null,
-        cabRearX: (pk && body.pts[6]) ? parseFloat(X(body.pts[6][0])) : null,
+        roofY: YY(1.0), roofX0: parseFloat(X(lmk.roofF)), roofX1: parseFloat(X(lmk.roofR)),
+        railY: (pk && lmk.rail) ? YY(lmk.rail) : null,
+        cabRearX: (pk && lmk.cabRear) ? parseFloat(X(lmk.cabRear)) : null,
         hoodX1: body.glass ? parseFloat(X(body.glass[0][0])) : parseFloat(X(0.3))
       };
     }
@@ -539,8 +586,6 @@ var VVY = (function () {
     for (i = 0; i < body.pts.length; i++) {
       d.push((i === 0 ? 'M' : 'L') + X(body.pts[i][0]) + ' ' + YY(body.pts[i][1]));
     }
-    d.push('L' + X(0.93) + ' ' + YY(body.gc));
-    d.push('L' + X(0.07) + ' ' + YY(body.gc));
     d.push('Z');
     var path = d.join(' ');
     var gp = [];
@@ -1315,7 +1360,7 @@ var VVY = (function () {
     var t = cfg.template || 'sedan', pickup = /^pickup/.test(t), trunk = (t === 'sedan' || t === 'coupe'), wedge = (t === 'wedge');
     var gl = body.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
     var cabinF = vx + L * (gl[0][0] + 0.006);                            /* windshield base / dash */
-    var cabinR = pickup ? vx + L * (body.pts[7][0]) : (trunk ? vx + L * (gl[3][0] + 0.05) : vx + L * 0.965);
+    var cabinR = pickup ? vx + L * (body.lm.bedFront || 0.69) : (trunk ? vx + L * (gl[3][0] + 0.05) : vx + L * 0.965);
     if (wedge) { cabinR = vx + L * 0.64; }
     var rows = has(cfg.rows) ? cfg.rows : 2, seats = has(cfg.seats) ? cfg.seats : 5;
     var clr = has(cfg.clearance) ? cfg.clearance : H0 * 0.115;
@@ -1348,7 +1393,7 @@ var VVY = (function () {
     /* ---- silhouette, ghosted, then the cabin ---- */
     var d = [];
     for (i = 0; i < body.pts.length; i++) { d.push((i === 0 ? 'M' : 'L') + X(body.pts[i][0]) + ' ' + YY(body.pts[i][1])); }
-    d.push('L' + X(0.93) + ' ' + YY(body.gc) + ' L' + X(0.07) + ' ' + YY(body.gc) + ' Z');
+    d.push('Z');
     var path = d.join(' ');
     var clipB = dx.clip('cbi' + (dx.n++), '<path d="' + path + '"/>');
     o.push(groundShadow(vx + L / 2, Y(0) + 0.8, L * 0.47, 2.0, 0.18));
@@ -1469,7 +1514,7 @@ var VVY = (function () {
         continue;   /* drawn before the riders, so it sits behind them on its own seat offset */
       } else if (dg.place === 'bed') {
         /* rear of the bed, clearly behind the cab; the near bed wall is drawn over its lower body below */
-        var bedY = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20);
+        var bedY = has(e.bedHeight) ? e.bedHeight : ((body.lm.rail || 0.62) * H0 + rise - 20);
         var bx = vx + L * 0.955 - 9 - nBed * 15; nBed++;
         o.push(groundShadow(bx - 1, Y(bedY) + 0.6, 12, 1.1, 0.22) + sittingDogSvg(bx, bedY, Y, 22, dx));
       } else if (dg.place === 'cargo' && cargoOK) {
@@ -1487,7 +1532,7 @@ var VVY = (function () {
     var nStr = sea.strollers, si;
     for (si = 0; si < nStr; si++) {
       var sx, sy;
-      if (sea.space.kind === 'bed') { sx = vx + L * 0.955 - 30 - si * 9; sy = has(e.bedHeight) ? e.bedHeight : (body.pts[9][1] * H0 + rise - 20); }
+      if (sea.space.kind === 'bed') { sx = vx + L * 0.955 - 30 - si * 9; sy = has(e.bedHeight) ? e.bedHeight : ((body.lm.rail || 0.62) * H0 + rise - 20); }
       else if (trunk) { sx = cabinR + 8 + si * 7; sy = floor + 2; }
       else { sx = Math.min(cargoR - 6, cargoF + 4 + si * 7); sy = floor; }
       o.push('<g class="vvy-stroller" opacity="0.95">' +
@@ -1500,9 +1545,9 @@ var VVY = (function () {
     }
     if (nBed) {
       /* near bed side wall in front of the dog: from the bed floor up to the rail, bed front to tailgate */
-      var railY = body.pts[9][1] * H0 + rise, bedFloorY = has(e.bedHeight) ? e.bedHeight : railY - 20;
-      o.push('<rect x="' + r1(vx + L * body.pts[8][0]) + '" y="' + Y(railY) + '" width="' + r1(L * (0.995 - body.pts[8][0])) + '" height="' + r1(Y(bedFloorY) - Y(railY)) + '" fill="' + pal.body + '" opacity="0.55"/>');
-      o.push('<line x1="' + r1(vx + L * body.pts[8][0]) + '" y1="' + Y(railY) + '" x2="' + r1(vx + L * 0.995) + '" y2="' + Y(railY) + '" stroke="' + pal.stroke + '" stroke-width="0.5"/>');
+      var railY = (body.lm.rail || 0.62) * H0 + rise, bedFloorY = has(e.bedHeight) ? e.bedHeight : railY - 20, bfx = body.lm.bedFront || 0.69;
+      o.push('<rect x="' + r1(vx + L * bfx) + '" y="' + Y(railY) + '" width="' + r1(L * (0.995 - bfx)) + '" height="' + r1(Y(bedFloorY) - Y(railY)) + '" fill="' + pal.body + '" opacity="0.55"/>');
+      o.push('<line x1="' + r1(vx + L * bfx) + '" y1="' + Y(railY) + '" x2="' + r1(vx + L * 0.995) + '" y2="' + Y(railY) + '" stroke="' + pal.stroke + '" stroke-width="0.5"/>');
     }
     var catSpots = [];
     /* lap of the first rear rider, dashboard, parcel shelf / rear seat top, cargo floor */
@@ -1607,7 +1652,7 @@ var VVY = (function () {
     var t = cfg.template || 'sedan', pickup = /^pickup/.test(t), trunk = (t === 'sedan' || t === 'coupe'), wedge = (t === 'wedge');
     var gl = body.glass || [[0.3, 0.57], [0.43, 0.95], [0.7, 0.95], [0.83, 0.57]];
     var uH = gl[0][0] * L, uW = gl[1][0] * L;
-    var uR = pickup ? body.pts[7][0] * L : (trunk ? (gl[3][0] + 0.05) * L : 0.955 * L);
+    var uR = pickup ? (body.lm.bedFront || 0.69) * L : (trunk ? (gl[3][0] + 0.05) * L : 0.955 * L);
     if (wedge) { uR = 0.64 * L; }
     var plan = seatPlan(cfg), R = [], u1 = uW + 12, prev;
     if (u1 < uH + 22) { u1 = uH + 22; }
