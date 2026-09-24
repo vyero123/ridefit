@@ -15,7 +15,7 @@
 // `duration`, and the scorer would consume the same `onNote` events with
 // `session.calibration.correct(ev.t)` applied.
 
-import { midiToName, midiToFreq, spellForDisplay } from '../music/pitch.js';
+import { midiToFreq, spellForDisplay } from '../music/pitch.js';
 import { validateExercise } from '../exercises/loader.js';
 import { TONICS, MODES, MINOR_MODES, parseTonic, tonicToString } from '../music/scales.js';
 
@@ -228,7 +228,7 @@ export class PracticeView {
     const n = this.target;
     if (!n) return this.finish();
 
-    $('target-name').textContent = midiToName(n.midi, ex.preferFlats);
+    $('target-name').textContent = spellingToName(n.spelling);
     $('target-freq').textContent = `${midiToFreq(n.midi, this.session.a4).toFixed(1)} Hz`;
     $('progress-count').textContent = `${this.noteIndex + 1} of ${ex.notes.length}`;
     this.refreshPrompt();
@@ -322,16 +322,16 @@ export class PracticeView {
       if (!next) return this.finish();
 
       this.staff.setNoteState(next.id, 'target');
-      $('target-name').textContent = midiToName(next.midi, ex.preferFlats);
+      $('target-name').textContent = spellingToName(next.spelling);
       $('target-freq').textContent = `${midiToFreq(next.midi, this.session.a4).toFixed(1)} Hz`;
       fb.className = 'feedback good';
-      fb.textContent = `${midiToName(ev.midi)} ✓`;
+      fb.textContent = `${spellingToName(target.spelling)} ✓`;
     } else {
       // Brief, distinct, and that is all. No reset, no lost progress.
       this.staff.setNoteState(target.id, 'wrong');
       const diff = ev.midi - target.midi;
       const hint = Math.abs(diff) === 12 ? ' (right note, wrong octave)' : '';
-      fb.textContent = `Heard ${midiToName(ev.midi)}${hint} — looking for ${midiToName(target.midi, ex.preferFlats)}`;
+      fb.textContent = `Heard ${spellingToName(spellForDisplay(ev.midi, { preferFlats: ex.preferFlats }))}${hint} — looking for ${spellingToName(target.spelling)}`;
       fb.className = 'feedback bad';
       fb.dataset.sticky = '1';
       clearTimeout(this._wrongTimer);
