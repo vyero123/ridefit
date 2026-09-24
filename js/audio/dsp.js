@@ -240,6 +240,19 @@ var PianoDSP = (function () {
     // That makes the absolute noise floor below a real, tunable number rather
     // than something that silently scales with the FFT size.
     this.magScale = 2 / fftSize;
+
+    // The absolute floor is tight, and measurement says it has to be. Striking
+    // a key that is ALREADY ringing changes the spectrum only slightly: the
+    // browser suite measures flux of about 0.0185 for the second strike of a
+    // repeated note, against this floor of 0.015 — a margin of 23%. Raise the
+    // floor and repeated notes start being swallowed, which is the single
+    // thing the separate onset path exists to get right.
+    //
+    // The cost of a floor that low is honest sensitivity to broadband thumps:
+    // a dropped book, a slammed lid, a knock on the piano case can register as
+    // a note. Such an onset usually resolves to no confident pitch and is then
+    // discarded by MicInputSource._flush, so it rarely reaches the UI — but it
+    // is the reason the detector is not, and cannot be, immune to clatter.
     this.floor = 0.015;
     this.factor = 3.0;
 

@@ -50,6 +50,14 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // decay, slight inharmonicity. The weak fundamental is the point — it is the
 // case that breaks naive detectors, so the whole stack gets tested on the hard
 // signal rather than an easy sine.
+//
+// The 40 ms release ramp is not decoration. An earlier version of this file
+// simply stopped writing samples at the end of each note, which left a step
+// discontinuity of a few percent — a click. The onset detector duly reported
+// it, and the suite failed with two extra notes. That was the TEST being
+// wrong, not the detector: a piano does not stop instantaneously, and a
+// detector that ignored a broadband transient of that size would also miss
+// the second strike of a repeated note (see the note on `g` below).
 // ---------------------------------------------------------------------------
 function renderSequence(ctx, notes) {
   const sr = ctx.sampleRate;
@@ -57,11 +65,13 @@ function renderSequence(ctx, notes) {
   const buf = ctx.createBuffer(1, Math.ceil(totalSec * sr), sr);
   const d = buf.getChannelData(0);
   const amps = [0.22, 1.0, 0.75, 0.40, 0.28, 0.16];
+  const RELEASE_SEC = 0.040;
 
   for (const n of notes) {
     const f = 440 * Math.pow(2, (n.midi - 69) / 12);
     const start = Math.floor(n.at * sr);
     const len = Math.floor(n.dur * sr);
+    const gain = n.g != null ? n.g : 1;
     for (let i = 0; i < len; i++) {
       const t = i / sr;
       let v = 0;
@@ -70,10 +80,9 @@ function renderSequence(ctx, notes) {
         if (hf > sr / 2) break;
         v += amps[h] * Math.sin(2 * Math.PI * hf * t);
       }
-      // A 3 ms attack ramp, then decay. The sharp-ish attack is what the
-      // onset detector keys on.
-      const env = Math.min(1, t / 0.003) * Math.exp(-3.2 * t);
-      d[start + i] += 0.25 * v * env;
+      const attack = Math.min(1, t / 0.003);
+      const release = Math.min(1, (len - i) / (RELEASE_SEC * sr));
+      d[start + i] += 0.25 * gain * v * attack * release * Math.exp(-3.2 * t);
     }
   }
   return buf;
@@ -106,12 +115,16 @@ async function run() {
   await session.engine.unlock();
   const ctx = session.engine.ctx;
 
+  // `g` is relative loudness. The quiet notes are deliberate coverage: the
+  // onset detector's absolute flux floor has to be low enough to catch the
+  // second strike of a repeated note while the first is still ringing, which
+  // measured at only ~23% above the floor. Soft notes must clear it too.
   const SEQ = [
-    { midi: 60, at: 0.40, dur: 0.85 },   // C4
-    { midi: 60, at: 1.50, dur: 0.85 },   // C4 again — the repeated-note case
-    { midi: 64, at: 2.60, dur: 0.85 },   // E4
-    { midi: 67, at: 3.70, dur: 0.85 },   // G4
-    { midi: 72, at: 4.80, dur: 0.85 }    // C5
+    { midi: 60, at: 0.40, dur: 0.85, g: 1.00 },   // C4
+    { midi: 60, at: 1.50, dur: 0.85, g: 1.00 },   // C4 again — repeated note over a ringing one
+    { midi: 64, at: 2.60, dur: 0.85, g: 0.25 },   // E4, quiet
+    { midi: 67, at: 3.70, dur: 0.85, g: 1.00 },   // G4
+    { midi: 72, at: 4.80, dur: 0.85, g: 0.12 }    // C5, very quiet
   ];
   const src = ctx.createBufferSource();
   src.buffer = renderSequence(ctx, SEQ);
@@ -180,7 +193,7 @@ async function run() {
   const detected = notes.map(n => n.midi);
   const expected = SEQ.map(n => n.midi);
   check(detected.length === expected.length && detected.every((m, i) => m === expected[i]),
-    'every note in the sequence was detected, at the right pitch',
+    'every note detected, right pitch, no doubles — including the quiet ones',
     `expected [${expected.join(', ')}], got [${detected.join(', ')}]`);
 
   // -------------------------------------------------------------------------

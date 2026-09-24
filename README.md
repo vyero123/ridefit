@@ -261,6 +261,16 @@ threshold. Without that, a single attack fires an onset on every frame until
 the running median catches up, because the median is still dominated by the
 silence before the note. That was the second bug the test suite caught.
 
+**Its sensitivity floor is tight, and has to be.** Striking a key that is
+already ringing barely changes the spectrum: the browser suite measures a flux
+of about 0.0185 for the second strike of a repeated note, against an absolute
+floor of 0.015 — a margin of 23%. Raise the floor and repeated notes start
+getting swallowed, which is the one thing this separate path exists to get
+right. The price is honest: a dropped book, a slammed lid or a knock on the
+case can register as an onset. Most such events resolve to no confident pitch
+and get discarded before reaching the UI, but the detector is not, and cannot
+be, immune to clatter.
+
 ---
 
 ## The note you are playing
