@@ -1,6 +1,3 @@
 .secrets/
-*.lock
-*token*
-.writetest
-__pycache__/
-*.tmp
+node_modules/
+.DS_Store

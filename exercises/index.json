@@ -1,0 +1,10 @@
+{
+  "_comment": "Every exercise file the app should offer. Add your new file here. Order is preserved in the UI.",
+  "files": [
+    "middle-c-neighbours.json",
+    "right-hand-c-position.json",
+    "bass-clef-basics.json",
+    "black-keys.json",
+    "ledger-lines.json"
+  ]
+}

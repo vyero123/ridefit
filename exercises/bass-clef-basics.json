@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "bass-clef-basics",
+  "title": "Bass clef, left hand C position",
+  "description": "C3 up to G3. Worth watching the confidence reading here: the lower you go, the harder the detector's job, and this is where you will first see clarity drop.",
+  "clef": "bass",
+  "tempo": 66,
+  "timeSignature": [4, 4],
+  "keySignature": 0,
+  "tolerance": { "cents": 60, "timingMs": 150 },
+  "tags": ["beginner", "left hand", "bass"],
+  "notes": [
+    { "pitch": "C3", "beat": 0, "duration": 1, "hand": "left" },
+    { "pitch": "D3", "beat": 1, "duration": 1, "hand": "left" },
+    { "pitch": "E3", "beat": 2, "duration": 1, "hand": "left" },
+    { "pitch": "F3", "beat": 3, "duration": 1, "hand": "left" },
+    { "pitch": "G3", "beat": 4, "duration": 2, "hand": "left" },
+    { "pitch": "E3", "beat": 6, "duration": 1, "hand": "left" },
+    { "pitch": "C3", "beat": 7, "duration": 1, "hand": "left" }
+  ]
+}

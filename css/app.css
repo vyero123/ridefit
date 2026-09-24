@@ -1,0 +1,214 @@
+/* app.css — mobile first. Everything is sized for a 375 px iPhone viewport and
+   widens gracefully; nothing assumes a hover-capable pointer. */
+
+:root {
+  --bg: #12141a;
+  --panel: #1b1e27;
+  --panel-2: #232733;
+  --line: #313747;
+  --text: #e8eaf0;
+  --muted: #9aa2b6;
+  --accent: #5ac8fa;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --ink: #e8eaf0;          /* notation colour */
+  --radius: 14px;
+  --tap: 48px;             /* minimum touch target */
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7fa;
+    --panel: #ffffff;
+    --panel-2: #eef0f6;
+    --line: #d7dbe6;
+    --text: #151821;
+    --muted: #5c6478;
+    --ink: #151821;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Stop iOS from bouncing the whole page while practising. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  padding: max(12px, env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+h1 { font-size: 1.15rem; margin: 0; letter-spacing: 0.01em; }
+h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+
+.pill {
+  font-size: 0.72rem; padding: 5px 10px; border-radius: 999px;
+  background: var(--panel-2); color: var(--muted); white-space: nowrap;
+}
+.pill.running { color: var(--good); }
+.pill.error { color: var(--bad); }
+.pill.starting { color: var(--warn); }
+
+/* ---- tabs ---------------------------------------------------------------- */
+nav.tabs {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  background: var(--panel-2); padding: 5px; border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+nav.tabs button {
+  min-height: var(--tap); border: 0; border-radius: 10px; font-size: 0.9rem;
+  background: transparent; color: var(--muted); font-weight: 600;
+}
+nav.tabs button[aria-selected='true'] { background: var(--panel); color: var(--text); }
+
+section.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+}
+section[hidden] { display: none; }
+
+/* ---- buttons ------------------------------------------------------------- */
+button.primary, button.secondary {
+  width: 100%; min-height: var(--tap); border-radius: 12px; border: 0;
+  font-size: 1rem; font-weight: 600; margin-top: 4px;
+}
+button.primary { background: var(--accent); color: #06202b; }
+button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+button:disabled { opacity: 0.45; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+
+select, input[type='range'] { width: 100%; }
+select {
+  min-height: var(--tap); border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--text); padding: 0 10px; font-size: 1rem;
+}
+
+/* ---- live readout -------------------------------------------------------- */
+.readout { text-align: center; padding: 6px 0 2px; }
+.note-name {
+  font-size: 4.2rem; line-height: 1; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  min-height: 4.2rem;
+}
+.note-name .octave { font-size: 0.42em; color: var(--muted); vertical-align: 0.9em; margin-left: 2px; }
+.note-name.silent { color: var(--muted); opacity: 0.35; }
+
+.freq { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+
+.cents-wrap { margin: 14px 0 4px; }
+.cents-bar {
+  position: relative; height: 34px; border-radius: 8px;
+  background: var(--panel-2); overflow: hidden;
+}
+.cents-bar .centre { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 2px; background: var(--line); }
+.cents-bar .zone {
+  position: absolute; top: 0; bottom: 0; left: 40%; width: 20%;
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+.cents-bar .needle {
+  position: absolute; top: 3px; bottom: 3px; width: 4px; border-radius: 2px;
+  background: var(--accent); left: 50%;
+  transition: left 60ms linear, background-color 120ms linear;
+}
+.cents-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+.meter { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; margin-top: 4px; }
+.meter > div { height: 100%; width: 0%; background: var(--accent); transition: width 80ms linear; }
+.meter.good > div { background: var(--good); }
+
+.stat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px;
+}
+.stat {
+  background: var(--panel-2); border-radius: 10px; padding: 8px 10px;
+}
+.stat .k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stat .v { font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 0.6em; font-weight: 400; color: var(--muted); }
+
+.onset-flash {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--line); margin-left: 6px; vertical-align: middle;
+}
+.onset-flash.hit { background: var(--accent); }
+
+/* ---- notation ------------------------------------------------------------ */
+.staff-wrap { background: var(--panel-2); border-radius: 12px; padding: 8px 4px; }
+svg.staff { display: block; width: 100%; height: auto; }
+
+.staff-line, .ledger, .barline { stroke: var(--ink); stroke-width: 0.1; opacity: 0.75; }
+.ledger { stroke-width: 0.12; }
+.barline { stroke-width: 0.16; }
+.clef-stroke { stroke: var(--ink); }
+.clef-fill { fill: var(--ink); }
+.acc-stroke { stroke: var(--ink); }
+.notehead { fill: var(--ink); }
+.stem { stroke: var(--ink); }
+
+.note { transition: opacity 120ms linear; }
+.note.state-target .notehead { fill: var(--accent); }
+.note.state-target .stem { stroke: var(--accent); }
+.note.state-target .acc-stroke { stroke: var(--accent); }
+.note.state-correct .notehead { fill: var(--good); }
+.note.state-correct .stem { stroke: var(--good); }
+.note.state-correct .acc-stroke { stroke: var(--good); }
+.note.state-wrong .notehead { fill: var(--bad); }
+.note.state-wrong .stem { stroke: var(--bad); }
+.note.state-pending { opacity: 0.32; }
+
+@keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.note.state-correct { animation: pop 260ms ease-out; transform-origin: center; transform-box: fill-box; }
+
+.target-line {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: 10px; font-size: 0.9rem;
+}
+.target-line strong { font-size: 1.3rem; }
+.feedback { font-size: 0.85rem; color: var(--muted); min-height: 1.3em; margin-top: 6px; }
+.feedback.good { color: var(--good); }
+.feedback.bad { color: var(--bad); }
+
+.progress-dots { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+.progress-dots i {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block;
+}
+.progress-dots i.done { background: var(--good); }
+.progress-dots i.current { background: var(--accent); transform: scale(1.35); }
+
+/* ---- latency panel ------------------------------------------------------- */
+.note-text { font-size: 0.8rem; color: var(--muted); margin: 8px 0 0; }
+.quality { font-weight: 600; }
+.quality.good { color: var(--good); }
+.quality.fair { color: var(--warn); }
+.quality.poor, .quality.none { color: var(--bad); }
+
+.calib-status { font-size: 0.9rem; min-height: 1.4em; margin-top: 8px; }
+.calib-beats { display: flex; gap: 4px; margin-top: 8px; }
+.calib-beats i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.calib-beats i.lead { background: var(--warn); }
+.calib-beats i.on { background: var(--accent); }
+
+details { margin-top: 10px; }
+summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; min-height: 32px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--muted); white-space: pre-wrap; }
+
+.banner {
+  border-radius: 10px; padding: 10px 12px; font-size: 0.86rem; margin-bottom: 12px;
+}
+.banner.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--text); }
+.banner.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--text); }

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "right-hand-c-position",
+  "title": "Right hand, C position",
+  "description": "The five-finger C position: C4 up to G4 and back. All white keys, all inside the staff.",
+  "clef": "treble",
+  "tempo": 72,
+  "timeSignature": [4, 4],
+  "keySignature": 0,
+  "tolerance": { "cents": 50, "timingMs": 120 },
+  "tags": ["beginner", "right hand", "five-finger"],
+  "notes": [
+    { "pitch": "C4", "beat": 0, "duration": 1, "hand": "right" },
+    { "pitch": "D4", "beat": 1, "duration": 1, "hand": "right" },
+    { "pitch": "E4", "beat": 2, "duration": 1, "hand": "right" },
+    { "pitch": "F4", "beat": 3, "duration": 1, "hand": "right" },
+    { "pitch": "G4", "beat": 4, "duration": 2, "hand": "right" },
+    { "pitch": "F4", "beat": 6, "duration": 1, "hand": "right" },
+    { "pitch": "E4", "beat": 7, "duration": 1, "hand": "right" },
+    { "pitch": "D4", "beat": 8, "duration": 1, "hand": "right" },
+    { "pitch": "C4", "beat": 9, "duration": 3, "hand": "right" }
+  ]
+}

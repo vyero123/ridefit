@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "black-keys",
+  "title": "Accidentals: sharps and flats",
+  "description": "Mixed sharps and flats so the accidental glyphs get exercised. Note how F#4 and Gb4 are the same key but draw differently — the `spelling` is what decides.",
+  "clef": "treble",
+  "tempo": 60,
+  "timeSignature": [4, 4],
+  "keySignature": 0,
+  "tolerance": { "cents": 50, "timingMs": 150 },
+  "tags": ["accidentals", "black keys"],
+  "notes": [
+    { "pitch": "C4", "beat": 0, "duration": 1 },
+    { "pitch": "C#4", "beat": 1, "duration": 1 },
+    { "pitch": "D4", "beat": 2, "duration": 1 },
+    { "pitch": "Eb4", "beat": 3, "duration": 1 },
+    { "pitch": "F#4", "beat": 4, "duration": 1 },
+    { "pitch": "Gb4", "beat": 5, "duration": 1, "spelling": { "letter": "G", "alter": -1, "octave": 4 } },
+    { "pitch": "Bb4", "beat": 6, "duration": 1 },
+    { "pitch": "B4", "beat": 7, "duration": 1, "accidental": "natural" }
+  ]
+}

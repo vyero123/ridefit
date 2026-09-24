@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "middle-c-neighbours",
+  "title": "Middle C and its neighbours",
+  "description": "Middle C, D and E in the treble clef. Middle C sits on its own ledger line below the staff — a good check that ledger lines render where you expect.",
+  "clef": "treble",
+  "tempo": 60,
+  "timeSignature": [4, 4],
+  "keySignature": 0,
+  "tolerance": { "cents": 50, "timingMs": 150 },
+  "tags": ["beginner", "right hand"],
+  "notes": [
+    { "pitch": "C4", "beat": 0, "duration": 1 },
+    { "pitch": "D4", "beat": 1, "duration": 1 },
+    { "pitch": "E4", "beat": 2, "duration": 1 },
+    { "pitch": "D4", "beat": 3, "duration": 1 },
+    { "pitch": "C4", "beat": 4, "duration": 2 },
+    { "pitch": "E4", "beat": 6, "duration": 1 },
+    { "pitch": "C4", "beat": 7, "duration": 1 }
+  ]
+}

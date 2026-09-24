@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "ledger-lines",
+  "title": "Ledger lines, both directions",
+  "description": "Notes well above and below each staff, on the grand staff. This is the rendering stress test, and also the pitch-detection stress test: A1 at the bottom needs a long analysis window, and C7 at the top has almost no harmonic content to work with.",
+  "clef": "grand",
+  "tempo": 54,
+  "timeSignature": [4, 4],
+  "keySignature": 0,
+  "tolerance": { "cents": 70, "timingMs": 200 },
+  "tags": ["ledger lines", "range", "stress test"],
+  "notes": [
+    { "pitch": "A1", "beat": 0, "duration": 2 },
+    { "pitch": "C2", "beat": 2, "duration": 2 },
+    { "pitch": "C4", "beat": 4, "duration": 2, "clef": "bass" },
+    { "pitch": "C4", "beat": 6, "duration": 2, "clef": "treble" },
+    { "pitch": "A5", "beat": 8, "duration": 2 },
+    { "pitch": "C6", "beat": 10, "duration": 2 },
+    { "pitch": "C7", "beat": 12, "duration": 2 }
+  ]
+}
