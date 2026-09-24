@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "a-harmonic-minor-scale",
+  "title": "A harmonic minor — right hand, 2 octaves",
+  "description": "A minor has no key signature, so the raised 7th shows as a printed G♯ — and it stays raised coming down, which is what separates harmonic minor from melodic.",
+  "generator": {
+    "type": "scale",
+    "tonic": "A",
+    "mode": "harmonic-minor",
+    "octaves": 2,
+    "direction": "up-down",
+    "hand": "right"
+  },
+  "tolerance": { "cents": 50, "timingMs": 150 },
+  "tags": ["scale", "minor", "right hand"]
+}

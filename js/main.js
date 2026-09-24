@@ -15,11 +15,17 @@ import { LatencyView } from './views/latency.js';
 const $ = (id) => document.getElementById(id);
 
 const session = new AudioSession({ windowSize: 4096 });
-const staff = new StaffRenderer($('staff'), { clef: 'treble', widthUnits: 26, playedX: 18 });
+const staff = new StaffRenderer($('staff'), { clef: 'treble', widthUnits: 34, playedX: 18 });
+
+// A second, tiny renderer for the "what I'm hearing" indicator. Narrow, so one
+// note fills it, and it sits below the sequence rather than inside it.
+const hearingStaff = new StaffRenderer($('hearing-staff'), {
+  clef: 'treble', widthUnits: 9, playedX: 6
+});
 
 const views = {
   listen: new ListenView(session),
-  practice: new PracticeView(session, staff),
+  practice: new PracticeView(session, staff, hearingStaff),
   latency: new LatencyView(session)
 };
 
@@ -94,7 +100,7 @@ $('btn-stop').addEventListener('click', async () => {
   $('btn-start').hidden = false;
   $('btn-stop').hidden = true;
   views.listen.clear();
-  staff.setPlayedNote(null);
+  hearingStaff.setPlayedNote(null);
   if (views[activeTab].render) views[activeTab].render();
 });
 
@@ -131,6 +137,10 @@ $('lowrange').addEventListener('change', e => {
 // Exercises
 // ---------------------------------------------------------------------------
 
+// The scale builder needs nothing loaded, so the Practice tab is usable
+// immediately; the hand-written drills arrive when they arrive.
+views.practice.buildScale();
+
 loadAllExercises('exercises/').then(({ exercises, errors }) => {
   for (const e of errors) console.warn('Exercise failed to load:', e.file, e.message);
   views.practice.setExercises(exercises);
@@ -146,4 +156,4 @@ loadAllExercises('exercises/').then(({ exercises, errors }) => {
 });
 
 // Exposed for the browser test harness and for console poking.
-window.pianoTrainer = { session, staff, views, switchTab };
+window.pianoTrainer = { session, staff, hearingStaff, views, switchTab };

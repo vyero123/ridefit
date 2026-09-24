@@ -8,6 +8,7 @@
 // series, is a change of x-assignment rather than a rewrite.
 
 import { midiToStep, diatonicStep } from '../music/pitch.js';
+import { SHARP_ORDER, FLAT_ORDER } from '../music/scales.js';
 import { TREBLE_CLEF, BASS_CLEF, SHARP, FLAT, NATURAL, NOTEHEAD, unitTransform } from './glyphs.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -20,6 +21,35 @@ const CLEF_INFO = {
   treble: { glyph: TREBLE_CLEF, bottomLineStep: diatonicStep('E', 4) },  // E4
   bass:   { glyph: BASS_CLEF,   bottomLineStep: diatonicStep('G', 2) }   // G2
 };
+
+/**
+ * Where each key-signature accidental sits, by clef. These positions are
+ * convention, not arithmetic — the F♯ in a treble key signature goes on the
+ * top line and the B♭ on the middle line because that is where they have
+ * always gone, and a scale with them anywhere else reads as wrong.
+ */
+const KEY_SIG_STEPS = {
+  treble: {
+    sharp: { F: diatonicStep('F', 5), C: diatonicStep('C', 5), G: diatonicStep('G', 5),
+             D: diatonicStep('D', 5), A: diatonicStep('A', 4), E: diatonicStep('E', 5),
+             B: diatonicStep('B', 4) },
+    flat:  { B: diatonicStep('B', 4), E: diatonicStep('E', 5), A: diatonicStep('A', 4),
+             D: diatonicStep('D', 5), G: diatonicStep('G', 4), C: diatonicStep('C', 5),
+             F: diatonicStep('F', 4) }
+  },
+  bass: {
+    sharp: { F: diatonicStep('F', 3), C: diatonicStep('C', 3), G: diatonicStep('G', 3),
+             D: diatonicStep('D', 3), A: diatonicStep('A', 2), E: diatonicStep('E', 3),
+             B: diatonicStep('B', 2) },
+    flat:  { B: diatonicStep('B', 2), E: diatonicStep('E', 3), A: diatonicStep('A', 2),
+             D: diatonicStep('D', 3), G: diatonicStep('G', 2), C: diatonicStep('C', 3),
+             F: diatonicStep('F', 2) }
+  }
+};
+
+const KEY_SIG_SPACING = 0.92;   // staff spaces between successive accidentals
+
+const round = (n) => Math.round(n * 1000) / 1000;
 
 function el(name, attrs = {}) {
   const n = document.createElementNS(SVG_NS, name);
@@ -67,13 +97,16 @@ export class StaffRenderer {
     return lowest + this.padBottom;
   }
 
-  /** y of a diatonic step within a given staff. */
-  _stepY(clef, step) {
-    const top = this._staffTops()[clef];
+  /** y of a diatonic step on a staff whose TOP line is at `topLineY`. */
+  _stepYAt(clef, topLineY, step) {
     const info = CLEF_INFO[clef];
-    // top is the y of the TOP line; the bottom line is STAFF_HEIGHT below it.
-    const bottomLineY = top + STAFF_HEIGHT;
+    const bottomLineY = topLineY + STAFF_HEIGHT;
     return bottomLineY - (step - info.bottomLineStep) * 0.5;
+  }
+
+  /** y of a diatonic step within this layout's staff for that clef. */
+  _stepY(clef, step) {
+    return this._stepYAt(clef, this._staffTops()[clef], step);
   }
 
   /** Which staff a MIDI note belongs on. */
@@ -133,6 +166,106 @@ export class StaffRenderer {
   }
 
   /**
+   * Render a sequence of notes as one or more systems (rows of staff).
+   *
+   * THE MOBILE LAYOUT DECISION
+   * --------------------------
+   * Two octaves up and down is 29 notes. On a 375 px phone that is roughly
+   * 13 px per note if you put them on one line — unreadable, and the ledger
+   * lines on a two-octave scale make it worse.
+   *
+   * The three options were horizontal scroll, a sliding window, and wrapping
+   * onto several systems. This wraps, because it is what printed music does
+   * and it is the only one of the three that shows the WHOLE exercise at once.
+   * A scale is a shape you are trying to learn; seeing where you are inside it,
+   * and how much is left, is the point. Horizontal scrolling hides most of the
+   * shape and needs scroll-position management that fights the user's own
+   * scrolling; a sliding window hides it too and gives no sense of progress.
+   *
+   * Each system repeats the clef and key signature, as printed music does.
+   * Vertical padding is computed once from the actual note range so a scale
+   * that never leaves the staff does not get acres of blank space.
+   *
+   * @param {object} o
+   * @param {object[]} o.notes
+   * @param {'treble'|'bass'} o.clef
+   * @param {number} [o.keySignature] signed fifths
+   * @param {number} [o.notesPerSystem]
+   */
+  renderSequence(o) {
+    const notes = o.notes || [];
+    const clef = o.clef === 'bass' ? 'bass' : 'treble';
+    const fifths = o.keySignature || 0;
+    const perSystem = Math.max(2, o.notesPerSystem || 8);
+
+    const svg = this.svg;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    this._noteEls.clear();
+    this._playedLayer = null;
+
+    const info = CLEF_INFO[clef];
+    const bottomStep = info.bottomLineStep;
+    const topStep = bottomStep + 8;
+
+    // How far outside the staff do the notes actually go?
+    let minStep = bottomStep, maxStep = topStep;
+    for (const n of notes) {
+      const sp = n.spelling || midiToStep(n.midi, false);
+      const s = diatonicStep(sp.letter, sp.octave);
+      if (s < minStep) minStep = s;
+      if (s > maxStep) maxStep = s;
+    }
+    // Half a step is half a staff space; add room for the stem and a little air.
+    const padAbove = Math.max(1.6, (maxStep - topStep) * 0.5 + 2.2);
+    const padBelow = Math.max(1.6, (bottomStep - minStep) * 0.5 + 2.2);
+    const systemHeight = STAFF_HEIGHT + padAbove + padBelow;
+    const systemGap = 1.4;
+
+    // Width budget: clef, key signature, then the notes.
+    const clefX = 2.4;
+    const keySigX = 4.1;
+    const keySigWidth = fifths ? Math.min(7, Math.abs(fifths)) * KEY_SIG_SPACING + 0.5 : 0;
+    const firstNoteX = keySigX + keySigWidth + 1.5;
+    const noteSpacing = (this.widthUnits - firstNoteX - 1.2) / perSystem;
+
+    const systemCount = Math.max(1, Math.ceil(notes.length / perSystem));
+    const totalHeight = systemCount * systemHeight + (systemCount - 1) * systemGap;
+
+    svg.setAttribute('viewBox', `0 0 ${this.widthUnits} ${round(totalHeight)}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    const root = el('g', { class: 'staff-root sequence' });
+    svg.appendChild(root);
+
+    for (let sys = 0; sys < systemCount; sys++) {
+      const topLineY = sys * (systemHeight + systemGap) + padAbove;
+      const g = el('g', { class: 'system' });
+      root.appendChild(g);
+
+      g.appendChild(this._drawStaffLines(clef, topLineY, 0.6, this.widthUnits - 0.6));
+      g.appendChild(this._drawClef(clef, topLineY, clefX));
+      const ks = this._drawKeySignature(clef, topLineY, keySigX, fifths);
+      if (ks.group) g.appendChild(ks.group);
+
+      const layer = el('g', { class: 'notes' });
+      g.appendChild(layer);
+
+      const from = sys * perSystem;
+      const to = Math.min(notes.length, from + perSystem);
+      for (let i = from; i < to; i++) {
+        const n = notes[i];
+        const x = firstNoteX + (i - from + 0.5) * noteSpacing;
+        const ng = this._drawNote(n, x, topLineY, clef);
+        layer.appendChild(ng);
+        if (n.id) this._noteEls.set(n.id, ng);
+      }
+    }
+
+    this._systemLayout = { clef, perSystem, systemHeight, systemGap, padAbove, firstNoteX, noteSpacing };
+    return svg;
+  }
+
+  /**
    * Show (or clear) the note currently being heard.
    * @param {{midi:number, spelling?:object, accidental?:string}|null} note
    */
@@ -160,15 +293,32 @@ export class StaffRenderer {
 
   // -------------------------------------------------------------------------
 
-  _drawStaffLines(clef, top) {
+  _drawStaffLines(clef, top, x0 = 0.6, x1 = this.widthUnits - 0.6) {
     const g = el('g', { class: 'staff-lines' });
     for (let i = 0; i <= 4; i++) {
-      g.appendChild(el('line', {
-        x1: 0.6, y1: top + i, x2: this.widthUnits - 0.6, y2: top + i,
-        class: 'staff-line'
-      }));
+      g.appendChild(el('line', { x1: x0, y1: top + i, x2: x1, y2: top + i, class: 'staff-line' }));
     }
     return g;
+  }
+
+  /**
+   * Draw the key signature and report how wide it was.
+   * @returns {{group: SVGGElement|null, width: number}}
+   */
+  _drawKeySignature(clef, topLineY, x, fifths) {
+    if (!fifths) return { group: null, width: 0 };
+    const kind = fifths > 0 ? 'sharp' : 'flat';
+    const order = fifths > 0 ? SHARP_ORDER : FLAT_ORDER;
+    const count = Math.min(7, Math.abs(fifths));
+    const steps = KEY_SIG_STEPS[clef][kind];
+
+    const g = el('g', { class: `key-signature key-${kind}` });
+    for (let i = 0; i < count; i++) {
+      const letter = order[i];
+      const y = this._stepYAt(clef, topLineY, steps[letter]);
+      g.appendChild(this._drawAccidental(kind, x + i * KEY_SIG_SPACING, y));
+    }
+    return { group: g, width: count * KEY_SIG_SPACING + 0.5 };
   }
 
   _drawBrace(tops) {
@@ -178,12 +328,12 @@ export class StaffRenderer {
     return g;
   }
 
-  _drawClef(clef) {
+  _drawClef(clef, topLineY = null, x = 2.6) {
     const info = CLEF_INFO[clef];
     const glyph = info.glyph;
     const anchorStep = diatonicStep(glyph.anchorPitch.letter, glyph.anchorPitch.octave);
-    const y = this._stepY(clef, anchorStep);
-    const g = el('g', { class: `clef clef-${clef}`, transform: unitTransform(2.6, y, 1) });
+    const y = topLineY == null ? this._stepY(clef, anchorStep) : this._stepYAt(clef, topLineY, anchorStep);
+    const g = el('g', { class: `clef clef-${clef}`, transform: unitTransform(x, y, 1) });
 
     g.appendChild(el('path', {
       d: glyph.path,
@@ -205,11 +355,11 @@ export class StaffRenderer {
     return g;
   }
 
-  _drawNote(note, x) {
-    const clef = this._clefFor(note.midi, note.clef);
+  _drawNote(note, x, topLineY = null, forceClef = null) {
+    const clef = forceClef || this._clefFor(note.midi, note.clef);
     const spelling = note.spelling || midiToStep(note.midi, note.preferFlats === true);
     const step = diatonicStep(spelling.letter, spelling.octave);
-    const y = this._stepY(clef, step);
+    const y = topLineY == null ? this._stepY(clef, step) : this._stepYAt(clef, topLineY, step);
 
     const g = el('g', { class: `note state-${note.state || 'target'}` });
 
@@ -218,14 +368,15 @@ export class StaffRenderer {
     const bottomStep = info.bottomLineStep;
     const topStep = bottomStep + 8;
     const ledgerHalf = NOTEHEAD.rx * 1.35;
+    const ledgerY = (s) => (topLineY == null ? this._stepY(clef, s) : this._stepYAt(clef, topLineY, s));
     if (step > topStep + 1) {
       for (let s = topStep + 2; s <= step; s += 2) {
-        const ly = this._stepY(clef, s);
+        const ly = ledgerY(s);
         g.appendChild(el('line', { x1: x - ledgerHalf, y1: ly, x2: x + ledgerHalf, y2: ly, class: 'ledger' }));
       }
     } else if (step < bottomStep - 1) {
       for (let s = bottomStep - 2; s >= step; s -= 2) {
-        const ly = this._stepY(clef, s);
+        const ly = ledgerY(s);
         g.appendChild(el('line', { x1: x - ledgerHalf, y1: ly, x2: x + ledgerHalf, y2: ly, class: 'ledger' }));
       }
     }

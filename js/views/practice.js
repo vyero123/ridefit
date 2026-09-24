@@ -4,38 +4,56 @@
 // visible subscribes; becoming hidden unsubscribes. Neither does anything to
 // the audio graph, the microphone or the AudioContext.
 //
-// The note-you-are-playing mark is driven by session.playedNote, which is part
-// of the session's model and keeps tracking whether or not this view exists.
-// So the mark is correct the instant the tab appears, rather than waiting for
-// the next attack.
+// Phase 2 shows the whole sequence at once rather than one note at a time.
+// Completed notes turn green and stay green, the current target is highlighted,
+// and the notes still to come are dimmed. A wrong note flashes red and does
+// NOT advance — there is no punishment beyond that, and nothing resets.
+//
+// Pacing is self-directed: the sequence advances when you play the right note,
+// with no clock involved. Beat-driven timing is the next phase, and nothing
+// here forecloses it — every exercise note already carries `beat` and
+// `duration`, and the scorer would consume the same `onNote` events with
+// `session.calibration.correct(ev.t)` applied.
 
 import { midiToName, midiToFreq, spellForDisplay } from '../music/pitch.js';
+import { validateExercise } from '../exercises/loader.js';
+import { TONICS, MODES, MINOR_MODES, parseTonic, tonicToString } from '../music/scales.js';
 
 const $ = (id) => document.getElementById(id);
+
+/** How many notes fit legibly on one system at 375 px. */
+const NOTES_PER_SYSTEM = 8;
 
 export class PracticeView {
   /**
    * @param {import('../app/session.js').AudioSession} session
-   * @param {import('../notation/staff.js').StaffRenderer} staff
+   * @param {import('../notation/staff.js').StaffRenderer} staff  the sequence staff
+   * @param {import('../notation/staff.js').StaffRenderer} hearingStaff  the one-note indicator
    */
-  constructor(session, staff) {
+  constructor(session, staff, hearingStaff) {
     this.session = session;
     this.staff = staff;
-    this.exercises = [];
-    this.exercise = null;
+    this.hearingStaff = hearingStaff;
+
+    this.exercises = [];          // hand-written drills from exercises/*.json
+    this.exercise = null;         // the exercise currently being practised
     this.noteIndex = 0;
+    this.source = 'scale';        // 'scale' | 'drill'
+
+    this.scaleSpec = {
+      tonicPc: 0, family: 'major', mode: 'major',
+      hand: 'right', octaves: 2, direction: 'up-down'
+    };
+
     this._unsub = null;
-    this._advanceTimer = null;
     this._wrongTimer = null;
 
-    $('exercise-select').addEventListener('change', e => this.select(e.target.value));
-    $('btn-restart').addEventListener('click', () => { this.noteIndex = 0; this.draw(); });
-    $('btn-skip').addEventListener('click', () => {
-      if (!this.exercise) return;
-      this.noteIndex = Math.min(this.noteIndex + 1, this.exercise.notes.length);
-      this.draw();
-    });
+    this._wireControls();
   }
+
+  // -------------------------------------------------------------------------
+  // Lifecycle
+  // -------------------------------------------------------------------------
 
   activate() {
     if (this._unsub) return;
@@ -47,6 +65,111 @@ export class PracticeView {
     if (this._unsub) { this._unsub(); this._unsub = null; }
   }
 
+  // -------------------------------------------------------------------------
+  // Controls
+  // -------------------------------------------------------------------------
+
+  _wireControls() {
+    // Source: scales or hand-written drills.
+    $('src-scale').addEventListener('click', () => this.setSource('scale'));
+    $('src-drill').addEventListener('click', () => this.setSource('drill'));
+
+    // Tonic buttons, all twelve.
+    const tonicWrap = $('tonic-picker');
+    tonicWrap.innerHTML = '';
+    for (let pc = 0; pc < 12; pc++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.pc = String(pc);
+      b.addEventListener('click', () => { this.scaleSpec.tonicPc = pc; this.buildScale(); });
+      tonicWrap.appendChild(b);
+    }
+
+    const modeSel = $('scale-mode');
+    modeSel.innerHTML = '';
+    for (const [key, def] of Object.entries(MODES)) {
+      const o = document.createElement('option');
+      o.value = key; o.textContent = def.label;
+      modeSel.appendChild(o);
+    }
+    modeSel.value = 'major';
+    modeSel.addEventListener('change', e => {
+      this.scaleSpec.mode = e.target.value;
+      this.scaleSpec.family = MINOR_MODES.includes(e.target.value) ? 'minor' : 'major';
+      this.buildScale();
+    });
+
+    $('hand-right').addEventListener('click', () => { this.scaleSpec.hand = 'right'; this.buildScale(); });
+    $('hand-left').addEventListener('click', () => { this.scaleSpec.hand = 'left'; this.buildScale(); });
+
+    $('scale-octaves').addEventListener('change', e => {
+      this.scaleSpec.octaves = Number(e.target.value); this.buildScale();
+    });
+    $('scale-direction').addEventListener('change', e => {
+      this.scaleSpec.direction = e.target.value; this.buildScale();
+    });
+
+    $('exercise-select').addEventListener('change', e => this.select(e.target.value));
+    $('btn-restart').addEventListener('click', () => { this.noteIndex = 0; this.draw(); });
+    $('btn-skip').addEventListener('click', () => {
+      if (!this.exercise) return;
+      this.noteIndex = Math.min(this.noteIndex + 1, this.exercise.notes.length);
+      this.draw();
+    });
+  }
+
+  setSource(source) {
+    this.source = source;
+    $('src-scale').setAttribute('aria-selected', String(source === 'scale'));
+    $('src-drill').setAttribute('aria-selected', String(source === 'drill'));
+    $('scale-controls').hidden = source !== 'scale';
+    $('drill-controls').hidden = source === 'scale';
+    if (source === 'scale') this.buildScale();
+    else if (this.exercises.length) this.select($('exercise-select').value || this.exercises[0].id);
+  }
+
+  // -------------------------------------------------------------------------
+  // Building what to practise
+  // -------------------------------------------------------------------------
+
+  /** Build a scale from the current picker state. Nothing is hand-authored. */
+  buildScale(overrides = {}) {
+    Object.assign(this.scaleSpec, overrides);
+    const spec = this.scaleSpec;
+    spec.family = MINOR_MODES.includes(spec.mode) ? 'minor' : 'major';
+    const tonic = TONICS[spec.family][spec.tonicPc];
+
+    this.exercise = validateExercise({
+      id: `scale-${tonic}-${spec.mode}-${spec.hand}`,
+      generator: {
+        type: 'scale',
+        tonic, mode: spec.mode, octaves: spec.octaves,
+        direction: spec.direction, hand: spec.hand
+      },
+      tolerance: { cents: 50, timingMs: 150, octaveStrict: true }
+    }, '(scale builder)');
+
+    this.noteIndex = 0;
+    this._syncScaleControls();
+    this.draw();
+    return this.exercise;
+  }
+
+  _syncScaleControls() {
+    const spec = this.scaleSpec;
+    const names = TONICS[spec.family];
+    for (const b of $('tonic-picker').children) {
+      const pc = Number(b.dataset.pc);
+      b.textContent = tonicToString(parseTonic(names[pc]));
+      b.setAttribute('aria-selected', String(pc === spec.tonicPc));
+    }
+    $('scale-mode').value = spec.mode;
+    $('hand-right').setAttribute('aria-selected', String(spec.hand === 'right'));
+    $('hand-left').setAttribute('aria-selected', String(spec.hand === 'left'));
+    $('scale-octaves').value = String(spec.octaves);
+    $('scale-direction').value = spec.direction;
+  }
+
   setExercises(list) {
     this.exercises = list;
     const sel = $('exercise-select');
@@ -56,16 +179,20 @@ export class PracticeView {
       o.value = ex.id; o.textContent = ex.title;
       sel.appendChild(o);
     }
-    if (list.length) this.select(list[0].id);
   }
 
+  /** Select a hand-written drill. */
   select(id) {
     const ex = this.exercises.find(e => e.id === id);
     if (!ex) return;
+    this.source = 'drill';
+    $('src-scale').setAttribute('aria-selected', 'false');
+    $('src-drill').setAttribute('aria-selected', 'true');
+    $('scale-controls').hidden = true;
+    $('drill-controls').hidden = false;
+    $('exercise-select').value = id;
     this.exercise = ex;
     this.noteIndex = 0;
-    $('exercise-desc').textContent = ex.description;
-    this.staff.setClef(ex.clef);
     this.draw();
   }
 
@@ -73,27 +200,49 @@ export class PracticeView {
     return this.exercise ? this.exercise.notes[this.noteIndex] : null;
   }
 
+  // -------------------------------------------------------------------------
+  // Drawing
+  // -------------------------------------------------------------------------
+
   draw() {
     const ex = this.exercise;
     if (!ex) return;
     clearTimeout(this._wrongTimer);
+
+    $('exercise-desc').textContent = ex.description || ex.title;
+
+    // A grand-staff drill still uses the Phase 1 single-system path; a
+    // sequence on one clef uses the wrapped multi-system path.
+    if (ex.clef === 'grand') {
+      this.staff.setClef('grand');
+      this.staff.render(ex.notes.map((n, i) => this._noteSpec(n, i)));
+    } else {
+      this.staff.renderSequence({
+        notes: ex.notes.map((n, i) => this._noteSpec(n, i)),
+        clef: ex.clef,
+        keySignature: ex.keySignature,
+        notesPerSystem: NOTES_PER_SYSTEM
+      });
+    }
+
     const n = this.target;
     if (!n) return this.finish();
 
-    this.staff.render([{
+    $('target-name').textContent = midiToName(n.midi, ex.preferFlats);
+    $('target-freq').textContent = `${midiToFreq(n.midi, this.session.a4).toFixed(1)} Hz`;
+    $('progress-count').textContent = `${this.noteIndex + 1} of ${ex.notes.length}`;
+    this.refreshPrompt();
+  }
+
+  _noteSpec(n, i) {
+    return {
       id: n.id,
       midi: n.midi,
       spelling: n.spelling,
       accidental: n.accidental,
       clef: n.clef,
-      state: 'target',
-      x: 10
-    }]);
-
-    $('target-name').textContent = midiToName(n.midi, ex.preferFlats);
-    $('target-freq').textContent = `${midiToFreq(n.midi, this.session.a4).toFixed(1)} Hz`;
-    this.refreshPrompt();
-    this.drawDots();
+      state: i < this.noteIndex ? 'correct' : i === this.noteIndex ? 'target' : 'pending'
+    };
   }
 
   /** Keeps the prompt honest about whether the microphone is actually on. */
@@ -101,19 +250,7 @@ export class PracticeView {
     const fb = $('feedback');
     if (fb.dataset.sticky === '1') return;
     fb.className = 'feedback';
-    fb.textContent = this.session.running ? 'Listening…' : 'Start the microphone first.';
-  }
-
-  drawDots() {
-    const wrap = $('progress-dots');
-    wrap.innerHTML = '';
-    if (!this.exercise) return;
-    this.exercise.notes.forEach((_, i) => {
-      const dot = document.createElement('i');
-      if (i < this.noteIndex) dot.className = 'done';
-      else if (i === this.noteIndex) dot.className = 'current';
-      wrap.appendChild(dot);
-    });
+    fb.textContent = this.session.running ? 'Play the highlighted note.' : 'Start the microphone first.';
   }
 
   // -------------------------------------------------------------------------
@@ -123,15 +260,20 @@ export class PracticeView {
   onStatus() { this.refreshPrompt(); }
 
   /**
-   * The note currently sounding. Drawn in its own colour, in its own column,
-   * for exactly as long as it is heard.
+   * The note currently sounding, on its own little staff below the sequence.
+   *
+   * It gets its own staff rather than a column inside the sequence because in
+   * a 29-note scale there is no free column: anywhere it went it would sit on
+   * top of a real note. Keeping it separate also means it still works after
+   * the last note, when there is no target to sit beside.
    */
   onPlayed(s) {
     const note = s.note;
     const readout = $('played-readout');
 
     if (!note) {
-      this.staff.setPlayedNote(null);
+      this.hearingStaff.setPlayedNote(null);
+      this.hearingStaff.render([]);
       readout.classList.remove('lit');
       $('played-name').textContent = '—';
       return;
@@ -142,7 +284,16 @@ export class PracticeView {
       reference: target ? { midi: target.midi, spelling: target.spelling } : null,
       preferFlats: this.exercise ? this.exercise.preferFlats : false
     });
-    this.staff.setPlayedNote({ midi: note.midi, spelling });
+
+    // The indicator staff follows the exercise's clef so the note appears at
+    // the height it would occupy in the music, not transposed by a clef change.
+    const clef = this.exercise && this.exercise.clef !== 'grand'
+      ? this.exercise.clef
+      : (note.midi >= 60 ? 'treble' : 'bass');
+    this.hearingStaff.setClef(clef);
+    this.hearingStaff.render([]);
+    this.hearingStaff.setPlayedNote({ midi: note.midi, spelling });
+
     readout.classList.add('lit');
     $('played-name').textContent = spellingToName(spelling);
   }
@@ -159,25 +310,33 @@ export class PracticeView {
       : ((ev.midi % 12) + 12) % 12 === ((target.midi % 12) + 12) % 12;
 
     const fb = $('feedback');
-    fb.dataset.sticky = '1';
 
     if (same) {
+      // Mark it done and leave it done. The sequence never resets.
       this.staff.setNoteState(target.id, 'correct');
-      fb.textContent = `${midiToName(ev.midi)} — ${ev.cents >= 0 ? '+' : ''}${ev.cents.toFixed(0)}¢, confidence ${ev.clarity.toFixed(2)}`;
-      fb.className = 'feedback good';
       this.noteIndex++;
-      clearTimeout(this._advanceTimer);
-      // Cosmetic pause so the match is visible. Nothing musical depends on it.
-      this._advanceTimer = setTimeout(() => { fb.dataset.sticky = '0'; this.draw(); }, 450);
+      fb.dataset.sticky = '0';
+      $('progress-count').textContent = `${Math.min(this.noteIndex + 1, ex.notes.length)} of ${ex.notes.length}`;
+
+      const next = this.target;
+      if (!next) return this.finish();
+
+      this.staff.setNoteState(next.id, 'target');
+      $('target-name').textContent = midiToName(next.midi, ex.preferFlats);
+      $('target-freq').textContent = `${midiToFreq(next.midi, this.session.a4).toFixed(1)} Hz`;
+      fb.className = 'feedback good';
+      fb.textContent = `${midiToName(ev.midi)} ✓`;
     } else {
+      // Brief, distinct, and that is all. No reset, no lost progress.
       this.staff.setNoteState(target.id, 'wrong');
       const diff = ev.midi - target.midi;
       const hint = Math.abs(diff) === 12 ? ' (right note, wrong octave)' : '';
       fb.textContent = `Heard ${midiToName(ev.midi)}${hint} — looking for ${midiToName(target.midi, ex.preferFlats)}`;
       fb.className = 'feedback bad';
+      fb.dataset.sticky = '1';
       clearTimeout(this._wrongTimer);
       this._wrongTimer = setTimeout(() => {
-        this.staff.setNoteState(target.id, 'target');
+        if (this.target === target) this.staff.setNoteState(target.id, 'target');
         fb.dataset.sticky = '0';
         this.refreshPrompt();
       }, 700);
@@ -185,18 +344,19 @@ export class PracticeView {
   }
 
   finish() {
-    this.staff.render([]);
     $('target-name').textContent = 'done';
     $('target-freq').textContent = '';
     const fb = $('feedback');
     fb.dataset.sticky = '0';
-    fb.textContent = 'Exercise complete.';
+    fb.textContent = this.exercise && this.exercise.scale
+      ? 'Scale complete.'
+      : 'Exercise complete.';
     fb.className = 'feedback good';
-    this.drawDots();
+    if (this.exercise) $('progress-count').textContent = `${this.exercise.notes.length} of ${this.exercise.notes.length}`;
   }
 }
 
-/** "C#4" / "Gb4" from a {letter, alter, octave} spelling. */
+/** "C♯4" / "G♭4" from a {letter, alter, octave} spelling. */
 function spellingToName(s) {
   const acc = s.alter > 0 ? '♯'.repeat(s.alter) : s.alter < 0 ? '♭'.repeat(-s.alter) : '';
   return `${s.letter}${acc}${s.octave}`;

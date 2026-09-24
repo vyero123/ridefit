@@ -9,6 +9,7 @@
 // practice time.
 
 import { nameToMidi, midiToStep } from '../music/pitch.js';
+import { generateScale, accidentalForKey } from '../music/scales.js';
 
 export const SCHEMA_VERSION = 1;
 
@@ -56,6 +57,18 @@ export function validateExercise(raw, file = '(inline)') {
 
   if (!raw || typeof raw !== 'object') fail('not a JSON object');
 
+  // A `generator` block produces the notes instead of listing them. Everything
+  // downstream is identical either way — a generated exercise and a
+  // hand-written one are the same object by the time they leave this function
+  // — so a custom drill remains exactly as expressive as it was.
+  if (raw.generator) {
+    try {
+      raw = expandGenerator(raw);
+    } catch (err) {
+      fail(`generator: ${err.message}`);
+    }
+  }
+
   const version = raw.schemaVersion != null ? raw.schemaVersion : SCHEMA_VERSION;
   if (version > SCHEMA_VERSION) {
     fail(`schemaVersion ${version} is newer than this app understands (${SCHEMA_VERSION})`);
@@ -78,6 +91,7 @@ export function validateExercise(raw, file = '(inline)') {
       octaveStrict: !(raw.tolerance && raw.tolerance.octaveStrict === false)
     },
     tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
+    scale: raw.scale || null,      // present when a generator produced this
     notes: []
   };
 
@@ -140,3 +154,43 @@ export function validateExercise(raw, file = '(inline)') {
 
 const str = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
 const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+
+/**
+ * Turn a `generator` block into a plain exercise with a `notes` array.
+ * Anything the file states explicitly wins over what the generator derived,
+ * so a scale can still be overridden note by note if you want to.
+ */
+function expandGenerator(raw) {
+  const g = raw.generator;
+  if (g.type !== 'scale') throw new Error(`unknown type "${g.type}" (only "scale" so far)`);
+
+  const scale = generateScale({
+    tonic: g.tonic, mode: g.mode, octaves: g.octaves,
+    direction: g.direction, hand: g.hand, startOctave: g.startOctave
+  });
+
+  const keySignature = raw.keySignature != null ? raw.keySignature : scale.keySignature;
+
+  // Accidentals are decided against the key signature here, once, rather than
+  // in the renderer: a note that agrees with the signature prints nothing, a
+  // note that contradicts it prints an accidental, including a natural. That
+  // is what makes harmonic minor's raised 7th show up.
+  const notes = scale.notes.map(n => ({
+    ...n,
+    accidental: accidentalForKey(n.spelling, keySignature)
+  }));
+
+  return {
+    ...raw,
+    clef: raw.clef || scale.clef,
+    keySignature,
+    title: raw.title || scale.title,
+    preferFlats: raw.preferFlats !== undefined ? raw.preferFlats : keySignature < 0,
+    notes,
+    // Kept so the UI can show which scale this is and rebuild it.
+    scale: {
+      tonic: scale.tonic, mode: scale.mode, hand: scale.hand,
+      octaves: scale.octaves, direction: scale.direction
+    }
+  };
+}

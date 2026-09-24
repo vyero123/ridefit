@@ -5,6 +5,8 @@
     "right-hand-c-position.json",
     "bass-clef-basics.json",
     "black-keys.json",
-    "ledger-lines.json"
+    "ledger-lines.json",
+    "bb-major-scale.json",
+    "a-harmonic-minor-scale.json"
   ]
 }

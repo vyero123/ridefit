@@ -144,8 +144,7 @@ async function run() {
   // -------------------------------------------------------------------------
   log('\nDetection on the Practice tab, across tab switches', 'head');
   switchTab('practice');
-  const ex = views.practice.exercises.find(e => e.id === 'right-hand-c-position');
-  views.practice.select(ex.id);   // C4 D4 E4 F4 G4 ...
+  views.practice.select('right-hand-c-position');   // C4 D4 E4 F4 G4 ...
 
   const notes = [];
   const played = [];
@@ -209,69 +208,252 @@ async function run() {
 
   // -------------------------------------------------------------------------
   log('\nThe played note is drawn, in its own colour, at the right pitch', 'head');
-  const svg = frame.contentDocument.getElementById('staff');
+  const doc = frame.contentDocument;
+  const svg = doc.getElementById('staff');
+  const hsvg = doc.getElementById('hearing-staff');
+  const hearing = pt.hearingStaff;
+  const yOf = (n) => +n.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
 
   // Drive the staff directly for the geometry checks — deterministic, and it
   // is the same code path the live tracker uses.
+  //
+  // Since Phase 2 the played note lives on its own small staff below the
+  // sequence, because a 29-note scale leaves no free column for it inside the
+  // music. The assertions therefore look at the indicator staff, and check
+  // the height against what the renderer computes for that pitch.
   views.practice.select('middle-c-neighbours');     // treble clef, target C4
   views.practice.onPlayed({ type: 'start', note: { midi: 60, cents: 0, clarity: 0.9 } });
 
-  const playedG = svg.querySelector('.played-layer .note.played');
+  const playedG = hsvg.querySelector('.played-layer .note.played');
   check(!!playedG, 'a played notehead is rendered');
   if (playedG) {
     const head = playedG.querySelector('.notehead');
-    const targetHead = svg.querySelector('.notes .notehead');
-    const py = +head.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
-    const ty = +targetHead.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
-    const px = +head.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
-    const tx = +targetHead.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
-
-    check(Math.abs(py - ty) < 0.01, 'played C4 sits at the same height as the written C4',
-      `played y=${py}, target y=${ty}`);
-    check(px !== tx, 'but in its own column, so neither hides the other',
-      `played x=${px}, target x=${tx}`);
+    check(Math.abs(yOf(head) - hearing._stepY('treble', 0)) < 0.01,
+      'played C4 sits exactly where a written C4 belongs on a treble stave',
+      `y=${yOf(head)}, expected ${hearing._stepY('treble', 0)}`);
+    check(!svg.querySelector('.played-layer .note'),
+      'and on its own staff, never on top of a note in the sequence');
     check(playedG.querySelectorAll('.ledger').length === 1,
-      'middle C gets its ledger line in the played layer too');
+      'middle C gets its ledger line');
 
+    const seqHead = svg.querySelector('.notes .note.state-target .notehead');
     const fill = win.getComputedStyle(head).fill;
-    const targetFill = win.getComputedStyle(targetHead).fill;
+    const targetFill = win.getComputedStyle(seqHead).fill;
     check(fill !== targetFill, 'and in a different colour from the target',
       `played ${fill} vs target ${targetFill}`);
   }
 
   // Ledger lines below the staff for a low note on a treble stave.
   views.practice.onPlayed({ type: 'change', note: { midi: 48, cents: 0, clarity: 0.9 } });
-  const lowLedgers = svg.querySelectorAll('.played-layer .ledger').length;
+  const lowLedgers = hsvg.querySelectorAll('.played-layer .ledger').length;
   check(lowLedgers >= 4, 'a note far below the staff gets the ledger lines it needs',
     `${lowLedgers} ledger lines for C3 on a treble stave`);
 
-  // Clef choice on the grand staff.
+  // Clef choice on a grand-staff drill.
   views.practice.select('ledger-lines');            // grand staff
   views.practice.onPlayed({ type: 'change', note: { midi: 40, cents: 0, clarity: 0.9 } });
-  const bassTop = frame.contentWindow.pianoTrainer.staff._staffTops().bass;
-  const headLow = svg.querySelector('.played-layer .notehead');
-  const lowY = +headLow.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
-  check(lowY > bassTop, 'on a grand staff a low note is placed on the bass stave',
-    `y=${lowY.toFixed(2)}, bass stave top y=${bassTop}`);
-
+  check(hearing.clef === 'bass', 'a low note on a grand-staff drill uses the bass clef', hearing.clef);
   views.practice.onPlayed({ type: 'change', note: { midi: 79, cents: 0, clarity: 0.9 } });
-  const headHigh = svg.querySelector('.played-layer .notehead');
-  const highY = +headHigh.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
-  check(highY < bassTop, 'and a high note on the treble stave', `y=${highY.toFixed(2)}`);
+  check(hearing.clef === 'treble', 'and a high one the treble clef', hearing.clef);
 
   // Enharmonic choice, through the view.
   views.practice.select('black-keys');
-  for (let i = 0; i < 5; i++) frame.contentDocument.getElementById('btn-skip').click();
+  for (let i = 0; i < 5; i++) doc.getElementById('btn-skip').click();
   const tgt = views.practice.target;
   check(tgt && tgt.midi === 66 && tgt.spelling.letter === 'G',
     'stepped to the written G♭4', tgt ? `${tgt.spelling.letter}${tgt.spelling.alter}` : 'none');
   views.practice.onPlayed({ type: 'start', note: { midi: 66, cents: 0, clarity: 0.9 } });
-  check(frame.contentDocument.getElementById('played-name').textContent === 'G♭4',
+  check(doc.getElementById('played-name').textContent === 'G♭4',
     'playing it shows G♭4, agreeing with the page, not F♯4',
-    frame.contentDocument.getElementById('played-name').textContent);
+    doc.getElementById('played-name').textContent);
 
   views.practice.onPlayed({ type: 'end', note: null });
-  check(!svg.querySelector('.played-layer .note'), 'clearing removes the mark');
+  check(!hsvg.querySelector('.played-layer .note'), 'clearing removes the mark');
+
+  // =========================================================================
+  log('\nPHASE 2 — scales: generation, spelling and layout', 'head');
+  // =========================================================================
+
+  views.practice.setSource('scale');
+  let ex = views.practice.buildScale({ tonicPc: 0, mode: 'major', hand: 'right', octaves: 2, direction: 'up-down' });
+  check(ex.notes.length === 29, 'C major, 2 octaves, up and down = 29 notes', `${ex.notes.length}`);
+  check(ex.clef === 'treble', 'right hand gives the treble clef');
+  check(ex.notes[0].midi === 60 && ex.notes[14].midi === 84,
+    'and runs C4 → C6 → C4', `${ex.notes[0].midi} → ${ex.notes[14].midi} → ${ex.notes[28].midi}`);
+
+  check(svg.querySelectorAll('.system').length === 4,
+    'the 29 notes wrap onto 4 systems rather than one unreadable line',
+    `${svg.querySelectorAll('.system').length} systems`);
+  check(svg.querySelectorAll('.notes .note').length === 29, 'every note is drawn');
+  check(svg.querySelectorAll('.clef').length === 4, 'each system repeats the clef');
+  check(svg.querySelectorAll('.notes .note.state-target').length === 1, 'exactly one target at a time');
+  check(svg.querySelectorAll('.notes .note.state-pending').length === 28, 'the rest are pending');
+
+  // No two noteheads may overlap, or the layout is lying about being readable.
+  {
+    const heads = [...svg.querySelectorAll('.notes .notehead')];
+    let minGap = Infinity;
+    const bySystem = new Map();
+    for (const h of heads) {
+      const y = yOf(h);
+      const x = +h.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
+      const key = Math.round(y / 100);
+      if (!bySystem.has(key)) bySystem.set(key, []);
+      bySystem.get(key).push(x);
+    }
+    for (const xs of bySystem.values()) {
+      xs.sort((a, b) => a - b);
+      for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
+    }
+    check(minGap > 1.4, 'noteheads never collide horizontally',
+      `smallest gap ${minGap.toFixed(2)} staff spaces (notehead is ${(0.66 * 2).toFixed(2)} wide)`);
+  }
+
+  log('\nKey signatures are drawn, and spelling follows the key', 'head');
+  ex = views.practice.buildScale({ tonicPc: 10, mode: 'major', hand: 'left' });   // B♭ major
+  check(ex.keySignature === -2, 'B♭ major has two flats', `${ex.keySignature}`);
+  check(ex.clef === 'bass', 'left hand gives the bass clef');
+  check(svg.querySelectorAll('.system .key-signature').length === svg.querySelectorAll('.system').length,
+    'the key signature is repeated on every system');
+  check(svg.querySelectorAll('.system:first-child .key-signature .accidental').length === 2,
+    'with exactly two accidentals in it',
+    `${svg.querySelectorAll('.system:first-child .key-signature .accidental').length}`);
+  check(svg.querySelectorAll('.system:first-child .key-signature .acc-flat').length === 2,
+    'and they are flats, not sharps');
+  check(svg.querySelectorAll('.notes .accidental').length === 0,
+    'no note carries a redundant accidental — the signature already said it',
+    `${svg.querySelectorAll('.notes .accidental').length} found`);
+  {
+    const spelled = ex.notes.slice(0, 8).map(n =>
+      n.spelling.letter + (n.spelling.alter < 0 ? '♭' : n.spelling.alter > 0 ? '♯' : ''));
+    check(spelled.join(' ') === 'B♭ C D E♭ F G A B♭',
+      'B♭ major is spelled B♭ C D E♭ F G A — not A♯ and D♯', spelled.join(' '));
+  }
+
+  ex = views.practice.buildScale({ tonicPc: 9, mode: 'harmonic-minor', hand: 'right' });  // A harmonic minor
+  check(ex.keySignature === 0, 'A minor has no key signature', `${ex.keySignature}`);
+  check(svg.querySelectorAll('.system .key-signature').length === 0, 'so none is drawn');
+  check(svg.querySelectorAll('.notes .acc-sharp').length === 4,
+    'but the raised 7th prints a sharp, all four times it occurs',
+    `${svg.querySelectorAll('.notes .acc-sharp').length}`);
+
+  ex = views.practice.buildScale({ tonicPc: 0, mode: 'harmonic-minor', hand: 'right' });  // C harmonic minor
+  check(ex.keySignature === -3, 'C minor has three flats', `${ex.keySignature}`);
+  check(svg.querySelectorAll('.notes .acc-natural').length > 0,
+    'and the raised 7th prints a NATURAL, because the signature flattens that B',
+    `${svg.querySelectorAll('.notes .acc-natural').length} naturals`);
+
+  log('\nMelodic minor differs on the way down', 'head');
+  ex = views.practice.buildScale({ tonicPc: 9, mode: 'melodic-minor', hand: 'right', octaves: 1 });
+  {
+    const names = ex.notes.map(n =>
+      n.spelling.letter + (n.spelling.alter > 0 ? '♯' : n.spelling.alter < 0 ? '♭' : ''));
+    check(names.join(' ') === 'A B C D E F♯ G♯ A G F E D C B A',
+      'A melodic minor: F♯ G♯ going up, F G coming down', names.join(' '));
+  }
+
+  // =========================================================================
+  log('\nPHASE 2 — playing a scale, for real, through the audio pipeline', 'head');
+  // =========================================================================
+
+  views.practice.buildScale({ tonicPc: 0, mode: 'major', hand: 'right', octaves: 1, direction: 'up-down' });
+  const scaleNotes = views.practice.exercise.notes.map(n => n.midi);
+  check(scaleNotes.length === 15, 'one octave up and down is 15 notes', `${scaleNotes.length}`);
+
+  // Play the whole thing correctly, but put ONE wrong note in the middle.
+  const WRONG_AT = 5;
+  const WRONG_MIDI = 71;                       // B4 where D4 is expected
+  const SPACING = 0.62, DUR = 0.52;
+  const plan = [];
+  let at = 0.40;
+  for (let i = 0; i < scaleNotes.length; i++) {
+    if (i === WRONG_AT) { plan.push({ midi: WRONG_MIDI, at, dur: DUR, g: 1, wrong: true }); at += SPACING; }
+    plan.push({ midi: scaleNotes[i], at, dur: DUR, g: 1 });
+    at += SPACING;
+  }
+
+  // The first synthetic source has played out; swap in a new one. This is the
+  // only kind of thing allowed to stop and restart the pipeline.
+  await session.stop();
+  await session.engine.unlock();
+  const ctx2 = session.engine.ctx;
+  const src2 = ctx2.createBufferSource();
+  src2.buffer = renderSequence(ctx2, plan);
+
+  const seen = [];
+  const states = [];
+  const un2 = session.subscribe({
+    onNote: ev => {
+      seen.push(ev.midi);
+      states.push({
+        midi: ev.midi,
+        index: views.practice.noteIndex,
+        wrongShown: !!svg.querySelector('.notes .note.state-wrong')
+      });
+    }
+  });
+
+  await session.start({ sourceNode: src2 });
+  switchTab('practice');
+  src2.start();
+  await sleep((at + 1.0) * 1000);
+  un2();
+
+  check(seen.length === plan.length,
+    'every note including the deliberate mistake was detected',
+    `expected ${plan.length}, got ${seen.length}: [${seen.join(', ')}]`);
+
+  const wrongEvent = states.find(s => s.midi === WRONG_MIDI && s.index === WRONG_AT);
+  check(!!wrongEvent, 'the wrong note arrived while the target was still note 5',
+    `states around it: ${JSON.stringify(states.slice(WRONG_AT, WRONG_AT + 3))}`);
+
+  // The index after the wrong note must be unchanged from before it.
+  const wrongIdx = states.findIndex(s => s.midi === WRONG_MIDI && s.index === WRONG_AT);
+  const after = states[wrongIdx + 1];
+  check(after && after.index === WRONG_AT,
+    'a wrong note does NOT advance the sequence, and nothing is lost',
+    after ? `index stayed at ${after.index}` : 'no following event');
+
+  check(views.practice.noteIndex === scaleNotes.length,
+    'the whole scale completed after the correct notes',
+    `index ${views.practice.noteIndex} of ${scaleNotes.length}`);
+  check(svg.querySelectorAll('.notes .note.state-correct').length === scaleNotes.length,
+    'and every note is marked done, in the correct-state colour',
+    `${svg.querySelectorAll('.notes .note.state-correct').length} green`);
+  check(doc.getElementById('feedback').textContent.includes('complete'),
+    'the view says so', doc.getElementById('feedback').textContent);
+  {
+    const green = win.getComputedStyle(svg.querySelector('.notes .note.state-correct .notehead')).fill;
+    check(green === 'rgb(74, 222, 128)', 'green is the existing correct-state colour', green);
+  }
+
+  log('\nSwitching hand, key and mode mid-exercise', 'head');
+  views.practice.buildScale({ tonicPc: 0, mode: 'major', hand: 'right', octaves: 2, direction: 'up-down' });
+  views.practice.noteIndex = 6;
+  views.practice.draw();
+  check(views.practice.noteIndex === 6, 'part-way through a scale');
+
+  views.practice.buildScale({ hand: 'left' });
+  check(views.practice.exercise.clef === 'bass' && views.practice.noteIndex === 0,
+    'switching hand rebuilds on the bass clef and starts again',
+    `clef ${views.practice.exercise.clef}, index ${views.practice.noteIndex}`);
+  check(views.practice.exercise.notes[0].midi === 36, 'in a sensible left-hand octave (C2)',
+    `${views.practice.exercise.notes[0].midi}`);
+
+  views.practice.buildScale({ tonicPc: 6, mode: 'major' });
+  check(views.practice.exercise.keySignature === 6, 'switching key to F♯ major gives six sharps',
+    `${views.practice.exercise.keySignature}`);
+  check(svg.querySelectorAll('.system:first-child .key-signature .acc-sharp').length === 6,
+    'and six sharps are drawn');
+
+  views.practice.buildScale({ mode: 'natural-minor' });
+  check(views.practice.exercise.keySignature === 3,
+    'switching to F♯ natural minor gives three sharps', `${views.practice.exercise.keySignature}`);
+  check(session.engine.ctx === ctxBefore && session.running,
+    'and none of that touched the audio pipeline');
+
+  const liveEnd = session.assertLive();
+  check(liveEnd.ok, 'pipeline still healthy after all the switching', liveEnd.problems.join('; '));
 
   // -------------------------------------------------------------------------
   log('\nStop tears down only on request', 'head');

@@ -90,7 +90,50 @@
 <!-- ===================== PRACTICE ===================== -->
 <section class="panel" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
   <h2>Practice</h2>
-  <select id="exercise-select" aria-label="Exercise"></select>
+
+  <div class="segmented" role="tablist">
+    <button id="src-scale" role="tab" aria-selected="true">Scales</button>
+    <button id="src-drill" role="tab" aria-selected="false">Drills</button>
+  </div>
+
+  <div id="scale-controls">
+    <div class="tonic-picker" id="tonic-picker" role="group" aria-label="Tonic"></div>
+    <div class="control-row">
+      <label>
+        <span>Mode</span>
+        <select id="scale-mode" aria-label="Scale mode"></select>
+      </label>
+      <label>
+        <span>Octaves</span>
+        <select id="scale-octaves" aria-label="Octaves">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+        </select>
+      </label>
+    </div>
+    <div class="control-row">
+      <label>
+        <span>Hand</span>
+        <div class="segmented small">
+          <button id="hand-right" aria-selected="true">Right</button>
+          <button id="hand-left" aria-selected="false">Left</button>
+        </div>
+      </label>
+      <label>
+        <span>Direction</span>
+        <select id="scale-direction" aria-label="Direction">
+          <option value="up-down" selected>Up and down</option>
+          <option value="up">Up only</option>
+          <option value="down">Down only</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="drill-controls" hidden>
+    <select id="exercise-select" aria-label="Exercise"></select>
+  </div>
+
   <p class="note-text" id="exercise-desc"></p>
 
   <div class="staff-wrap">
@@ -98,28 +141,33 @@
   </div>
 
   <div class="legend">
-    <span class="key key-target"></span> written
+    <span class="key key-target"></span> next to play
+    <span class="key key-correct"></span> done
     <span class="key key-played"></span> what you are playing
-    <span class="key key-correct"></span> matched
   </div>
 
   <div class="target-line">
     <span>Play <strong id="target-name">—</strong></span>
-    <span class="freq" id="target-freq"></span>
+    <span class="freq"><span id="progress-count"></span> · <span id="target-freq"></span></span>
   </div>
-  <div class="target-line" id="played-readout">
+
+  <div class="hearing-row" id="played-readout">
+    <div class="hearing-staff">
+      <svg class="staff" id="hearing-staff" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Note currently heard"></svg>
+    </div>
     <span>Hearing <strong id="played-name">—</strong></span>
   </div>
+
   <div class="feedback" id="feedback"></div>
-  <div class="progress-dots" id="progress-dots"></div>
 
   <div class="row" style="margin-top:10px">
     <button id="btn-restart" class="secondary">Restart</button>
     <button id="btn-skip" class="secondary">Skip note</button>
   </div>
   <p class="note-text">
-    Phase 1 is untimed: play the highlighted note and it advances. Timing
-    against a beat comes next, and it is what the calibrated offset is for.
+    Self-paced: play the highlighted note and the sequence moves on. A wrong
+    note flashes and nothing is lost — the sequence never resets. Playing to a
+    beat comes next, and it is what the calibrated offset is for.
   </p>
 </section>
 
