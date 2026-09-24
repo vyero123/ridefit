@@ -13,7 +13,13 @@
 //   'frame'  — continuous state, for the live readout. Fired often (~50 Hz for
 //              the mic source). Payload:
 //                { t, frequency, midi, cents, clarity, rms, voiced }
-//              `midi` is null when unvoiced. `t` is ALWAYS an AudioContext
+//              `midi` is the nearest note to whatever pitch was found, or null
+//              when no pitch was found at all. `voiced` says whether the
+//              detector is confident enough to call it a note. The two are
+//              deliberately separate: a note decaying under the sustain pedal
+//              still has a perfectly good pitch at clarity 0.45, below the
+//              voiced threshold, and the played-note tracker needs to see it
+//              to know the note has not stopped. `t` is ALWAYS an AudioContext
 //              time, never wall-clock.
 //
 //   'note'   — a discrete note event: someone struck a key. Payload:
@@ -92,10 +98,11 @@ export class MicInputSource extends InputSource {
     this._unsub = [];
   }
 
-  async start() {
-    this.emit('status', { state: 'starting', message: 'Requesting microphone…' });
+  /** @param {{sourceNode?: AudioNode}} [o] see AudioEngine.startInput */
+  async start(o = {}) {
+    this.emit('status', { state: 'starting', message: o.sourceNode ? 'Starting (synthetic input)…' : 'Requesting microphone…' });
     try {
-      await this.engine.startInput();
+      await this.engine.startInput(o);
     } catch (err) {
       this.emit('status', { state: 'error', message: describeMicError(err) });
       throw err;
@@ -133,11 +140,11 @@ export class MicInputSource extends InputSource {
     const frame = {
       t: msg.t,
       frequency: msg.frequency,
-      midi: msg.voiced ? midi : null,
+      midi,                 // nearest note to whatever was found, null if nothing
       cents,
       clarity: msg.clarity,
       rms: msg.rms,
-      voiced: msg.voiced
+      voiced: msg.voiced    // confident enough to call it a note
     };
     this._lastFrame = frame;
     this.emit('frame', frame);

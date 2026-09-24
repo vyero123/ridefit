@@ -13,6 +13,12 @@
   --warn: #fbbf24;
   --bad: #f87171;
   --ink: #e8eaf0;          /* notation colour */
+  /* The note you are currently playing. Chosen to be unmistakable against the
+     target blue, the matched green and the wrong-note salmon — a violet sits
+     clear of all three in hue, and stays distinct for red-green colour
+     blindness, where blue/green is the risky pair and violet/blue differ in
+     lightness as well as hue. */
+  --played: #b98bfa;
   --radius: 14px;
   --tap: 48px;             /* minimum touch target */
 }
@@ -171,6 +177,14 @@ svg.staff { display: block; width: 100%; height: auto; }
 .note.state-wrong .stem { stroke: var(--bad); }
 .note.state-pending { opacity: 0.32; }
 
+/* The note currently sounding. Its own colour and its own column, so it is
+   never confused with the written note even when they are the same pitch. */
+.note.played .notehead { fill: var(--played); }
+.note.played .stem { stroke: var(--played); }
+.note.played .acc-stroke { stroke: var(--played); }
+.note.played .ledger { stroke: var(--played); opacity: 0.9; }
+.played-layer { transition: opacity 90ms linear; }
+
 @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .note.state-correct { animation: pop 260ms ease-out; transform-origin: center; transform-box: fill-box; }
 
@@ -179,6 +193,18 @@ svg.staff { display: block; width: 100%; height: auto; }
   margin-top: 10px; font-size: 0.9rem;
 }
 .target-line strong { font-size: 1.3rem; }
+#played-readout { color: var(--muted); opacity: 0.55; transition: opacity 90ms linear; }
+#played-readout.lit { opacity: 1; color: var(--played); }
+#played-readout strong { font-size: 1.3rem; }
+
+.legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+.legend .key { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-left: 6px; }
+.legend .key:first-child { margin-left: 0; }
+.key-target { background: var(--accent); }
+.key-played { background: var(--played); }
+.key-correct { background: var(--good); }
+
 .feedback { font-size: 0.85rem; color: var(--muted); min-height: 1.3em; margin-top: 6px; }
 .feedback.good { color: var(--good); }
 .feedback.bad { color: var(--bad); }

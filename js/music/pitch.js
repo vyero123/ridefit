@@ -84,6 +84,37 @@ export function nameToMidi(name) {
 }
 
 /**
+ * Choose how to WRITE a pitch that we only know as a MIDI number.
+ *
+ * This is genuinely ambiguous and no amount of signal processing can resolve
+ * it: the microphone hears one black key, and F#4 and Gb4 are the same black
+ * key. Something has to decide, so the rule is "agree with the music in front
+ * of you", in this order:
+ *
+ *   1. Same note as the target — spell it exactly as the target is written.
+ *      Play the G♭4 that the exercise asked for and you see a G♭4, not an F♯4.
+ *   2. Same pitch class as the target, wrong octave — keep the target's letter
+ *      and accidental, change the octave. Octave slips stay legible.
+ *   3. Otherwise — follow the exercise's key signature: flats for flat keys,
+ *      sharps for sharp keys and for C major.
+ *
+ * @param {number} midi
+ * @param {{reference?: {midi:number, spelling:object}, preferFlats?: boolean}} [opts]
+ */
+export function spellForDisplay(midi, opts = {}) {
+  const ref = opts.reference;
+  if (ref && ref.spelling) {
+    if (ref.midi === midi) return { ...ref.spelling };
+    const samePc = (((ref.midi - midi) % 12) + 12) % 12 === 0;
+    if (samePc) {
+      const octaveShift = Math.round((midi - ref.midi) / 12);
+      return { ...ref.spelling, octave: ref.spelling.octave + octaveShift };
+    }
+  }
+  return midiToStep(midi, opts.preferFlats === true);
+}
+
+/**
  * Diatonic step number, used for vertical placement on a staff.
  * C4 (middle C) is 0; each letter name up is +1, each octave is +7.
  */

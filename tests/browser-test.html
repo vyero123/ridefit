@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Trainer — browser tests</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #12141a; color: #e8eaf0; margin: 0; padding: 16px; }
+  h1 { font-size: 1rem; }
+  button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0;
+           background: #5ac8fa; color: #06202b; font-weight: 700; }
+  #out { white-space: pre-wrap; margin-top: 16px; }
+  .ok { color: #4ade80; } .fail { color: #f87171; } .head { color: #9aa2b6; }
+  iframe { width: 390px; height: 500px; border: 1px solid #313747; border-radius: 8px;
+           margin-top: 16px; background: #12141a; }
+</style>
+</head>
+<body>
+
+<h1>Piano Trainer — browser tests</h1>
+<p class="head">Drives the real app in the iframe below with synthesised piano
+tones. No microphone is used; the synthetic source is injected at exactly the
+point the microphone would attach, so the worklet, the pitch detector, the
+onset detector, the session and the views are all the shipped code.</p>
+
+<button id="run">Run tests</button>
+<div id="out"></div>
+<iframe id="app" src="../index.html"></iframe>
+
+<script type="module">
+const out = document.getElementById('out');
+let failures = 0, total = 0;
+
+function log(text, cls = '') {
+  const span = document.createElement('div');
+  if (cls) span.className = cls;
+  span.textContent = text;
+  out.appendChild(span);
+}
+function check(ok, label, detail = '') {
+  total++;
+  if (!ok) failures++;
+  log(`${ok ? '  ok  ' : ' FAIL '} ${label}${detail ? '  ' + detail : ''}`, ok ? 'ok' : 'fail');
+}
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ---------------------------------------------------------------------------
+// A piano-ish tone: weak fundamental, strong 2nd and 3rd partials, exponential
+// decay, slight inharmonicity. The weak fundamental is the point — it is the
+// case that breaks naive detectors, so the whole stack gets tested on the hard
+// signal rather than an easy sine.
+// ---------------------------------------------------------------------------
+function renderSequence(ctx, notes) {
+  const sr = ctx.sampleRate;
+  const totalSec = notes.reduce((m, n) => Math.max(m, n.at + n.dur), 0) + 0.4;
+  const buf = ctx.createBuffer(1, Math.ceil(totalSec * sr), sr);
+  const d = buf.getChannelData(0);
+  const amps = [0.22, 1.0, 0.75, 0.40, 0.28, 0.16];
+
+  for (const n of notes) {
+    const f = 440 * Math.pow(2, (n.midi - 69) / 12);
+    const start = Math.floor(n.at * sr);
+    const len = Math.floor(n.dur * sr);
+    for (let i = 0; i < len; i++) {
+      const t = i / sr;
+      let v = 0;
+      for (let h = 0; h < amps.length; h++) {
+        const hf = f * (h + 1) * (1 + 0.0004 * h * h);
+        if (hf > sr / 2) break;
+        v += amps[h] * Math.sin(2 * Math.PI * hf * t);
+      }
+      // A 3 ms attack ramp, then decay. The sharp-ish attack is what the
+      // onset detector keys on.
+      const env = Math.min(1, t / 0.003) * Math.exp(-3.2 * t);
+      d[start + i] += 0.25 * v * env;
+    }
+  }
+  return buf;
+}
+
+// ---------------------------------------------------------------------------
+
+document.getElementById('run').addEventListener('click', run, { once: true });
+window.runTests = run;   // so an automated driver can start it without a click
+
+async function run() {
+  out.innerHTML = '';
+  failures = 0; total = 0;
+
+  const frame = document.getElementById('app');
+  const win = frame.contentWindow;
+
+  // Wait for the app to boot and load its exercises.
+  for (let i = 0; i < 100 && !(win.pianoTrainer && win.pianoTrainer.views.practice.exercise); i++) {
+    await sleep(100);
+  }
+  const pt = win.pianoTrainer;
+  if (!pt) { check(false, 'app loaded in iframe'); return finish(); }
+  check(true, 'app loaded in iframe');
+
+  const { session, staff, views, switchTab } = pt;
+
+  // -------------------------------------------------------------------------
+  log('\nStart the pipeline with a synthetic source', 'head');
+  await session.engine.unlock();
+  const ctx = session.engine.ctx;
+
+  const SEQ = [
+    { midi: 60, at: 0.40, dur: 0.85 },   // C4
+    { midi: 60, at: 1.50, dur: 0.85 },   // C4 again — the repeated-note case
+    { midi: 64, at: 2.60, dur: 0.85 },   // E4
+    { midi: 67, at: 3.70, dur: 0.85 },   // G4
+    { midi: 72, at: 4.80, dur: 0.85 }    // C5
+  ];
+  const src = ctx.createBufferSource();
+  src.buffer = renderSequence(ctx, SEQ);
+
+  await session.start({ sourceNode: src });
+  check(session.running, 'session is running');
+
+  const live0 = session.assertLive();
+  check(live0.ok, 'pipeline reports healthy', live0.problems.join('; '));
+
+  // Record identities so we can prove the graph is literally the same objects
+  // after a tab change, not merely a working replacement.
+  const workletBefore = session.engine.workletNode;
+  const sourceBefore = session.engine.sourceNode;
+  const ctxBefore = session.engine.ctx;
+
+  // -------------------------------------------------------------------------
+  log('\nDetection on the Practice tab, across tab switches', 'head');
+  switchTab('practice');
+  const ex = views.practice.exercises.find(e => e.id === 'right-hand-c-position');
+  views.practice.select(ex.id);   // C4 D4 E4 F4 G4 ...
+
+  const notes = [];
+  const played = [];
+  const probe = {
+    onNote: ev => notes.push({ t: +ev.t.toFixed(3), midi: ev.midi, stats: session.stats.notes }),
+    onPlayed: s => played.push({ type: s.type, midi: s.note ? s.note.midi : null })
+  };
+  const unprobe = session.subscribe(probe);
+
+  src.start();
+
+  // Let the first note land, then switch tabs BACK AND FORTH in the middle of
+  // the sequence — the exact thing that was reported broken.
+  await sleep(1300);
+  const notesBeforeSwitch = notes.length;
+  check(notesBeforeSwitch >= 1, 'a note was detected before any tab switch', `${notesBeforeSwitch} so far`);
+
+  switchTab('listen');
+  await sleep(120);
+  switchTab('latency');
+  await sleep(120);
+  switchTab('practice');
+  const statsAtSwitch = { ...session.stats };
+
+  check(session.engine.workletNode === workletBefore, 'worklet node survived the tab switches unchanged');
+  check(session.engine.sourceNode === sourceBefore, 'input source node survived unchanged');
+  check(session.engine.ctx === ctxBefore, 'AudioContext survived unchanged');
+  check(session.engine.ctx.state === 'running', 'AudioContext still running', session.engine.ctx.state);
+  const liveAfter = session.assertLive();
+  check(liveAfter.ok, 'pipeline still reports healthy after tab switches', liveAfter.problems.join('; '));
+
+  // Now wait for the rest of the sequence and prove events kept arriving.
+  await sleep(4600);
+  unprobe();
+
+  const afterSwitch = notes.filter(n => n.stats > statsAtSwitch.notes);
+  check(afterSwitch.length >= 3,
+    'note events STILL ARRIVE after switching away and back',
+    `${afterSwitch.length} notes after the switch: [${afterSwitch.map(n => n.midi).join(', ')}]`);
+
+  check(session.stats.notes - session.stats.notesAtLastViewChange >= 3,
+    'the session counters agree that detection continued',
+    `${session.stats.notes - session.stats.notesAtLastViewChange} since the last view change`);
+
+  const detected = notes.map(n => n.midi);
+  const expected = SEQ.map(n => n.midi);
+  check(detected.length === expected.length && detected.every((m, i) => m === expected[i]),
+    'every note in the sequence was detected, at the right pitch',
+    `expected [${expected.join(', ')}], got [${detected.join(', ')}]`);
+
+  // -------------------------------------------------------------------------
+  log('\nThe played-note mark tracks sustain', 'head');
+  const starts = played.filter(p => p.type === 'start' || p.type === 'change');
+  const ends = played.filter(p => p.type === 'end');
+  check(starts.length >= 4, 'the mark lit for each note', `${starts.length} start/change events`);
+  check(ends.length >= 3, 'and cleared between notes — not a fixed-duration flash',
+    `${ends.length} end events`);
+  check(session.playedNote.current === null,
+    'nothing is lit once the audio has finished',
+    JSON.stringify(session.playedNote.current));
+
+  // -------------------------------------------------------------------------
+  log('\nThe played note is drawn, in its own colour, at the right pitch', 'head');
+  const svg = frame.contentDocument.getElementById('staff');
+
+  // Drive the staff directly for the geometry checks — deterministic, and it
+  // is the same code path the live tracker uses.
+  views.practice.select('middle-c-neighbours');     // treble clef, target C4
+  views.practice.onPlayed({ type: 'start', note: { midi: 60, cents: 0, clarity: 0.9 } });
+
+  const playedG = svg.querySelector('.played-layer .note.played');
+  check(!!playedG, 'a played notehead is rendered');
+  if (playedG) {
+    const head = playedG.querySelector('.notehead');
+    const targetHead = svg.querySelector('.notes .notehead');
+    const py = +head.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+    const ty = +targetHead.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+    const px = +head.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
+    const tx = +targetHead.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
+
+    check(Math.abs(py - ty) < 0.01, 'played C4 sits at the same height as the written C4',
+      `played y=${py}, target y=${ty}`);
+    check(px !== tx, 'but in its own column, so neither hides the other',
+      `played x=${px}, target x=${tx}`);
+    check(playedG.querySelectorAll('.ledger').length === 1,
+      'middle C gets its ledger line in the played layer too');
+
+    const fill = win.getComputedStyle(head).fill;
+    const targetFill = win.getComputedStyle(targetHead).fill;
+    check(fill !== targetFill, 'and in a different colour from the target',
+      `played ${fill} vs target ${targetFill}`);
+  }
+
+  // Ledger lines below the staff for a low note on a treble stave.
+  views.practice.onPlayed({ type: 'change', note: { midi: 48, cents: 0, clarity: 0.9 } });
+  const lowLedgers = svg.querySelectorAll('.played-layer .ledger').length;
+  check(lowLedgers >= 4, 'a note far below the staff gets the ledger lines it needs',
+    `${lowLedgers} ledger lines for C3 on a treble stave`);
+
+  // Clef choice on the grand staff.
+  views.practice.select('ledger-lines');            // grand staff
+  views.practice.onPlayed({ type: 'change', note: { midi: 40, cents: 0, clarity: 0.9 } });
+  const bassTop = frame.contentWindow.pianoTrainer.staff._staffTops().bass;
+  const headLow = svg.querySelector('.played-layer .notehead');
+  const lowY = +headLow.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+  check(lowY > bassTop, 'on a grand staff a low note is placed on the bass stave',
+    `y=${lowY.toFixed(2)}, bass stave top y=${bassTop}`);
+
+  views.practice.onPlayed({ type: 'change', note: { midi: 79, cents: 0, clarity: 0.9 } });
+  const headHigh = svg.querySelector('.played-layer .notehead');
+  const highY = +headHigh.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+  check(highY < bassTop, 'and a high note on the treble stave', `y=${highY.toFixed(2)}`);
+
+  // Enharmonic choice, through the view.
+  views.practice.select('black-keys');
+  for (let i = 0; i < 5; i++) frame.contentDocument.getElementById('btn-skip').click();
+  const tgt = views.practice.target;
+  check(tgt && tgt.midi === 66 && tgt.spelling.letter === 'G',
+    'stepped to the written G♭4', tgt ? `${tgt.spelling.letter}${tgt.spelling.alter}` : 'none');
+  views.practice.onPlayed({ type: 'start', note: { midi: 66, cents: 0, clarity: 0.9 } });
+  check(frame.contentDocument.getElementById('played-name').textContent === 'G♭4',
+    'playing it shows G♭4, agreeing with the page, not F♯4',
+    frame.contentDocument.getElementById('played-name').textContent);
+
+  views.practice.onPlayed({ type: 'end', note: null });
+  check(!svg.querySelector('.played-layer .note'), 'clearing removes the mark');
+
+  // -------------------------------------------------------------------------
+  log('\nStop tears down only on request', 'head');
+  await session.stop();
+  check(!session.running, 'stopped');
+  check(session.engine.workletNode === null, 'worklet released on explicit stop');
+
+  finish();
+}
+
+function finish() {
+  log('');
+  log(failures === 0 ? `ALL ${total} CHECKS PASSED` : `${failures} of ${total} CHECKS FAILED`,
+      failures === 0 ? 'ok' : 'fail');
+  window.__testResults = { total, failures, done: true };
+}
+</script>
+</body>
+</html>

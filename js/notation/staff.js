@@ -44,6 +44,11 @@ export class StaffRenderer {
     this.padBottom = 7;
     this.notes = [];
     this._noteEls = new Map();
+
+    /** Column for the "note you are playing" mark, clear of the target. */
+    this.playedX = opts.playedX || 18;
+    this._playedNote = null;
+    this._playedLayer = null;
   }
 
   setClef(clef) { this.clef = clef; }
@@ -114,7 +119,37 @@ export class StaffRenderer {
       if (n.id) this._noteEls.set(n.id, g);
       autoX += 4.5;
     }
+
+    // The played-note layer is separate from the exercise notes and is never
+    // cleared by render(). It has its own column so that a played note which
+    // happens to BE the target is still visible as its own mark rather than
+    // hidden underneath one — the target meanwhile changes colour to say it
+    // was matched.
+    this._playedLayer = el('g', { class: 'played-layer' });
+    root.appendChild(this._playedLayer);
+    if (this._playedNote) this._paintPlayed();
+
     return svg;
+  }
+
+  /**
+   * Show (or clear) the note currently being heard.
+   * @param {{midi:number, spelling?:object, accidental?:string}|null} note
+   */
+  setPlayedNote(note) {
+    this._playedNote = note;
+    this._paintPlayed();
+  }
+
+  _paintPlayed() {
+    const layer = this._playedLayer;
+    if (!layer) return;
+    while (layer.firstChild) layer.removeChild(layer.firstChild);
+    if (!this._playedNote) return;
+    const n = this._playedNote;
+    const g = this._drawNote({ ...n, state: 'played' }, this.playedX);
+    g.setAttribute('class', 'note played');
+    layer.appendChild(g);
   }
 
   /** Change a note's visual state without a full re-render (cheap, animatable). */

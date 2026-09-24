@@ -25,6 +25,8 @@ export class AudioEngine {
 
     this._messageHandlers = new Set();
     this._stateHandlers = new Set();
+    this.messageCount = 0;
+    this.synthetic = false;
 
     // Clock anchor reported by the worklet on its first render quantum.
     this.anchor = null;
@@ -94,9 +96,25 @@ export class AudioEngine {
    * Open the microphone and wire it to the pitch worklet.
    * Assumes unlock() has already run inside a user gesture.
    */
-  async startInput() {
+  /**
+   * @param {object} [o]
+   * @param {AudioNode} [o.sourceNode] Use this node as the input instead of the
+   *   microphone. This is how the browser test harness drives the real
+   *   pipeline — the same worklet, the same MPM, the same onset detector —
+   *   with synthesised piano tones and no microphone permission. Nothing about
+   *   the graph downstream of here differs between the two cases.
+   */
+  async startInput(o = {}) {
     if (!this.ctx) throw new Error('Call unlock() from a user gesture first.');
     if (this.workletNode) return;
+
+    if (o.sourceNode) {
+      this.synthetic = true;
+      await loadPitchWorklet(this.ctx, this.basePath);
+      this.sourceNode = o.sourceNode;
+      this._attachWorklet();
+      return;
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const e = new Error('getUserMedia is unavailable. This page must be served over HTTPS.');
@@ -139,6 +157,10 @@ export class AudioEngine {
     await loadPitchWorklet(this.ctx, this.basePath);
 
     this.sourceNode = this.ctx.createMediaStreamSource(stream);
+    this._attachWorklet();
+  }
+
+  _attachWorklet() {
     this.workletNode = new AudioWorkletNode(this.ctx, 'pitch-processor', {
       numberOfInputs: 1,
       numberOfOutputs: 0,
@@ -150,12 +172,35 @@ export class AudioEngine {
     this.workletNode.port.onmessage = (e) => {
       const msg = e.data;
       if (msg && msg.type === 'anchor') this.anchor = msg;
+      this.messageCount++;
       for (const fn of this._messageHandlers) fn(msg);
     };
 
     // The worklet has zero outputs, so it needs no connection to destination.
     // Chrome will still pull on it because it has a connected input.
     this.sourceNode.connect(this.workletNode);
+  }
+
+  /**
+   * A snapshot of the audio graph's actual condition, for assertions and for
+   * the diagnostics panel. The point of this is that "is the pipeline alive?"
+   * becomes a question with a checkable answer rather than something you infer
+   * from whether the UI happens to be moving.
+   */
+  pipelineHealth() {
+    const track = this.stream ? this.stream.getAudioTracks()[0] : null;
+    return {
+      hasContext: !!this.ctx,
+      contextState: this.ctx ? this.ctx.state : null,
+      hasWorkletNode: !!this.workletNode,
+      hasSourceNode: !!this.sourceNode,
+      synthetic: !!this.synthetic,
+      trackReadyState: track ? track.readyState : null,   // 'live' or 'ended'
+      trackEnabled: track ? track.enabled : null,
+      trackMuted: track ? track.muted : null,
+      workletMessages: this.messageCount,
+      subscribers: this._messageHandlers.size
+    };
   }
 
   async stopInput() {
@@ -170,6 +215,7 @@ export class AudioEngine {
       this.stream = null;
     }
     this.anchor = null;
+    this.synthetic = false;
   }
 
   onWorkletMessage(fn) {

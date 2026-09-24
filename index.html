@@ -97,9 +97,18 @@
     <svg class="staff" id="staff" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Music staff"></svg>
   </div>
 
+  <div class="legend">
+    <span class="key key-target"></span> written
+    <span class="key key-played"></span> what you are playing
+    <span class="key key-correct"></span> matched
+  </div>
+
   <div class="target-line">
     <span>Play <strong id="target-name">—</strong></span>
     <span class="freq" id="target-freq"></span>
+  </div>
+  <div class="target-line" id="played-readout">
+    <span>Hearing <strong id="played-name">—</strong></span>
   </div>
   <div class="feedback" id="feedback"></div>
   <div class="progress-dots" id="progress-dots"></div>
@@ -159,6 +168,14 @@
     <summary>Raw diagnostics</summary>
     <div class="mono" id="lat-raw">Nothing measured yet.</div>
   </details>
+
+  <h2 style="margin-top:16px">Input pipeline</h2>
+  <p class="note-text" style="margin-top:0">
+    State: <span class="quality none" id="pipeline-state">stopped</span>.
+    Switching tabs must never change any of this — if the counters below stop
+    advancing after a tab change, something has regressed.
+  </p>
+  <div class="mono" id="pipeline-detail"></div>
 
   <p class="note-text">
     No browser reports microphone input latency, so these platform numbers only

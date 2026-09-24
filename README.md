@@ -35,13 +35,26 @@ context, so the microphone will not start.
 **Tests:**
 
 ```bash
-node tests/dsp-test.mjs
+node tests/dsp-test.mjs        # pitch and onset DSP
+node tests/tracker-test.mjs    # played-note hysteresis and enharmonic spelling
 ```
 
-This runs the real `js/audio/dsp.js` against synthesised piano-like tones — no
-browser, no microphone, no second copy of the algorithm. It already earned its
-keep: it caught an octave-halving bug and a false-retrigger bug in the onset
-detector that would have been miserable to diagnose by ear.
+These run the real shipped modules against synthesised input — no browser, no
+microphone, no second copy of the algorithm. They have already earned their
+keep: the DSP suite caught an octave-halving bug and a false-retrigger bug in
+the onset detector that would have been miserable to diagnose by ear.
+
+```
+open tests/browser-test.html   # served over http, not file://
+```
+
+The browser suite loads the real app in an iframe, injects synthesised piano
+tones at exactly the point the microphone would attach, and drives it through
+real tab switches. It is the regression test for the Practice-tab bug described
+under *One pipeline, many views* below: it asserts that note events keep
+arriving after switching away and back, and that the worklet node, the source
+node and the AudioContext are the *same objects* afterwards, not merely working
+replacements. Live copy: <https://ride-fit.netlify.app/tests/browser-test.html>
 
 ---
 
@@ -56,6 +69,41 @@ detector that would have been miserable to diagnose by ear.
    play any single note exactly on each. This is not optional — until it is
    done, nothing that scores timing has a meaningful reference.
 4. **Practice tab.** Pick an exercise and play the highlighted note.
+
+On the Practice tab there are two marks on the staff, in two columns:
+
+- **blue, left column** — the note that is written, the one to play;
+- **violet, right column** — the note you are actually playing, for as long as
+  it is sounding;
+- **green** — the written note, once you have matched it.
+
+They are separate columns on purpose. If the played note were drawn on top of
+the target, then playing the right note would hide it under an identical mark
+and you could not tell a match from a miss.
+
+---
+
+## One pipeline, many views
+
+There is exactly one `AudioContext`, one microphone stream, one worklet and one
+input source for the life of the page. They are created by the Start button and
+destroyed by the Stop button, **and by nothing else**. Switching tabs does not
+create, destroy, connect, disconnect, suspend or resume anything.
+
+Views are observers (`js/views/*.js`). Each subscribes to the session when it
+becomes visible and unsubscribes when it is hidden, and that is the entire
+extent of its power. A view that forgets to unsubscribe leaks a little work; a
+view that forgets to subscribe shows nothing. Neither can stop the audio.
+
+The session (`js/app/session.js`) also keeps a **permanent internal subscriber**,
+registered once and never removed, which updates the liveness counters and the
+played-note model. That is what makes "is it still listening?" a question with
+a checkable answer rather than something you infer from whether the UI happens
+to be moving — which is exactly what was missing when the Practice tab looked
+dead. The counters are visible under *Latency → Input pipeline*, including how
+many frames and notes have arrived since the last tab change, and
+`session.assertLive()` reports any problem it can detect. `switchTab()` calls it
+on every tab change and logs loudly if the graph has gone missing.
 
 ---
 
@@ -215,6 +263,63 @@ silence before the note. That was the second bug the test suite caught.
 
 ---
 
+## The note you are playing
+
+The violet mark shows whatever the detector currently hears, at its correct
+staff position, with ledger lines, and — on a grand staff — on whichever stave
+suits the pitch.
+
+### It tracks sustain rather than flashing
+
+An onset tells you a note *started*. Nothing tells you it stopped: a piano note
+decays continuously, so there is no moment where the sound switches off, only a
+confidence figure sliding down towards noise. Lighting the staff on an onset
+and clearing it on a fixed timer would produce a display with no relationship
+to what you are hearing — a note held under the pedal would go dark while still
+ringing, a staccato note would stay lit long after it had gone.
+
+So the note is held for as long as the detector keeps finding it, and letting
+go is deliberately made harder than grabbing on (`js/practice/played-note.js`):
+
+| | |
+|---|---|
+| **attack** | an onset event, or a frame at clarity ≥ 0.72 if we missed the attack |
+| **sustain** | any frame at the same pitch above clarity 0.34 keeps it alive |
+| **release** | only after 130 ms of *continuous* failure to find it |
+
+Two thresholds plus a hold time is the hysteresis. The sustain threshold sits
+well below the one needed to start, so a note that has decayed to clarity 0.45
+— far too weak to trigger a new note — still comfortably holds the one already
+showing. And because release needs 130 ms of continuous failure, a single bad
+frame cannot make the display flicker, which matters constantly under the
+pedal. A rival pitch has to persist for 50 ms before it takes over, so one
+confused frame mid-decay does not yank the mark to a neighbouring note.
+
+`tests/tracker-test.mjs` pins all of this down, including the case that made it
+necessary: a 50 ms dropout mid-note must not produce an end/start pair.
+
+### How the enharmonic spelling is chosen
+
+The microphone hears one black key. F♯4 and G♭4 are the same black key, and no
+amount of signal processing can tell you which one the player meant — the
+detector only ever produces a MIDI number. Something has to decide, so the rule
+is *agree with the music in front of you* (`spellForDisplay` in
+`js/music/pitch.js`):
+
+1. **Same note as the target** — spell it exactly as the target is written. Play
+   the G♭4 the exercise asked for and you see a G♭4, not an F♯4.
+2. **Same pitch class, wrong octave** — keep the target's letter and accidental
+   and change the octave, so octave slips stay legible.
+3. **Otherwise** — follow the exercise's key signature: flats for flat keys,
+   sharps for sharp keys and for C major.
+
+This is a display choice, not a claim about what you played. Rule 1 in
+particular exists so that the written note and the played note line up visually
+when they match, rather than sitting a staff position apart with different
+accidentals attached to the same key.
+
+---
+
 ## Latency
 
 This is treated as a first-class feature because it decides whether any timing
@@ -290,7 +395,15 @@ exercises/
   index.json                   the list of exercise files
   *.json                       the exercises themselves
 js/
-  main.js                      wiring only: DOM ↔ engine ↔ renderer
+  main.js                      the shell: creates the session, switches views
+  app/
+    session.js                 THE one audio pipeline; views subscribe to it
+  views/
+    listen.js                  \
+    practice.js                 > observers. DOM only. Never touch audio.
+    latency.js                 /
+  practice/
+    played-note.js             "what is sounding right now", with hysteresis
   audio/
     engine.js                  AudioContext, getUserMedia, worklet, latency report
     worklet-loader.js          concatenates dsp.js + pitch-processor.js into one module
@@ -306,6 +419,8 @@ js/
     staff.js                   SVG staff renderer
 tests/
   dsp-test.mjs                 headless DSP checks (node)
+  tracker-test.mjs             played-note hysteresis and spelling (node)
+  browser-test.html            drives the real app with synthetic audio
 ```
 
 ### Two things that look odd and are deliberate
@@ -347,6 +462,11 @@ class implementing that contract; nothing downstream changes.
 downstream code can adapt rather than assume. A polyphonic source emits one
 `note` per struck key.
 
+`engine.startInput({ sourceNode })` accepts any `AudioNode` in place of the
+microphone. That is how the browser test suite drives the real pipeline with
+synthesised tones and no microphone permission; nothing downstream of that
+point differs between the two cases.
+
 The Clavinova that prompted all this cannot do USB MIDI to an iPhone, which is
 why the microphone path exists. If that ever changes — a different cable, a
 different device, a Bluetooth MIDI adapter — a `MidiInputSource` would be
@@ -381,4 +501,6 @@ Structurally anticipated, deliberately not built:
   the Practice tab today. It is measured now so that it is correct later.
 - The key signature is not drawn on the staff, only used for spelling.
 - Only quarter-note noteheads are drawn — no beams, flags, rests or dots.
-- One note is shown at a time.
+- One target note is shown at a time, plus the note you are playing.
+- The played note is monophonic like everything else: play a chord and one
+  note will show, with low confidence.
