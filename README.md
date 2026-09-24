@@ -4,11 +4,11 @@ A browser-based piano practice trainer. It listens to an acoustic or digital
 piano through the device microphone, works out what note was played and when,
 and checks it against an exercise.
 
-**This is Phase 1: the foundation.** What works today is pitch detection, onset
-detection, a live "what am I hearing" readout, latency measurement and
-calibration, and single-note staff rendering with immediate feedback. Timed
-note sequences, scrolling notation and backing instrumentation are deliberately
-not built yet, but the structure anticipates them.
+**Phase 2.** Pitch and onset detection, a live "what am I hearing" readout,
+latency measurement and calibration, and note sequences — with a scale builder
+covering all twelve tonics, major and all three minor forms, either hand, one
+or two octaves, up and down. Playing to a beat and backing instrumentation are
+deliberately not built yet, but the structure anticipates them.
 
 ---
 
@@ -37,6 +37,7 @@ context, so the microphone will not start.
 ```bash
 node tests/dsp-test.mjs        # pitch and onset DSP
 node tests/tracker-test.mjs    # played-note hysteresis and enharmonic spelling
+node tests/scales-test.mjs     # scale spelling, key signatures, melodic minor
 ```
 
 These run the real shipped modules against synthesised input — no browser, no
@@ -68,18 +69,94 @@ replacements. Live copy: <https://ride-fit.netlify.app/tests/browser-test.html>
 3. **Latency tab → Run calibration.** Four counting-in clicks, then twelve more;
    play any single note exactly on each. This is not optional — until it is
    done, nothing that scores timing has a meaningful reference.
-4. **Practice tab.** Pick an exercise and play the highlighted note.
+4. **Practice tab.** Pick a scale (or a drill) and play the highlighted note.
 
-On the Practice tab there are two marks on the staff, in two columns:
+The sequence is shown in full, and the colours mean:
 
-- **blue, left column** — the note that is written, the one to play;
-- **violet, right column** — the note you are actually playing, for as long as
-  it is sounding;
-- **green** — the written note, once you have matched it.
+- **blue** — the next note to play;
+- **green** — done, and it stays done;
+- **dim** — still to come;
+- **red, briefly** — that was not the note. Nothing advances and nothing is
+  lost; play the right one and it carries on.
 
-They are separate columns on purpose. If the played note were drawn on top of
-the target, then playing the right note would hide it under an identical mark
-and you could not tell a match from a miss.
+The **violet** note on the small staff underneath is what the microphone is
+hearing right now, for as long as it is sounding. It has its own staff rather
+than a column in the music because a two-octave scale is 29 notes and there is
+no free column to put it in.
+
+---
+
+## Scales
+
+The scale builder is the main way in. Pick a tonic from the twelve, a mode, a
+hand, one or two octaves, and a direction; the notes are generated.
+
+**Hand.** Right hand puts the scale on the treble clef, left hand on the bass.
+Detection is monophonic, so one hand at a time is not a limitation here, it is
+the correct unit of practice. The octave is chosen so that C major lands on the
+textbook ranges — **C4–C6** for the right hand, **C2–C4** for the left — by
+starting each scale on the lowest tonic at or above F3 (treble) or C2 (bass).
+No key ends up more than three ledger lines out, and nothing drops below C2,
+where pitch detection starts to struggle.
+
+**Direction** defaults to up and then down, because that is how scales are
+actually practised. Up-only and down-only are there too.
+
+### The three minor forms
+
+Natural minor is the default, as you asked. Harmonic and melodic are both
+offered, and **melodic minor is implemented properly**: raised 6th and 7th
+ascending, plain natural minor descending. A melodic minor scale played up and
+down really does change on the way back — A melodic minor is
+`A B C D E F♯ G♯ A | G F E D C B A`. Ascending-only and descending-only pick
+the appropriate single form rather than pretending. Harmonic minor, by
+contrast, keeps its raised 7th in both directions, which is exactly what
+distinguishes the two and is checked in the test suite.
+
+(The "jazz minor" simplification — ascending form in both directions — is not
+offered, since it would be indistinguishable in the UI from the real thing and
+would quietly teach the wrong scale.)
+
+### Spelling, and why it comes out right
+
+There is no table of 24 scales anywhere in this codebase. A diatonic scale uses
+each letter name exactly once, in order, and the accidental on each is whatever
+is needed to make that letter sound the right pitch. That single rule
+(`degreeSpellings` in `js/music/scales.js`) produces every correct spelling:
+
+- B♭ major is `B♭ C D E♭ F G A` — never `A♯ … D♯`;
+- G♭ major contains a **C♭**, not a B;
+- F♯ major contains an **E♯**, not an F;
+- G♯ harmonic minor contains an **F𝄪**, a double sharp.
+
+Key signatures are derived the same way, not tabulated: the signature is the
+sum of the accidentals in the scale's *natural* form. Harmonic and melodic
+minor take the natural minor signature and print their raised degrees as inline
+accidentals — so A harmonic minor shows a printed G♯, and C harmonic minor
+shows a printed **natural** on the B, because the three-flat signature would
+otherwise flatten it. Notes that agree with the signature print nothing, which
+is what a key signature is for.
+
+The one simplification: accidentals do not persist through a bar, so every
+altered note is marked. Scales run one note per beat with no barlines drawn, so
+this is correct for the material here; it would need revisiting alongside
+barlines.
+
+### Fitting 29 notes on a phone
+
+Two octaves up and down is 29 notes. On a 375 px screen that is about 13 px per
+note on a single line — unreadable, and the ledger lines make it worse.
+
+Of the three options — horizontal scroll, a sliding window, and wrapping onto
+several systems — this **wraps**, at eight notes per system, exactly as printed
+music does. It is the only one of the three that shows the whole exercise at
+once, and a scale is a shape you are trying to learn: seeing where you are
+inside it, and how much is left, is most of the point. Horizontal scrolling
+hides most of the shape and needs scroll-position management that fights the
+user's own scrolling; a sliding window hides it too and gives no sense of
+progress. Clef and key signature repeat on every system. Vertical padding is
+computed from the actual note range, so a scale that stays near the staff does
+not get acres of blank space.
 
 ---
 
@@ -121,6 +198,43 @@ adding its filename to `exercises/index.json`. Nothing in `js/` needs to change.
 ```
 
 Order is preserved in the exercise picker. A bare array of filenames also works.
+
+### Generated exercises
+
+Instead of listing `notes`, a file may carry a `generator` block. The two are
+interchangeable: by the time an exercise leaves the loader it is the same
+object either way, so everything downstream — rendering, scoring, the played
+note indicator — behaves identically.
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "bb-major-scale",
+  "title": "B♭ major — left hand, 2 octaves",
+  "generator": {
+    "type": "scale",
+    "tonic": "Bb",
+    "mode": "major",
+    "octaves": 2,
+    "direction": "up-down",
+    "hand": "left"
+  }
+}
+```
+
+| Field | Values | Default | Meaning |
+|---|---|---|---|
+| `type` | `"scale"` | required | The only generator so far. |
+| `tonic` | `"C"`, `"Bb"`, `"F#"`, `"Eb"`, … | `"C"` | Pitch class with its spelling, no octave. The spelling you give is the one used: `"Gb"` and `"F#"` produce the same keys but different notation. |
+| `mode` | `"major"`, `"natural-minor"`, `"harmonic-minor"`, `"melodic-minor"` | `"major"` | |
+| `octaves` | 1–4 | `2` | |
+| `direction` | `"up-down"`, `"up"`, `"down"` | `"up-down"` | For melodic minor this also selects which form is used. |
+| `hand` | `"right"`, `"left"` | `"right"` | Sets the clef and the octave the scale sits in. |
+| `startOctave` | number | derived | Octave of the written tonic, if you want to override where it sits. |
+
+`clef`, `keySignature`, `title` and every note's `accidental` are derived, and
+anything you state explicitly in the file wins over what was derived. So a
+generated scale can still be overridden note by note if you need to.
 
 ### An exercise file
 
@@ -424,12 +538,14 @@ js/
     latency.js                 calibration routine and the stored offset
   music/
     pitch.js                   frequency ↔ MIDI ↔ note name ↔ staff position
+    scales.js                  scale generation, spelling, key signatures
   notation/
     glyphs.js                  hand-built clef, accidental and notehead geometry
     staff.js                   SVG staff renderer
 tests/
   dsp-test.mjs                 headless DSP checks (node)
   tracker-test.mjs             played-note hysteresis and spelling (node)
+  scales-test.mjs              scale spelling and key signatures (node)
   browser-test.html            drives the real app with synthetic audio
 ```
 
@@ -487,10 +603,6 @@ in the pitch-detection section above disappear at once.
 
 Structurally anticipated, deliberately not built:
 
-- **A series of notes.** `StaffRenderer.render()` already takes a list with
-  per-note `x` and `state`, and `setNoteState(id, state)` updates one note
-  without a re-render. Exercises already carry every note with its `beat` and
-  `duration`.
 - **Scrolling to a beat.** The metronome's lookahead scheduler already reports
   each beat's exact audio time ahead of the sound, which is what an animation
   should be driven from — not from a timer, and not from `currentTime` sampled
@@ -503,14 +615,16 @@ Structurally anticipated, deliberately not built:
 
 ---
 
-## Known limitations of Phase 1
+## Known limitations
 
 - Monophonic only.
-- Practice is untimed: play the highlighted note and it advances. Nothing is
+- Practice is self-paced: play the highlighted note and it advances. Nothing is
   scored against a beat yet, which is why calibration has no visible effect in
   the Practice tab today. It is measured now so that it is correct later.
-- The key signature is not drawn on the staff, only used for spelling.
-- Only quarter-note noteheads are drawn — no beams, flags, rests or dots.
-- One target note is shown at a time, plus the note you are playing.
+- Only quarter-note noteheads are drawn — no beams, flags, rests, dots, bar
+  lines or time signatures.
+- Accidentals do not persist through a bar; every altered note is marked.
+- Scales only, among the generators. Arpeggios, broken chords and contrary
+  motion would each be a new `generator.type` and nothing else.
 - The played note is monophonic like everything else: play a chord and one
   note will show, with low confidence.

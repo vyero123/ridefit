@@ -291,22 +291,17 @@ async function run() {
 
   // No two noteheads may overlap, or the layout is lying about being readable.
   {
-    const heads = [...svg.querySelectorAll('.notes .notehead')];
+    // Compare x positions WITHIN each system. Notes on different systems are
+    // allowed to share an x — they are on different rows.
     let minGap = Infinity;
-    const bySystem = new Map();
-    for (const h of heads) {
-      const y = yOf(h);
-      const x = +h.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
-      const key = Math.round(y / 100);
-      if (!bySystem.has(key)) bySystem.set(key, []);
-      bySystem.get(key).push(x);
-    }
-    for (const xs of bySystem.values()) {
-      xs.sort((a, b) => a - b);
+    for (const system of svg.querySelectorAll('.system')) {
+      const xs = [...system.querySelectorAll('.notes .notehead')]
+        .map(h => +h.getAttribute('transform').match(/translate\(([-\d.]+) /)[1])
+        .sort((a, b) => a - b);
       for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
     }
-    check(minGap > 1.4, 'noteheads never collide horizontally',
-      `smallest gap ${minGap.toFixed(2)} staff spaces (notehead is ${(0.66 * 2).toFixed(2)} wide)`);
+    check(minGap > 1.4, 'noteheads never collide within a system',
+      `smallest gap ${minGap.toFixed(2)} staff spaces (a notehead is ${(0.66 * 2).toFixed(2)} wide)`);
   }
 
   log('\nKey signatures are drawn, and spelling follows the key', 'head');
