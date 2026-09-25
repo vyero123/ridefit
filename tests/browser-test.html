@@ -210,51 +210,104 @@ async function run() {
   log('\nThe played note is drawn, in its own colour, at the right pitch', 'head');
   const doc = frame.contentDocument;
   const svg = doc.getElementById('staff');
-  const hsvg = doc.getElementById('hearing-staff');
-  const hearing = pt.hearingStaff;
   const yOf = (n) => +n.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+  const xOf = (n) => +n.getAttribute('transform').match(/translate\(([-\d.]+) /)[1];
 
   // Drive the staff directly for the geometry checks — deterministic, and it
   // is the same code path the live tracker uses.
   //
-  // Since Phase 2 the played note lives on its own small staff below the
-  // sequence, because a 29-note scale leaves no free column for it inside the
-  // music. The assertions therefore look at the indicator staff, and check
-  // the height against what the renderer computes for that pitch.
+  // The played note now shares the TARGET'S COLUMN, at its own vertical
+  // position, so these assertions check that relationship: same x as the
+  // target, y determined by the played pitch.
   views.practice.select('middle-c-neighbours');     // treble clef, target C4
-  views.practice.onPlayed({ type: 'start', note: { midi: 60, cents: 0, clarity: 0.9 } });
+  views.practice.onPlayed({ type: 'start', note: { midi: 62, cents: 0, clarity: 0.9 } });  // D4 over a C4 target
 
-  const playedG = hsvg.querySelector('.played-layer .note.played');
+  const playedG = svg.querySelector('.played-layer .note.played');
   check(!!playedG, 'a played notehead is rendered');
   if (playedG) {
     const head = playedG.querySelector('.notehead');
-    check(Math.abs(yOf(head) - hearing._stepY('treble', 0)) < 0.01,
-      'played C4 sits exactly where a written C4 belongs on a treble stave',
-      `y=${yOf(head)}, expected ${hearing._stepY('treble', 0)}`);
-    check(!svg.querySelector('.played-layer .note'),
-      'and on its own staff, never on top of a note in the sequence');
-    check(playedG.querySelectorAll('.ledger').length === 1,
-      'middle C gets its ledger line');
-
     const seqHead = svg.querySelector('.notes .note.state-target .notehead');
+    check(Math.abs(xOf(head) - xOf(seqHead)) < 0.01,
+      'the played note shares the target\'s column exactly',
+      `played x=${xOf(head)}, target x=${xOf(seqHead)}`);
+    check(yOf(head) < yOf(seqHead),
+      'and playing ABOVE the target puts it higher on the staff',
+      `played D4 y=${yOf(head)}, target C4 y=${yOf(seqHead)}`);
+
     const fill = win.getComputedStyle(head).fill;
     const targetFill = win.getComputedStyle(seqHead).fill;
-    check(fill !== targetFill, 'and in a different colour from the target',
+    check(fill !== targetFill, 'in a different colour from the target',
       `played ${fill} vs target ${targetFill}`);
+    check(playedG.querySelectorAll('.stem').length === 0,
+      'and with no stem, so two stems never read as a chord');
+  }
+
+  // Too low: below the target.
+  views.practice.onPlayed({ type: 'change', note: { midi: 57, cents: 0, clarity: 0.9 } });  // A3
+  {
+    const head = svg.querySelector('.played-layer .notehead');
+    const seqHead = svg.querySelector('.notes .note.state-target .notehead');
+    check(yOf(head) > yOf(seqHead), 'playing BELOW the target puts it lower on the staff',
+      `played A3 y=${yOf(head)}, target C4 y=${yOf(seqHead)}`);
+  }
+
+  // Exactly right: ring the target instead of covering it.
+  views.practice.onPlayed({ type: 'change', note: { midi: 60, cents: 0, clarity: 0.9 } });
+  {
+    const g = svg.querySelector('.played-layer .note.played');
+    const ring = svg.querySelector('.played-layer .played-ring');
+    check(!!ring && g.classList.contains('coincides'),
+      'playing the right note rings the target rather than covering it');
+    check(!svg.querySelector('.played-layer .notehead'),
+      'so no violet notehead is stamped over the green one');
+    const seqHead = svg.querySelector('.notes .note.state-target .notehead');
+    check(Math.abs(xOf(ring) - xOf(seqHead)) < 0.01 && Math.abs(yOf(ring) - yOf(seqHead)) < 0.01,
+      'and the ring is centred on it', `ring (${xOf(ring)}, ${yOf(ring)})`);
+    views.practice.staff.setNoteState(views.practice.target.id, 'correct');
+    const greenFill = win.getComputedStyle(seqHead).fill;
+    check(greenFill === 'rgb(74, 222, 128)',
+      'the target\'s green correct state reads at full strength underneath', greenFill);
   }
 
   // Ledger lines below the staff for a low note on a treble stave.
   views.practice.onPlayed({ type: 'change', note: { midi: 48, cents: 0, clarity: 0.9 } });
-  const lowLedgers = hsvg.querySelectorAll('.played-layer .ledger').length;
+  const lowLedgers = svg.querySelectorAll('.played-layer .ledger').length;
   check(lowLedgers >= 4, 'a note far below the staff gets the ledger lines it needs',
     `${lowLedgers} ledger lines for C3 on a treble stave`);
+  check(!svg.querySelector('.played-layer .played-arrow'),
+    'and four ledger lines is not yet far enough to clamp');
+
+  log('\nImplausibly distant pitches are clamped, not drawn with 20 ledger lines', 'head');
+  {
+    const maxLedgers = 4;
+    for (const [midi, label] of [[21, 'A0, five octaves below a treble C4 target'],
+                                 [108, 'C8, four octaves above it']]) {
+      views.practice.onPlayed({ type: 'change', note: { midi, cents: 0, clarity: 0.9 } });
+      const g = svg.querySelector('.played-layer .note.played');
+      const ledgers = g.querySelectorAll('.ledger').length;
+      check(ledgers <= maxLedgers, `${label}: at most ${maxLedgers} ledger lines`, `${ledgers} drawn`);
+      check(g.classList.contains('clamped'), 'and it is marked as clamped');
+      check(!!g.querySelector('.played-arrow'), 'with an arrow showing which way it really is');
+    }
+    // Clamping must not blow out the system's height.
+    const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+    views.practice.onPlayed({ type: 'end', note: null });
+    const vb2 = svg.getAttribute('viewBox').split(' ').map(Number);
+    check(vb[3] === vb2[3], 'and the system height is unchanged by it', `${vb[3]} vs ${vb2[3]}`);
+  }
 
   // Clef choice on a grand-staff drill.
   views.practice.select('ledger-lines');            // grand staff
   views.practice.onPlayed({ type: 'change', note: { midi: 40, cents: 0, clarity: 0.9 } });
-  check(hearing.clef === 'bass', 'a low note on a grand-staff drill uses the bass clef', hearing.clef);
-  views.practice.onPlayed({ type: 'change', note: { midi: 79, cents: 0, clarity: 0.9 } });
-  check(hearing.clef === 'treble', 'and a high one the treble clef', hearing.clef);
+  {
+    const head = svg.querySelector('.played-layer .notehead');
+    const bassTop = pt.staff._staffTops().bass;
+    check(yOf(head) > bassTop, 'a low note on a grand-staff drill lands on the bass stave',
+      `y=${yOf(head)}, bass top ${bassTop}`);
+    views.practice.onPlayed({ type: 'change', note: { midi: 79, cents: 0, clarity: 0.9 } });
+    const head2 = svg.querySelector('.played-layer .notehead');
+    check(yOf(head2) < bassTop, 'and a high one on the treble stave', `y=${yOf(head2)}`);
+  }
 
   // Enharmonic choice, through the view.
   views.practice.select('black-keys');
@@ -268,7 +321,7 @@ async function run() {
     doc.getElementById('played-name').textContent);
 
   views.practice.onPlayed({ type: 'end', note: null });
-  check(!hsvg.querySelector('.played-layer .note'), 'clearing removes the mark');
+  check(!svg.querySelector('.played-layer .note'), 'clearing removes the mark');
 
   // =========================================================================
   log('\nPHASE 2 — scales: generation, spelling and layout', 'head');
@@ -286,6 +339,25 @@ async function run() {
     `${svg.querySelectorAll('.system').length} systems`);
   check(svg.querySelectorAll('.notes .note').length === 29, 'every note is drawn');
   check(svg.querySelectorAll('.clef').length === 4, 'each system repeats the clef');
+  {
+    // The clef is a filled outline from Bravura, positioned by its own origin.
+    const clefPath = svg.querySelector('.clef-treble .clef-fill');
+    check(!!clefPath && clefPath.tagName === 'path', 'the clef is a filled path, not a stroked sketch');
+    const box = clefPath.getBBox();
+    // A G clef spans about 7 staff spaces and is about 2.7 wide.
+    check(box.height > 6.6 && box.height < 7.4, 'and is correctly proportioned vertically',
+      `${box.height.toFixed(2)} staff spaces tall`);
+    check(box.width > 2.4 && box.width < 3.0, 'and horizontally', `${box.width.toFixed(2)} wide`);
+    // The decisive test: the spiral must centre on the G line.
+    const sys = clefPath.closest('.system');
+    const topLineY = +sys.querySelector('.staff-line').getAttribute('y1');
+    const gLineY = topLineY + 3;          // G4 is the 2nd line up = 3 below the top
+    const originY = gLineY;               // the path's own origin, by SMuFL convention
+    check(Math.abs((box.y + box.height) - (originY + 2.632)) < 0.02
+       && Math.abs(box.y - (originY - 4.392)) < 0.02,
+      'and its origin sits exactly on the G line',
+      `glyph spans y ${box.y.toFixed(3)}..${(box.y + box.height).toFixed(3)}, G line at ${gLineY}`);
+  }
   check(svg.querySelectorAll('.notes .note.state-target').length === 1, 'exactly one target at a time');
   check(svg.querySelectorAll('.notes .note.state-pending').length === 28, 'the rest are pending');
 

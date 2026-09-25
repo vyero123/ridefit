@@ -28,12 +28,10 @@ export class PracticeView {
   /**
    * @param {import('../app/session.js').AudioSession} session
    * @param {import('../notation/staff.js').StaffRenderer} staff  the sequence staff
-   * @param {import('../notation/staff.js').StaffRenderer} hearingStaff  the one-note indicator
    */
-  constructor(session, staff, hearingStaff) {
+  constructor(session, staff) {
     this.session = session;
     this.staff = staff;
-    this.hearingStaff = hearingStaff;
 
     this.exercises = [];          // hand-written drills from exercises/*.json
     this.exercise = null;         // the exercise currently being practised
@@ -260,39 +258,33 @@ export class PracticeView {
   onStatus() { this.refreshPrompt(); }
 
   /**
-   * The note currently sounding, on its own little staff below the sequence.
+   * The note currently sounding, drawn IN THE TARGET'S OWN COLUMN at its own
+   * pitch. The vertical gap between the two is the feedback — below the target
+   * means flat of it, above means sharp of it, level means right — which is
+   * more use than any words underneath the staff.
    *
-   * It gets its own staff rather than a column inside the sequence because in
-   * a 29-note scale there is no free column: anywhere it went it would sit on
-   * top of a real note. Keeping it separate also means it still works after
-   * the last note, when there is no target to sit beside.
+   * When the sequence has finished there is no target left, so the renderer
+   * falls back to the last note's column and the mark still works.
    */
   onPlayed(s) {
     const note = s.note;
     const readout = $('played-readout');
 
     if (!note) {
-      this.hearingStaff.setPlayedNote(null);
-      this.hearingStaff.render([]);
+      this.staff.setPlayedNote(null);
       readout.classList.remove('lit');
       $('played-name').textContent = '—';
       return;
     }
 
     const target = this.target;
+    const anchor = target || (this.exercise ? this.exercise.notes[this.exercise.notes.length - 1] : null);
     const spelling = spellForDisplay(note.midi, {
       reference: target ? { midi: target.midi, spelling: target.spelling } : null,
       preferFlats: this.exercise ? this.exercise.preferFlats : false
     });
 
-    // The indicator staff follows the exercise's clef so the note appears at
-    // the height it would occupy in the music, not transposed by a clef change.
-    const clef = this.exercise && this.exercise.clef !== 'grand'
-      ? this.exercise.clef
-      : (note.midi >= 60 ? 'treble' : 'bass');
-    this.hearingStaff.setClef(clef);
-    this.hearingStaff.render([]);
-    this.hearingStaff.setPlayedNote({ midi: note.midi, spelling });
+    this.staff.setPlayedNote({ midi: note.midi, spelling }, anchor ? anchor.id : null);
 
     readout.classList.add('lit');
     $('played-name').textContent = spellingToName(spelling);
@@ -322,6 +314,13 @@ export class PracticeView {
       if (!next) return this.finish();
 
       this.staff.setNoteState(next.id, 'target');
+      // Move the overlay to the new column so the comparison stays live while
+      // the note you just played is still ringing.
+      this.staff.setPlayedNote(this.session.playedNote.current
+        ? { midi: this.session.playedNote.current.midi,
+            spelling: spellForDisplay(this.session.playedNote.current.midi,
+              { reference: { midi: next.midi, spelling: next.spelling }, preferFlats: ex.preferFlats }) }
+        : null, next.id);
       $('target-name').textContent = spellingToName(next.spelling);
       $('target-freq').textContent = `${midiToFreq(next.midi, this.session.a4).toFixed(1)} Hz`;
       fb.className = 'feedback good';

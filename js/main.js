@@ -15,17 +15,11 @@ import { LatencyView } from './views/latency.js';
 const $ = (id) => document.getElementById(id);
 
 const session = new AudioSession({ windowSize: 4096 });
-const staff = new StaffRenderer($('staff'), { clef: 'treble', widthUnits: 34, playedX: 18 });
-
-// A second, tiny renderer for the "what I'm hearing" indicator. Narrow, so one
-// note fills it, and it sits below the sequence rather than inside it.
-const hearingStaff = new StaffRenderer($('hearing-staff'), {
-  clef: 'treble', widthUnits: 9, playedX: 6
-});
+const staff = new StaffRenderer($('staff'), { clef: 'treble', widthUnits: 34 });
 
 const views = {
   listen: new ListenView(session),
-  practice: new PracticeView(session, staff, hearingStaff),
+  practice: new PracticeView(session, staff),
   latency: new LatencyView(session)
 };
 
@@ -100,7 +94,7 @@ $('btn-stop').addEventListener('click', async () => {
   $('btn-start').hidden = false;
   $('btn-stop').hidden = true;
   views.listen.clear();
-  hearingStaff.setPlayedNote(null);
+  staff.setPlayedNote(null);
   if (views[activeTab].render) views[activeTab].render();
 });
 
@@ -156,4 +150,4 @@ loadAllExercises('exercises/').then(({ exercises, errors }) => {
 });
 
 // Exposed for the browser test harness and for console poking.
-window.pianoTrainer = { session, staff, hearingStaff, views, switchTab };
+window.pianoTrainer = { session, staff, views, switchTab };

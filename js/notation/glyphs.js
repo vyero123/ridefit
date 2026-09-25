@@ -1,13 +1,19 @@
-// glyphs.js — hand-built notation glyphs, drawn as SVG paths.
+// glyphs.js — notation glyphs, as SVG paths.
 //
-// No VexFlow and no music font. Every glyph here is constructed from explicit
+// No VexFlow. The accidentals and noteheads here are hand-built from explicit
 // control points in units of ONE STAFF SPACE, with the origin at the pitch the
-// glyph refers to (the G line for the treble clef, the F line for the bass
-// clef, the notehead centre for accidentals). Scaling is therefore just a
-// multiply, and any part of a glyph can be animated independently later, which
-// is the entire reason for not using a font.
+// glyph refers to (the notehead centre). Scaling is therefore just a multiply,
+// and any part of them can be animated independently later.
+//
+// The two CLEFS are the exception: they come from Bravura, the SMuFL reference
+// font, under the SIL Open Font Licence. See ./clefs.js and OFL.txt.
 //
 // Coordinate convention: +x right, +y DOWN, matching SVG.
+
+import {
+  TREBLE_CLEF_PATH, TREBLE_CLEF_METRICS,
+  BASS_CLEF_PATH, BASS_CLEF_METRICS
+} from './clefs.js';
 
 /**
  * Catmull-Rom through the given points, emitted as cubic Béziers.
@@ -40,59 +46,41 @@ export function unitTransform(x, y, space) {
 }
 
 // ---------------------------------------------------------------------------
-// Treble (G) clef
+// Clefs.
 //
-// One continuous stroke, traced from the tail at the bottom, up the stem, into
-// the curl at the top, back down crossing the stem, around the big loop, and
-// spiralling inward to finish exactly on the origin — which is the G line.
-// The double crossing of the stem is what gives a G clef its characteristic
-// shape, so the points below deliberately pass from one side of the stem to
-// the other twice.
+// These two are NOT hand-drawn. They are the G and F clef outlines from
+// Bravura, the SMuFL reference music font, used under the SIL Open Font
+// Licence — see js/notation/clefs.js for the attribution and OFL.txt for the
+// licence. An earlier version of this file drew both clefs as a single
+// constant-width stroke through hand-placed control points; they were legible
+// but the proportions were visibly wrong to anyone who reads music, which is
+// exactly the kind of thing a reference font exists to get right.
+//
+// The accidentals and noteheads below remain hand-built, because their shapes
+// are simple enough to construct correctly and keeping them parametric is what
+// makes them animatable later.
+//
+// SMuFL puts a clef's origin ON THE LINE THE CLEF NAMES, so placement is
+// automatic: translate the path to the G line (or the F line) and the spiral
+// centres and the dots straddle exactly where a reader expects them.
 // ---------------------------------------------------------------------------
-const TREBLE_POINTS = [
-  [-0.62, 1.92], [-0.12, 2.02], [ 0.24, 1.72],   // tail curl
-  [ 0.28, 1.15], [ 0.26, 0.30], [ 0.22, -0.80],  // stem
-  [ 0.18, -1.95], [ 0.14, -2.95], [ 0.06, -3.62],
-  [-0.26, -3.96], [-0.58, -3.66], [-0.62, -3.10], // top curl
-  [-0.42, -2.52], [-0.12, -2.06],                 // first crossing of the stem
-  [ 0.34, -1.62], [ 0.68, -1.08], [ 0.80, -0.40],
-  [ 0.64, 0.24],  [ 0.18, 0.60],                  // second crossing
-  [-0.42, 0.62],  [-0.84, 0.22], [-0.92, -0.40],
-  [-0.62, -0.90], [-0.08, -0.94],                 // big left bulge closing
-  [ 0.34, -0.60], [ 0.42, -0.12], [ 0.18, 0.20],  // spiral
-  [-0.12, 0.10],  [-0.09, -0.11], [ 0.02, -0.14]
-];
 
 export const TREBLE_CLEF = {
-  /** Vertical origin: the note the clef names. */
   anchorPitch: { letter: 'G', octave: 4 },
-  path: smoothPath(TREBLE_POINTS),
-  strokeWidth: 0.21,
-  extentAbove: 4.2,
-  extentBelow: 2.3
+  path: TREBLE_CLEF_PATH,
+  filled: true,
+  width: TREBLE_CLEF_METRICS.right - TREBLE_CLEF_METRICS.left,
+  extentAbove: TREBLE_CLEF_METRICS.above,
+  extentBelow: TREBLE_CLEF_METRICS.below
 };
-
-// ---------------------------------------------------------------------------
-// Bass (F) clef — the comma stroke plus the two dots that straddle the F line.
-// ---------------------------------------------------------------------------
-const BASS_POINTS = [
-  [-0.80, 0.30], [-0.76, -0.18], [-0.40, -0.60],
-  [ 0.14, -0.74], [ 0.60, -0.46], [ 0.74, 0.10],
-  [ 0.72, 0.74], [ 0.44, 1.46], [-0.04, 2.06],
-  [-0.66, 2.52]
-];
 
 export const BASS_CLEF = {
   anchorPitch: { letter: 'F', octave: 3 },
-  path: smoothPath(BASS_POINTS),
-  strokeWidth: 0.34,
-  /** Dot centres, in staff spaces from the F line. */
-  dots: [[1.12, -0.5], [1.12, 0.5]],
-  dotRadius: 0.13,
-  /** The thick starting blob that a real F clef has. */
-  head: { x: -0.80, y: 0.30, r: 0.20 },
-  extentAbove: 1.0,
-  extentBelow: 2.8
+  path: BASS_CLEF_PATH,
+  filled: true,
+  width: BASS_CLEF_METRICS.right - BASS_CLEF_METRICS.left,
+  extentAbove: BASS_CLEF_METRICS.above,
+  extentBelow: BASS_CLEF_METRICS.below
 };
 
 // ---------------------------------------------------------------------------

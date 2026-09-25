@@ -177,13 +177,22 @@ svg.staff { display: block; width: 100%; height: auto; }
 .note.state-wrong .stem { stroke: var(--bad); }
 .note.state-pending { opacity: 0.32; }
 
-/* The note currently sounding. Its own colour and its own column, so it is
-   never confused with the written note even when they are the same pitch. */
+/* The note currently sounding, drawn in the target's column at its own pitch.
+   The halo is a fatter copy of the notehead in the panel colour, painted
+   underneath the violet one, so the mark stays readable when it sits a step
+   from the target and the two noteheads nearly touch. */
 .note.played .notehead { fill: var(--played); }
-.note.played .stem { stroke: var(--played); }
+.note.played .notehead-halo {
+  fill: none; stroke: var(--panel-2); stroke-width: 0.38;
+}
 .note.played .acc-stroke { stroke: var(--played); }
-.note.played .ledger { stroke: var(--played); opacity: 0.9; }
+.note.played .ledger { stroke: var(--played); opacity: 0.95; }
+.note.played .played-arrow { fill: var(--played); }
+.played-ring { stroke: var(--played); }
 .played-layer { transition: opacity 90ms linear; }
+
+/* Right note: ring the target rather than covering it, so the green reads. */
+.note.played.coincides .played-ring { stroke: var(--played); }
 
 @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .note.state-correct { animation: pop 260ms ease-out; transform-origin: center; transform-box: fill-box; }
@@ -234,11 +243,6 @@ svg.staff { display: block; width: 100%; height: auto; }
 }
 .hearing-row.lit { opacity: 1; color: var(--played); }
 .hearing-row strong { font-size: 1.25rem; }
-.hearing-staff {
-  flex: 0 0 96px; background: var(--panel-2); border-radius: 8px; padding: 4px 2px;
-}
-.hearing-staff svg { display: block; width: 100%; height: auto; }
-
 /* ---- sequence ------------------------------------------------------------ */
 .key-signature .acc-stroke { stroke: var(--ink); }
 .system + .system { opacity: 1; }

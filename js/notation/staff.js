@@ -76,9 +76,12 @@ export class StaffRenderer {
     this._noteEls = new Map();
 
     /** Column for the "note you are playing" mark, clear of the target. */
-    this.playedX = opts.playedX || 18;
     this._playedNote = null;
     this._playedLayer = null;
+    this._playedAnchorId = null;
+    /** id -> { x, topLineY, clef, grand, midi } for every note drawn. */
+    this._notePos = new Map();
+    this._lastNotePos = null;
   }
 
   setClef(clef) { this.clef = clef; }
@@ -126,6 +129,8 @@ export class StaffRenderer {
     const svg = this.svg;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     this._noteEls.clear();
+    this._notePos.clear();
+    this._lastNotePos = null;
 
     const h = this._totalHeight();
     svg.setAttribute('viewBox', `0 0 ${this.widthUnits} ${h}`);
@@ -147,9 +152,11 @@ export class StaffRenderer {
 
     let autoX = 9;
     for (const n of notes) {
-      const g = this._drawNote(n, n.x != null ? n.x : autoX);
+      const x = n.x != null ? n.x : autoX;
+      const g = this._drawNote(n, x);
       layer.appendChild(g);
       if (n.id) this._noteEls.set(n.id, g);
+      this._recordPos(n, x, null, this._clefFor(n.midi, n.clef));
       autoX += 4.5;
     }
 
@@ -201,6 +208,8 @@ export class StaffRenderer {
     const svg = this.svg;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     this._noteEls.clear();
+    this._notePos.clear();
+    this._lastNotePos = null;
     this._playedLayer = null;
 
     const info = CLEF_INFO[clef];
@@ -215,15 +224,24 @@ export class StaffRenderer {
       if (s < minStep) minStep = s;
       if (s > maxStep) maxStep = s;
     }
+    // Vertical room: whichever is taller, the notes (plus stems and ledger
+    // lines) or the clef itself. A treble clef hangs 1.39 spaces above the top
+    // line and 1.63 below the bottom one, so it sets the minimum on its own.
+    const glyph = info.glyph;
+    const anchorStep = diatonicStep(glyph.anchorPitch.letter, glyph.anchorPitch.octave);
+    const anchorFromTop = (topStep - anchorStep) * 0.5;          // spaces below the top line
+    const clefAbove = glyph.extentAbove - anchorFromTop;
+    const clefBelow = glyph.extentBelow + anchorFromTop - STAFF_HEIGHT;
+
     // Half a step is half a staff space; add room for the stem and a little air.
-    const padAbove = Math.max(1.6, (maxStep - topStep) * 0.5 + 2.2);
-    const padBelow = Math.max(1.6, (bottomStep - minStep) * 0.5 + 2.2);
+    const padAbove = Math.max(1.0, clefAbove + 0.3, (maxStep - topStep) * 0.5 + 2.2);
+    const padBelow = Math.max(1.0, clefBelow + 0.3, (bottomStep - minStep) * 0.5 + 2.2);
     const systemHeight = STAFF_HEIGHT + padAbove + padBelow;
     const systemGap = 1.4;
 
     // Width budget: clef, key signature, then the notes.
-    const clefX = 2.4;
-    const keySigX = 4.1;
+    const clefX = 1.0;
+    const keySigX = clefX + glyph.width + 0.7;
     const keySigWidth = fifths ? Math.min(7, Math.abs(fifths)) * KEY_SIG_SPACING + 0.5 : 0;
     const firstNoteX = keySigX + keySigWidth + 1.5;
     const noteSpacing = (this.widthUnits - firstNoteX - 1.2) / perSystem;
@@ -258,31 +276,132 @@ export class StaffRenderer {
         const ng = this._drawNote(n, x, topLineY, clef);
         layer.appendChild(ng);
         if (n.id) this._noteEls.set(n.id, ng);
+        this._recordPos(n, x, topLineY, clef);
       }
     }
+
+    // The played-note overlay sits above every system so it is never hidden
+    // behind a notehead it is meant to be compared with.
+    this._playedLayer = el('g', { class: 'played-layer' });
+    root.appendChild(this._playedLayer);
+    if (this._playedNote) this._paintPlayed();
 
     this._systemLayout = { clef, perSystem, systemHeight, systemGap, padAbove, firstNoteX, noteSpacing };
     return svg;
   }
 
   /**
-   * Show (or clear) the note currently being heard.
+   * Show (or clear) the note currently being heard, IN THE SAME COLUMN as the
+   * note it is being compared against, at its own correct vertical position.
+   *
+   * The vertical offset between the two is the feedback: too low and the mark
+   * sits below the target, too high and it sits above, correct and they
+   * coincide. That is more informative than any separate readout, so it is
+   * worth the small amount of care below to keep both legible where they meet.
+   *
    * @param {{midi:number, spelling?:object, accidental?:string}|null} note
+   * @param {string|null} anchorId  id of the note whose column to use
    */
-  setPlayedNote(note) {
+  setPlayedNote(note, anchorId = null) {
     this._playedNote = note;
+    if (anchorId !== null) this._playedAnchorId = anchorId;
     this._paintPlayed();
   }
+
+  /** How far outside the staff we will draw before clamping, in ledger lines. */
+  static get MAX_LEDGERS() { return 4; }
 
   _paintPlayed() {
     const layer = this._playedLayer;
     if (!layer) return;
     while (layer.firstChild) layer.removeChild(layer.firstChild);
     if (!this._playedNote) return;
+
+    const anchor = this._notePos.get(this._playedAnchorId) || this._lastNotePos;
+    if (!anchor) return;
+
     const n = this._playedNote;
-    const g = this._drawNote({ ...n, state: 'played' }, this.playedX);
-    g.setAttribute('class', 'note played');
+    const spelling = n.spelling || midiToStep(n.midi, false);
+    const clef = anchor.grand ? this._clefFor(n.midi) : anchor.clef;
+    const topLineY = anchor.grand ? this._staffTops()[clef] : anchor.topLineY;
+
+    const info = CLEF_INFO[clef];
+    const bottomStep = info.bottomLineStep;
+    const topStep = bottomStep + 8;
+    const trueStep = diatonicStep(spelling.letter, spelling.octave);
+
+    // Clamp implausibly distant pitches. Twenty ledger lines would wreck the
+    // system's vertical layout and tell the reader nothing they cannot get
+    // from an arrow: the useful information at that distance is simply
+    // "far above" or "far below", and the note name is in the readout anyway.
+    const limit = StaffRenderer.MAX_LEDGERS * 2;
+    let step = trueStep, clamped = null;
+    if (trueStep > topStep + limit) { step = topStep + limit; clamped = 'up'; }
+    else if (trueStep < bottomStep - limit) { step = bottomStep - limit; clamped = 'down'; }
+
+    const y = this._stepYAt(clef, topLineY, step);
+    const x = anchor.x;
+    const coincides = !clamped && anchor.midi != null && anchor.midi === n.midi;
+
+    const g = el('g', { class: `note played${coincides ? ' coincides' : ''}${clamped ? ' clamped' : ''}` });
+
+    if (coincides) {
+      // Right note. Do not stamp a violet notehead over the target's green
+      // one — ring it instead, so the "correct" colour reads at full strength
+      // and the violet still says "this is what you are playing".
+      g.appendChild(el('ellipse', {
+        cx: 0, cy: 0, rx: NOTEHEAD.rx + 0.30, ry: NOTEHEAD.ry + 0.30,
+        transform: `translate(${round(x)} ${round(y)}) rotate(${NOTEHEAD.rotationDeg})`,
+        fill: 'none', 'stroke-width': 0.17, class: 'played-ring'
+      }));
+      layer.appendChild(g);
+      return;
+    }
+
+    // Ledger lines for the played note's own position.
+    const ledgerHalf = NOTEHEAD.rx * 1.35;
+    const ledger = (s) => el('line', {
+      x1: round(x - ledgerHalf), y1: round(this._stepYAt(clef, topLineY, s)),
+      x2: round(x + ledgerHalf), y2: round(this._stepYAt(clef, topLineY, s)),
+      class: 'ledger'
+    });
+    if (step > topStep + 1) { for (let s = topStep + 2; s <= step; s += 2) g.appendChild(ledger(s)); }
+    else if (step < bottomStep - 1) { for (let s = bottomStep - 2; s >= step; s -= 2) g.appendChild(ledger(s)); }
+
+    const acc = n.accidental !== undefined
+      ? n.accidental
+      : (spelling.alter > 0 ? 'sharp' : spelling.alter < 0 ? 'flat' : null);
+    if (acc) g.appendChild(this._drawAccidental(acc, x - 1.45, y));
+
+    // A halo underneath keeps the violet readable when it sits a step or two
+    // from the target and the two noteheads nearly touch.
+    for (const cls of ['notehead-halo', 'notehead']) {
+      g.appendChild(el('ellipse', {
+        cx: 0, cy: 0, rx: NOTEHEAD.rx, ry: NOTEHEAD.ry,
+        transform: `translate(${round(x)} ${round(y)}) rotate(${NOTEHEAD.rotationDeg})`,
+        class: cls
+      }));
+    }
+    // Deliberately no stem: this is an overlay marker sharing a column with a
+    // real note, and two stems in one column read as a chord.
+
+    if (clamped) {
+      const dir = clamped === 'up' ? -1 : 1;
+      const tipY = y + dir * 1.15;
+      const baseY = y + dir * 0.55;
+      g.appendChild(el('path', {
+        d: `M ${round(x)} ${round(tipY)} L ${round(x - 0.42)} ${round(baseY)} L ${round(x + 0.42)} ${round(baseY)} Z`,
+        class: 'played-arrow'
+      }));
+    }
+
     layer.appendChild(g);
+  }
+
+  _recordPos(n, x, topLineY, clef) {
+    const pos = { x, topLineY, clef, grand: this.clef === 'grand' && topLineY === null, midi: n.midi };
+    if (n.id) this._notePos.set(n.id, pos);
+    this._lastNotePos = pos;
   }
 
   /** Change a note's visual state without a full re-render (cheap, animatable). */
@@ -328,30 +447,22 @@ export class StaffRenderer {
     return g;
   }
 
-  _drawClef(clef, topLineY = null, x = 2.6) {
+  _drawClef(clef, topLineY = null, x = 1.0) {
     const info = CLEF_INFO[clef];
     const glyph = info.glyph;
     const anchorStep = diatonicStep(glyph.anchorPitch.letter, glyph.anchorPitch.octave);
     const y = topLineY == null ? this._stepY(clef, anchorStep) : this._stepYAt(clef, topLineY, anchorStep);
     const g = el('g', { class: `clef clef-${clef}`, transform: unitTransform(x, y, 1) });
 
+    // The clef outline is a filled shape with counters (the holes in the G
+    // clef's spiral and loop), so it needs the nonzero fill rule the font
+    // outlines were drawn for — which is the SVG default, stated here anyway
+    // because getting it wrong fills the holes in.
     g.appendChild(el('path', {
       d: glyph.path,
-      fill: 'none',
-      'stroke-width': glyph.strokeWidth,
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      class: 'clef-stroke'
+      'fill-rule': 'nonzero',
+      class: 'clef-fill'
     }));
-
-    if (glyph.head) {
-      g.appendChild(el('circle', { cx: glyph.head.x, cy: glyph.head.y, r: glyph.head.r, class: 'clef-fill' }));
-    }
-    if (glyph.dots) {
-      for (const [dx, dy] of glyph.dots) {
-        g.appendChild(el('circle', { cx: dx, cy: dy, r: glyph.dotRadius, class: 'clef-fill' }));
-      }
-    }
     return g;
   }
 
