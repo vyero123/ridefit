@@ -334,7 +334,10 @@ export class StaffRenderer {
     // system's vertical layout and tell the reader nothing they cannot get
     // from an arrow: the useful information at that distance is simply
     // "far above" or "far below", and the note name is in the readout anyway.
-    const limit = StaffRenderer.MAX_LEDGERS * 2;
+    // A note ON the Nth ledger line is 2N steps out; the space just beyond it
+    // is 2N+1 and still needs only N ledger lines. So the last position we can
+    // draw within the budget is 2*MAX+1 steps outside the staff.
+    const limit = StaffRenderer.MAX_LEDGERS * 2 + 1;
     let step = trueStep, clamped = null;
     if (trueStep > topStep + limit) { step = topStep + limit; clamped = 'up'; }
     else if (trueStep < bottomStep - limit) { step = bottomStep - limit; clamped = 'down'; }

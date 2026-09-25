@@ -348,15 +348,28 @@ async function run() {
     check(box.height > 6.6 && box.height < 7.4, 'and is correctly proportioned vertically',
       `${box.height.toFixed(2)} staff spaces tall`);
     check(box.width > 2.4 && box.width < 3.0, 'and horizontally', `${box.width.toFixed(2)} wide`);
-    // The decisive test: the spiral must centre on the G line.
+    // The decisive test: the spiral must centre on the G line. getBBox() is in
+    // the path's OWN coordinates, where the origin is the G line by SMuFL
+    // convention, so this is two separate checks — the glyph is drawn around
+    // its origin correctly, and the group is translated onto the right line.
+    check(Math.abs(box.y + 4.392) < 0.02 && Math.abs((box.y + box.height) - 2.632) < 0.02,
+      'and hangs the right way around its own origin',
+      `${(-box.y).toFixed(3)} above it, ${(box.y + box.height).toFixed(3)} below`);
+
     const sys = clefPath.closest('.system');
     const topLineY = +sys.querySelector('.staff-line').getAttribute('y1');
     const gLineY = topLineY + 3;          // G4 is the 2nd line up = 3 below the top
-    const originY = gLineY;               // the path's own origin, by SMuFL convention
-    check(Math.abs((box.y + box.height) - (originY + 2.632)) < 0.02
-       && Math.abs(box.y - (originY - 4.392)) < 0.02,
-      'and its origin sits exactly on the G line',
-      `glyph spans y ${box.y.toFixed(3)}..${(box.y + box.height).toFixed(3)}, G line at ${gLineY}`);
+    const ty = +clefPath.parentNode.getAttribute('transform').match(/translate\([-\d.]+ ([-\d.]+)\)/)[1];
+    check(Math.abs(ty - gLineY) < 0.001,
+      'which is placed exactly on the G line',
+      `clef origin y=${ty}, G line y=${gLineY}`);
+
+    const bassPath = doc.querySelector('.clef-bass .clef-fill');
+    if (bassPath) {
+      const bbox = bassPath.getBBox();
+      check(Math.abs(bbox.y + 1.048) < 0.02, 'the F clef hangs right around its origin too',
+        `${(-bbox.y).toFixed(3)} above`);
+    }
   }
   check(svg.querySelectorAll('.notes .note.state-target').length === 1, 'exactly one target at a time');
   check(svg.querySelectorAll('.notes .note.state-pending').length === 28, 'the rest are pending');
