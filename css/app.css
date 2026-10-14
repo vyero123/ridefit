@@ -166,12 +166,11 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 .view-run .card-head b { font-size: 12.5px; }
 
 .warn-strip {
-  height: 0; overflow: hidden; border-radius: 8px;
+  display: none; border-radius: 8px; line-height: 1.3;
   font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
-  display: flex; align-items: center; padding: 0 10px;
-  transition: height 0.12s;
+  padding: 7px 10px;
 }
-.warn-strip.is-on { height: 32px; margin-bottom: 8px; }
+.warn-strip.is-on { display: block; margin-bottom: 7px; }
 .warn-strip.lv-off { background: #3a3014; color: #ecc96b; }
 .warn-strip.lv-bad { background: #4a2a12; color: #ffb27a; }
 .warn-strip.lv-damage { background: var(--danger); color: #fff; }

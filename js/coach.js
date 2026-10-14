@@ -63,11 +63,14 @@ export function judgeShift(rec, rel, opts = {}) {
 
     if (after > CAR.mechanicalLimitRpm) {
       level = 'damage';
-      lines.push(`${rec.to} at ${r(rec.kphAtDecision)} km/h forces the engine to ${r(after)} rpm. That is past anything the engine can survive. This is the money shift: the wheels are driving the engine through the clutch, so the rev limiter cannot save you — it can only cut fuel, and the problem is not fuel.`);
-      lines.push(`In this car the highest speed ${rec.to} can be selected from is about ${r(maxSpeedForGear(rec.to))} km/h.`);
+      // Short, blunt first line: it is the one shown live, above the controls.
+      lines.push(`${rec.to} at ${r(rec.kphAtDecision)} km/h forces the engine to ${r(after)} rpm. That engine is scrap.`);
+      lines.push(`This is the money shift. The wheels are driving the engine through the clutch, so the limiter cannot save you — it only cuts fuel, and fuel is not the problem. Valve springs cannot keep up, valves meet pistons, and it is over before you finish lifting your foot.`);
+      lines.push(`${rec.to} can only be selected below about ${r(maxSpeedForGear(rec.to))} km/h.`);
     } else if (after > CAR.redlineRpm) {
       level = 'bad';
-      lines.push(`${rec.to} at this speed means ${r(after)} rpm — over the ${r(CAR.redlineRpm)} limiter. The clutch will take some of the shock, but you have just spun the engine past its limit from the wheel end, which is exactly how engines get destroyed. ${rec.to} is good to about ${r(maxSpeedForGear(rec.to))} km/h.`);
+      lines.push(`${rec.to} at this speed means ${r(after)} rpm — over the ${r(CAR.redlineRpm)} limiter. ${rec.to} is good to about ${r(maxSpeedForGear(rec.to))} km/h.`);
+      lines.push(`The clutch absorbed some of the shock, but you have just spun the engine past its limit from the wheel end. A little more speed and that is a destroyed engine rather than a frightened one.`);
     } else if (after > CAR.redlineRpm - 900) {
       level = 'off';
       lines.push(`${r(after)} rpm. Legal, but there is almost no margin left — a slightly higher speed and the same shift would be over the limiter.`);

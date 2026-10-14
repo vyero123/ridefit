@@ -42,11 +42,16 @@ export class UpshiftDrill extends Drill {
   setup() { return { speed: 15 / 3.6, gear: 1, rpm: rpmAtSpeed(15 / 3.6, 1) }; }
 
   instruction(sim) {
-    const next = Math.min(6, (sim.gear || 1) + 1);
+    if (sim.gear === 0) {
+      const want = Math.max(1, Math.min(6, Math.round(sim.kph / 20) + 1));
+      this.targetGear = want;
+      return { title: 'You are in neutral', detail: `Coasting at ${r(sim.kph)} km/h with no gear. Clutch down and take ${want} to carry on.` };
+    }
+    const next = Math.min(6, sim.gear + 1);
     this.targetGear = sim.gear >= 6 ? null : next;
     if (sim.gear >= 6) return { title: 'Sixth. That is the drill.', detail: 'Hold it there, or finish below.' };
     return {
-      title: `Accelerate in ${sim.gear || 1}, then take ${next}`,
+      title: `Accelerate in ${sim.gear}, then take ${next}`,
       detail: `Hold the throttle. When the needle reaches the green band, shift up. Clutch down, lever across, clutch up.`,
     };
   }
@@ -89,13 +94,28 @@ export class DownshiftDrill extends Drill {
   setup() { return { speed: 115 / 3.6, gear: 6, rpm: rpmAtSpeed(115 / 3.6, 6) }; }
 
   instruction(sim) {
-    if (sim.kph < 12 && sim.gear <= 2) { this.done = true; }
-    const next = sim.gear > 1 ? sim.gear - 1 : null;
-    this.targetGear = next;
+    if (sim.kph < 12 && sim.gear <= 2 && sim.gear > 0) { this.done = true; }
     if (this.done) return { title: 'Down to a crawl in second. Good.', detail: 'Finish below to see the breakdown.' };
+
+    const next = sim.gear > 1 ? sim.gear - 1 : null;
+    if (!next) {
+      this.targetGear = null;
+      return { title: `Rolling in ${sim.gear === 0 ? 'neutral' : sim.gear}`, detail: 'Pick up a gear that suits the speed and carry on down the box.' };
+    }
+    // Never ask for a gear the speed will not take — that is the mistake the
+    // drill exists to prevent, so the prompt has to respect it too.
+    const ceiling = maxSpeedForGear(next);
+    if (sim.kph > ceiling * 0.98) {
+      this.targetGear = null;
+      return {
+        title: `${next} will not take ${r(sim.kph)} km/h`,
+        detail: `${next} runs out at about ${r(ceiling)} km/h. Brake first and wait for the speed to come down — selecting it now is the money shift.`,
+      };
+    }
+    this.targetGear = next;
     return {
-      title: `Braking from ${r(sim.kph)} km/h — take ${next ?? 1}`,
-      detail: `Brake, and come down one gear at a time. Check the speed before each one: ${next ? `${next} is good to about ${r(maxSpeedForGear(next))} km/h.` : ''}`,
+      title: `${r(sim.kph)} km/h — take ${next}`,
+      detail: `Brake, and come down one gear at a time. ${next} is good to about ${r(ceiling)} km/h, so you have room.`,
     };
   }
 
