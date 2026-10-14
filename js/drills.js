@@ -106,8 +106,9 @@ export class LaunchDrill extends Drill {
   aim = 'Hand over from clutch to throttle without stalling, juddering or burning the plate.';
   teach = [
     'A launch is one movement with two hands in it. The clutch comes up through the friction zone while the throttle comes on, and the <b>hand-off</b> between them is the whole skill. Too little gas and the engine dies; too much and you are spinning the plate against the flywheel to make up the difference.',
-    'The sequence that works: a little throttle first, so the engine has something in reserve — around <b>1,200 to 1,500 rpm</b> is plenty. Then the pedal up to the top of the friction zone <i>quickly</i>, because nothing is happening there. Then <b>slowly</b> through the zone as the car starts to move, feeding in a little more gas as it does.',
-    'Four things can happen, and the app will tell you which: <b>stalled</b> (clutch faster than the engine could follow), <b>juddered</b> (snatchy through the zone — the plate grabbing and letting go), <b>slipped</b> (too much gas, too slow a release, heat into the clutch), or <b>clean</b>.',
+    'The sequence that works: a little throttle first, so the engine has something in reserve — <b>1,500 to 2,000 rpm</b> in this car. Then the pedal up to the top of the friction zone <i>quickly</i>, because nothing is happening there. Then <b>through the zone steadily</b> as the car starts to move.',
+    'The two mistakes sit on opposite sides of that, and which one you get depends on how the gas and the clutch are balanced: <b>not enough gas for how fast the pedal came up</b> and the engine dies; <b>too much gas for how slowly it came up</b> and you are burning the plate instead of driving. More throttle buys you a quicker release; less throttle demands a slower one.',
+    'The app will tell you which of three happened: <b>stalled</b>, <b>slipped</b>, or <b>clean</b> — and how big a jolt the take-up gave, since a clean launch can still be a snatchy one.',
     'Three goes. Stalling is free — it is the only one of those four that costs nothing but a restart.',
   ];
 

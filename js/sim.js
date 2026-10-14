@@ -18,7 +18,7 @@ const SUBSTEP = 1 / 2000; // small enough to resolve the driveline mode cleanly
 // a snatch rather than a squeeze. Calibrated against the model: easing away
 // on idle alone peaks near 2, an ordinary launch around 5, a dropped clutch
 // well above that.
-export const SNATCH_LEVEL = 5.0;
+export const SNATCH_LEVEL = 6.0;
 export const JUDDER_AMPLITUDE = 0.6;  // m/s^2 a reversal must carry to count
 
 export class Sim {

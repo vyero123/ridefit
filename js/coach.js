@@ -23,7 +23,7 @@ const worst = (a, b) => (LEVEL[a] >= LEVEL[b] ? a : b);
  */
 export function launchOutcome(L, stalled) {
   if (stalled || L.stalled) return 'stalled';
-  if (L.energy > 14000 || L.slipSeconds > 2.5) return 'slipped';
+  if (L.energy > 22000 || L.slipSeconds > 2.5) return 'slipped';
   return 'clean';
 }
 

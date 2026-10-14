@@ -251,13 +251,14 @@ function init() {
   app.cluster = new Cluster($('#cluster'));
   app.gate = new Gate($('#gate'), onSelect);
 
-  // Rates tuned together: a short press gets you past the friction zone for a
-  // gear change, and a steady release crosses the zone in about a third of a
-  // second — fast enough that holding a position means pressing in rhythm.
+  // The pedal's top speed is set by the fastest legitimate use of it — a gear
+  // change, which wants the whole travel in about a second. Anything slower
+  // than that, and a launch wants much slower, the player gets by tapping:
+  // press, ease off, press again. That is the rhythm the drills are about.
   app.clutch = new Pedal($('#clutch'), {
     label: 'CLUTCH', sub: 'hold to press',
-    zones: CLUTCH_ZONES, downRate: 3.2, upRate: 1.0, cls: 'is-clutch',
-    fineZone: [CLUTCH.biteStart - 0.05, CLUTCH.biteEnd + 0.05],
+    zones: CLUTCH_ZONES, downRate: 3.4, upRate: 1.7, cls: 'is-clutch',
+    fineZone: [CLUTCH.biteStart - 0.05, CLUTCH.biteEnd + 0.05], fineFactor: 0.6,
   }, (v) => app.sim.setClutch(v));
 
   app.throttle = new Pedal($('#throttle'), {
