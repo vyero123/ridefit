@@ -53,17 +53,15 @@
       <button class="sound" id="sound-btn">Sound on</button>
     </div>
 
-    <div class="instruction">
+    <!-- The instruction and the newest verdict share this slot: see pushCard.
+         Both sit in the eyeline, and the controls below never move. -->
+    <div class="instruction" id="instruction">
       <b id="ins-title"></b>
       <span id="ins-detail"></span>
     </div>
+    <div id="cards" class="cards"></div>
 
     <div id="warn" class="warn-strip"></div>
-
-    <!-- The newest piece of feedback sits here, in the eyeline, rather than
-         below the controls where it would need scrolling to. The full set is
-         kept for the report. -->
-    <div id="cards" class="cards"></div>
 
     <div id="cluster" class="cluster"></div>
 

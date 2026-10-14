@@ -7,16 +7,16 @@
 
 const NS = 'http://www.w3.org/2000/svg';
 
-const MID = 76, TOP = 26, BOT = 126;
+const MID = 69, TOP = 24, BOT = 114;
 const COLS = [
   { x: 46, up: null, down: -1, label: 'R' },
   { x: 118, up: 1, down: 2 },
   { x: 190, up: 3, down: 4 },
   { x: 262, up: 5, down: 6 },
 ];
-const CORRIDOR = 14;   // half-height of the neutral channel
-const ENGAGE = 38;     // distance from MID at which the gear is in
-const KNOB_R = 18;
+const CORRIDOR = 13;   // half-height of the neutral channel
+const ENGAGE = 34;     // distance from MID at which the gear is in
+const KNOB_R = 17;
 
 function el(tag, attrs = {}, text) {
   const n = document.createElementNS(NS, tag);
@@ -45,10 +45,10 @@ export class Gate {
   }
 
   _build() {
-    const svg = el('svg', { viewBox: '0 0 308 152', class: 'gate-svg', 'aria-label': 'Gear lever gate' });
+    const svg = el('svg', { viewBox: '0 0 308 138', class: 'gate-svg', 'aria-label': 'Gear lever gate' });
     this.svg = svg;
 
-    svg.appendChild(el('rect', { x: 0, y: 0, width: 308, height: 152, rx: 10, fill: 'var(--panel)' }));
+    svg.appendChild(el('rect', { x: 0, y: 0, width: 308, height: 138, rx: 10, fill: 'var(--panel)' }));
 
     // The channel, drawn as the slot the lever actually runs in.
     const chan = el('g', { class: 'gate-channel' });
@@ -70,7 +70,7 @@ export class Gate {
         if (gear == null) continue;
         const y = dir === 'up' ? TOP : BOT;
         const g = el('g', { class: 'gate-end' });
-        g.appendChild(el('circle', { cx: c.x, cy: y, r: 16, class: 'gate-end-ring' }));
+        g.appendChild(el('circle', { cx: c.x, cy: y, r: 15, class: 'gate-end-ring' }));
         g.appendChild(el('text', { x: c.x, y: y + 7, 'text-anchor': 'middle', class: 'gate-end-label' },
           gear === -1 ? 'R' : String(gear)));
         svg.appendChild(g);

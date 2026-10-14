@@ -77,7 +77,7 @@ function startRun() {
   app.eventCursor = 0;
   app.pendingShift = null;
   app.cards = [];
-  $('#cards').innerHTML = '';
+  clearCard();
   $('#run-title').textContent = d.title;
   app.gate.syncTo(app.sim.gear);
   app.clutch.hold(false);
@@ -114,13 +114,28 @@ function cardHtml(c) {
   </div>`;
 }
 
+/**
+ * The verdict on a shift and the next instruction are never both urgent: for
+ * a few seconds after a change you want to know what you just did, and after
+ * that you want to know what to do next. So they share one slot, and the
+ * controls below never move. The full text goes to the report.
+ */
 function pushCard(c) {
   if (!c) return;
   app.cards.push(c);
-  // Live, only the newest and only the first couple of sentences: this sits
-  // above the controls, and anything longer pushes the gate off the screen.
-  const brief = { ...c, lines: c.lines.slice(0, 1) };
-  $('#cards').innerHTML = cardHtml(brief);
+  $('#cards').innerHTML = cardHtml({ ...c, lines: c.lines.slice(0, 1) });
+  $('#instruction').hidden = true;
+  clearTimeout(app.cardTimer);
+  app.cardTimer = setTimeout(() => {
+    $('#cards').innerHTML = '';
+    $('#instruction').hidden = false;
+  }, c.level === 'damage' ? 7000 : 4800);
+}
+
+function clearCard() {
+  clearTimeout(app.cardTimer);
+  $('#cards').innerHTML = '';
+  $('#instruction').hidden = false;
 }
 
 /* ------------------------------------------------------------ loop */
