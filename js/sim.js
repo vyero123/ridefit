@@ -54,8 +54,10 @@ export class Sim {
     this.gearAtPress = null;
     this.lastRelease = null;
     this.lastFreeMs = null;
-    this._tFloor = null;
+    this._pressMax = 0;
+    this._tAtMax = null;
     this._tBiteEnter = null;
+    this._match = null;
     this._slipRate = 0;
     this.gearBeforeNeutral = null;
     this._neutralAt = -99;
@@ -94,11 +96,20 @@ export class Sim {
       this.pedalDownSince = this.t;
       this.pressCount++;
       if (this.rpmAtPress == null) { this.rpmAtPress = this.rpm; this.kphAtPress = this.kph; }
-      this._tFloor = this.t;
+      this._pressMax = now;
+      this._tAtMax = this.t;
       this._tBiteEnter = null;
+      this._match = null;
     } else if (wasDown && !isDown && this.pedalDownSince != null) {
       this.lastPedalDownMs = (this.t - this.pedalDownSince) * 1000;
       this.pedalDownSince = null;
+    }
+
+    // How deep the pedal went, and when it was last that deep: the release
+    // only starts once the foot begins coming back up.
+    if (now >= (this._pressMax ?? 0) - 0.015) {
+      this._pressMax = Math.max(this._pressMax ?? 0, now);
+      this._tAtMax = this.t;
     }
 
     // Threshold crossings on the way back up. Release *speed* through each
@@ -106,18 +117,22 @@ export class Sim {
     const { biteStart, biteEnd } = CLUTCH_BOUNDS;
     if (prev > biteEnd && now <= biteEnd) {
       this._tBiteEnter = this.t;
-      this.lastFreeMs = this._tFloor != null ? (this.t - this._tFloor) * 1000 : null;
+      this.lastFreeMs = this._tAtMax != null ? (this.t - this._tAtMax) * 1000 : null;
+      // The mismatch has to be read *here*, at the top of the bite range,
+      // while the engine and the wheels are still turning independently. By
+      // the bottom of the range the clutch has already dragged them together
+      // and the difference it had to absorb has gone.
+      this._match = { engineRpm: this.rpm, drivenRpm: rpmAtSpeed(this.speed, this.gear) };
     }
     if (prev > biteStart && now <= biteStart) {
-      const engineRpm = this.rpm;
-      const drivenRpm = rpmAtSpeed(this.speed, this.gear);
+      const m = this._match || { engineRpm: this.rpm, drivenRpm: rpmAtSpeed(this.speed, this.gear) };
       this.lastRelease = {
         kind: 'release',
         t: this.t,
         gear: this.gear,
-        engineRpm,
-        drivenRpm,
-        mismatch: engineRpm - drivenRpm,
+        engineRpm: m.engineRpm,
+        drivenRpm: m.drivenRpm,
+        mismatch: m.engineRpm - m.drivenRpm,
         biteMs: this._tBiteEnter != null ? (this.t - this._tBiteEnter) * 1000 : null,
         freeMs: this.lastFreeMs ?? null,
         kph: this.kph,

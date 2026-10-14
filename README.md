@@ -32,8 +32,9 @@ Live: https://ride-fit.netlify.app
   clutch-position gauge with a live hold timer.
 - A real H-pattern gate the lever is dragged through — not six buttons. The
   lever will not enter a gear while the clutch is still gripping.
-- The clutch is a travel strip: your finger position is the pedal position,
-  so you control release speed through the bite point.
+- Clutch and throttle are travel strips: your finger position is the pedal
+  position, in both directions, so you control release speed through the
+  bite point and can hold a steady 2,000 rpm or deliver a blip.
 - Six progressive drills: upshifts, downshifts, both, rev matching, hill
   start, a short mixed drive. Each teaches, then tests, then reports.
 - A reference section: gear/speed/rpm table, the clutch rules, the damage
@@ -49,6 +50,12 @@ rpm comes from road speed through gear ratio, final drive and tyre
 circumference. An asymmetric torque curve, closed-throttle engine braking,
 clutch slip with heat accumulation, and a stall when the engine is dragged
 below idle while engaged. Fixed 1/480 s substeps.
+
+Rev-match error is sampled at the *top* of the bite range, where engine and
+wheels are still turning independently; by the bottom of the range the clutch
+has already pulled them together and the difference has become heat.
+
+`?debug` exposes the app object and a manual `advance(dt)` on `window.shift`.
 
 Real shift points vary by vehicle, load and gradient. Everything here is a
 range and a principle, not a specification — and the app says so.

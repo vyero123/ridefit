@@ -38,6 +38,9 @@ export const CAR = {
   upshiftBrisk: [3000, 3500],
   lugBand: [1200, 1500],   // below this, under load, the engine is lugging
   revMatchTolerance: 300,  // rpm mismatch we call "well matched"
+  // Mismatch is read at the top of the bite range, where the engine and the
+  // wheels are still independent — by the bottom the clutch has already
+  // dragged them together and the difference has gone into heat.
 };
 
 export const GEAR_NAMES = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6' };
