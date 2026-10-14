@@ -52,7 +52,7 @@ export class UpshiftDrill extends Drill {
     if (sim.gear >= 6) return { title: 'Sixth. That is the drill.', detail: 'Hold it there, or finish below.' };
     return {
       title: `Accelerate in ${sim.gear}, then take ${next}`,
-      detail: `Hold the throttle. When the needle reaches the green band, shift up. Clutch down, lever across, clutch up.`,
+      detail: `Hold the throttle part-way down. When the needle reaches the green band, shift up: clutch down, lever across, clutch up.`,
     };
   }
 

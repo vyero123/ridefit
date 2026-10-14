@@ -7,23 +7,44 @@
 
 import { CLUTCH } from './car.js';
 
-export class ClutchPedal {
-  constructor(host, onChange) {
+export const CLUTCH_ZONES = [
+  { h: CLUTCH.biteStart, cls: 'ct-free', text: 'free travel' },
+  { h: CLUTCH.biteEnd - CLUTCH.biteStart, cls: 'ct-bite', text: 'BITE POINT' },
+  { h: 1 - CLUTCH.biteEnd, cls: 'ct-clear', text: 'clear' },
+];
+
+export const THROTTLE_ZONES = [
+  { h: 0.22, cls: 'tt-0', text: 'off' },
+  { h: 0.38, cls: 'tt-1', text: 'light' },
+  { h: 0.40, cls: 'tt-2', text: 'full' },
+];
+
+/**
+ * A pedal whose position follows your finger, in both directions. Press-and-
+ * hold keeps it where you are holding it; sliding up is you letting it out at
+ * whatever speed you choose; lifting the finger is taking your foot off.
+ * The clutch needs this because release speed is half of what it teaches, and
+ * the throttle needs it because a pedal that is only ever flat to the floor
+ * cannot hold a steady 2,000 rpm or deliver a blip.
+ */
+export class TravelPedal {
+  constructor(host, { label, hint, zones, cls = '' }, onChange) {
     this.host = host;
     this.onChange = onChange;
     this.value = 0;
     this.active = false;
+    this.opts = { label, hint, zones, cls };
     this._build();
   }
 
   _build() {
-    this.host.classList.add('clutch-pad');
+    const { label, hint, zones, cls } = this.opts;
+    this.host.classList.add('travel-pad');
+    if (cls) this.host.classList.add(cls);
     this.host.innerHTML = `
-      <div class="pad-label">CLUTCH <span class="pad-hint">slide down · hold · slide up</span></div>
+      <div class="pad-label">${label}<span class="pad-hint">${hint}</span></div>
       <div class="clutch-track" aria-hidden="true">
-        <div class="ct-zone ct-free" style="height:${CLUTCH.biteStart * 100}%"><span>free travel</span></div>
-        <div class="ct-zone ct-bite" style="height:${(CLUTCH.biteEnd - CLUTCH.biteStart) * 100}%"><span>BITE POINT</span></div>
-        <div class="ct-zone ct-clear" style="height:${(1 - CLUTCH.biteEnd) * 100}%"><span>clear</span></div>
+        ${zones.map((z) => `<div class="ct-zone ${z.cls}" style="height:${z.h * 100}%"><span>${z.text}</span></div>`).join('')}
         <div class="ct-foot"></div>
       </div>`;
     this.track = this.host.querySelector('.clutch-track');
@@ -66,15 +87,16 @@ export class ClutchPedal {
     this._set = set;
   }
 
+  // A timer rather than requestAnimationFrame: a pedal that got stuck down
+  // because the tab was throttled would be measuring nonsense.
   _springUp() {
-    cancelAnimationFrame(this._raf);
-    const step = () => {
-      if (this.active) return;
-      const v = Math.max(0, this.value - 0.14);
+    clearInterval(this._timer);
+    this._timer = setInterval(() => {
+      if (this.active) { clearInterval(this._timer); return; }
+      const v = Math.max(0, this.value - 0.16);
       this._set(v);
-      if (v > 0) this._raf = requestAnimationFrame(step);
-    };
-    this._raf = requestAnimationFrame(step);
+      if (v <= 0) clearInterval(this._timer);
+    }, 16);
   }
 
   /** Keyboard / programmatic: hold to the floor, release to spring up. */

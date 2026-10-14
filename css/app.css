@@ -226,34 +226,39 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 
 /* --------------------------------------------------------- pedals */
 
-.pedals { display: flex; gap: 8px; align-items: stretch; }
-.clutch-pad { flex: 1.15; display: flex; flex-direction: column; min-width: 0; }
-.pedal-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pedals { display: flex; gap: 7px; align-items: stretch; }
+.travel-pad { flex: 1.1; display: flex; flex-direction: column; min-width: 0; }
+.pedal-col { flex: 0.85; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 
 .pad-label {
-  font-size: 9px; letter-spacing: 0.14em; font-weight: 700; color: var(--ink-dim);
-  margin-bottom: 4px; display: flex; justify-content: space-between; gap: 4px;
+  font-size: 8.5px; letter-spacing: 0.1em; font-weight: 700; color: var(--ink-dim);
+  margin-bottom: 4px; display: flex; flex-direction: column; gap: 1px;
 }
-.pad-hint { letter-spacing: 0; font-weight: 500; text-transform: none; opacity: 0.75; font-size: 8.5px; }
+.pad-hint { letter-spacing: 0; font-weight: 500; text-transform: none; opacity: 0.7; font-size: 8px; }
 
 .clutch-track {
   position: relative; flex: 1; min-height: 148px; border-radius: 10px; overflow: hidden;
   border: 1px solid var(--hairline); background: var(--dial); cursor: ns-resize;
   display: flex; flex-direction: column;
 }
-.clutch-pad.is-held .clutch-track { border-color: var(--bite); }
-.ct-zone { position: relative; display: flex; align-items: center; justify-content: center; }
-.ct-zone span { font-size: 8px; letter-spacing: 0.09em; color: var(--ink); opacity: 0.75; font-weight: 700; }
+.travel-pad.is-held .clutch-track { border-color: var(--bite); }
+.is-throttle.is-held .clutch-track { border-color: var(--go); }
+.ct-zone { position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.ct-zone span { font-size: 7.5px; letter-spacing: 0.07em; color: var(--ink); opacity: 0.72; font-weight: 700; white-space: nowrap; }
 .ct-free { background: rgba(74, 85, 95, 0.4); }
 .ct-bite { background: rgba(217, 162, 58, 0.26); border-top: 1px dashed rgba(217,162,58,0.7); border-bottom: 1px dashed rgba(217,162,58,0.7); }
 .ct-clear { background: rgba(61, 126, 166, 0.18); }
+.tt-0 { background: rgba(74, 85, 95, 0.35); }
+.tt-1 { background: rgba(62, 201, 138, 0.16); border-top: 1px dashed rgba(62,201,138,0.5); }
+.tt-2 { background: rgba(62, 201, 138, 0.34); border-top: 1px dashed rgba(62,201,138,0.5); }
+.is-throttle .ct-foot { background: var(--go); box-shadow: 0 0 10px rgba(62,201,138,0.6); }
 .ct-foot {
   position: absolute; left: 0; right: 0; top: 0; height: 4px; margin-top: -2px;
   background: var(--needle); box-shadow: 0 0 10px rgba(255,107,74,0.65);
 }
 
 .ramp-pad {
-  position: relative; flex: 1; min-height: 56px; border-radius: 10px; overflow: hidden;
+  position: relative; flex: 1; min-height: 92px; border-radius: 10px; overflow: hidden;
   border: 1px solid var(--hairline); background: var(--panel); cursor: pointer;
   display: flex; flex-direction: column; justify-content: space-between;
   padding: 7px 9px; user-select: none;
@@ -268,9 +273,9 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 .ramp-pad.is-held { border-color: var(--accent); }
 
 .handbrake {
-  appearance: none; flex: none; padding: 10px; border-radius: 10px; cursor: pointer;
+  appearance: none; flex: none; padding: 9px 4px; border-radius: 10px; cursor: pointer;
   background: var(--panel); border: 1px solid var(--hairline); color: var(--ink-dim);
-  font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  font: inherit; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; line-height: 1.3;
 }
 .handbrake.is-on { background: var(--needle); border-color: var(--needle); color: #2a0b03; }
 

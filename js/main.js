@@ -4,7 +4,7 @@ import { CAR } from './car.js';
 import { Sim } from './sim.js';
 import { Cluster } from './instruments.js';
 import { Gate } from './gate.js';
-import { ClutchPedal, RampPedal } from './controls.js';
+import { TravelPedal, RampPedal, CLUTCH_ZONES, THROTTLE_ZONES } from './controls.js';
 import { EngineAudio } from './audio.js';
 import { DRILLS } from './drills.js';
 import { habitNotes } from './coach.js';
@@ -162,7 +162,6 @@ let last = performance.now();
 /** One step of the world. Split out so it can be driven by hand. */
 function advance(dt) {
   if (app.running) {
-    app.throttle.tick(dt);
     app.brakePedal.tick(dt);
     app.sim.step(dt);
     drainEvents();
@@ -251,8 +250,11 @@ function init() {
   app.cluster = new Cluster($('#cluster'));
   app.gate = new Gate($('#gate'), onSelect);
 
-  app.clutch = new ClutchPedal($('#clutch'), (v) => app.sim.setClutch(v));
-  app.throttle = new RampPedal($('#throttle'), { label: 'THROTTLE', hint: 'hold', cls: 'is-throttle' }, (v) => { app.sim.throttle = v; });
+  app.clutch = new TravelPedal($('#clutch'),
+    { label: 'CLUTCH', hint: 'down · hold · up', zones: CLUTCH_ZONES }, (v) => app.sim.setClutch(v));
+  app.throttle = new TravelPedal($('#throttle'),
+    { label: 'THROTTLE', hint: 'how far down', zones: THROTTLE_ZONES, cls: 'is-throttle' },
+    (v) => { app.sim.throttle = v; });
   app.brakePedal = new RampPedal($('#brake'), { label: 'BRAKE', hint: 'hold', max: 0.7, riseMs: 320, cls: 'is-brake' }, (v) => { app.sim.brake = v; });
 
   $('#handbrake').addEventListener('click', (e) => {
