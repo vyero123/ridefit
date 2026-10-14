@@ -80,6 +80,10 @@ export class DownshiftDrill extends Drill {
     'Learn the shape of that list, not the digits: <b>second is a town gear, third is a roundabout gear, fourth and fifth are road gears.</b> If you are doing 100 km/h, second is not a choice you have.',
   ];
 
+  // No upshift window on the dial here — the only band that matters coming
+  // down is the lugging zone, which the dial always shows.
+  constructor() { super(); this.band = null; }
+
   setup() { return { speed: 100 / 3.6, gear: 6, rpm: rpmAtSpeed(100 / 3.6, 6) }; }
 
   instruction(sim) {
@@ -204,7 +208,7 @@ export class HillStartDrill extends Drill {
 
   setup() { return { speed: 0, gear: 0, rpm: CAR.idleRpm, gradePercent: 10, handbrake: true }; }
 
-  constructor() { super(); this.rollback = 0; this.launched = false; }
+  constructor() { super(); this.rollback = 0; this.launched = false; this.band = null; }
 
   instruction(sim) {
     this.targetGear = sim.gear === 0 ? 1 : null;

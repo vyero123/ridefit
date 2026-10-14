@@ -100,12 +100,12 @@ export class Cluster {
         svg.appendChild(el('line', { x1: hx1, y1: hy1, x2: hx2, y2: hy2, stroke: 'var(--hairline)', 'stroke-width': 1.5 }));
       }
     }
-    svg.appendChild(el('text', { x: cx, y: cy + 46, 'text-anchor': 'middle', class: 'dial-unit' }, 'rpm x1000'));
-
-    // Live digital rpm inside the dial.
-    this.rpmText = el('text', { x: cx, y: cy + 10, 'text-anchor': 'middle', class: 'rpm-digits' }, '800');
+    // The scale sweep stops well short of the bottom of the dial, so the
+    // digital readout lives down there where it cannot crowd the numerals.
+    svg.appendChild(el('text', { x: cx, y: cy - 28, 'text-anchor': 'middle', class: 'dial-unit' }, 'rpm x1000'));
+    this.rpmText = el('text', { x: cx, y: cy + 30, 'text-anchor': 'middle', class: 'rpm-digits' }, '800');
     svg.appendChild(this.rpmText);
-    this.rpmLabel = el('text', { x: cx, y: cy + 26, 'text-anchor': 'middle', class: 'dial-sub' }, 'idle');
+    this.rpmLabel = el('text', { x: cx, y: cy + 45, 'text-anchor': 'middle', class: 'dial-sub' }, 'idle');
     svg.appendChild(this.rpmLabel);
 
     // Needle last, on top.
@@ -129,7 +129,7 @@ export class Cluster {
     svg.appendChild(this.gearHint);
 
     // --- Clutch position gauge ---
-    const gx = 286, gy = 26, gw = 40, gh = 126;
+    const gx = 286, gy = 26, gw = 40, gh = 118;
     svg.appendChild(el('text', { x: gx, y: 18, class: 'panel-label' }, 'CLUTCH'));
     svg.appendChild(el('rect', { x: gx, y: gy, width: gw, height: gh, rx: 5, fill: 'var(--dial)', stroke: 'var(--hairline)' }));
     const zone = (a, b, fill, op) => el('rect', {

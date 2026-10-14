@@ -77,7 +77,6 @@ export class Gate {
         this.labels[gear] = g;
       }
     }
-    svg.appendChild(el('text', { x: COLS[0].x, y: MID + 4, 'text-anchor': 'middle', class: 'gate-neutral-tag' }, ''));
     svg.appendChild(el('text', { x: 154, y: MID - 22, 'text-anchor': 'middle', class: 'gate-neutral-tag' }, 'N E U T R A L'));
 
     // Lever.

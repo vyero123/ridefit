@@ -60,6 +60,11 @@
 
     <div id="warn" class="warn-strip"></div>
 
+    <!-- The newest piece of feedback sits here, in the eyeline, rather than
+         below the controls where it would need scrolling to. The full set is
+         kept for the report. -->
+    <div id="cards" class="cards"></div>
+
     <div id="cluster" class="cluster"></div>
 
     <div class="heat-row">
@@ -80,8 +85,6 @@
     </div>
 
     <button id="restart-btn" class="primary restart" hidden>Restart the engine</button>
-
-    <div id="cards" class="cards"></div>
 
     <button class="primary" id="finish-btn">Finish and review</button>
     <p class="kbd-note">On a keyboard: <b>space</b> clutch, <b>X</b> throttle, <b>Z</b> brake. The lever takes the arrow keys once you tap it.</p>

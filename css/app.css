@@ -272,7 +272,8 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 
 /* ---------------------------------------------------------- cards */
 
-.cards { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.cards:not(:empty) { margin-bottom: 8px; }
 .card {
   background: var(--panel); border: 1px solid var(--hairline);
   border-left: 3px solid var(--hairline); border-radius: 8px; padding: 10px 12px;

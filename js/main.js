@@ -117,11 +117,10 @@ function cardHtml(c) {
 function pushCard(c) {
   if (!c) return;
   app.cards.push(c);
-  const host = $('#cards');
-  const div = document.createElement('div');
-  div.innerHTML = cardHtml(c);
-  host.prepend(div.firstElementChild);
-  while (host.children.length > 4) host.lastElementChild.remove();
+  // Live, only the newest and only the first couple of sentences: this sits
+  // above the controls, and anything longer pushes the gate off the screen.
+  const brief = { ...c, lines: c.lines.slice(0, 2) };
+  $('#cards').innerHTML = cardHtml(brief);
 }
 
 /* ------------------------------------------------------------ loop */
