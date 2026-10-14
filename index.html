@@ -27,7 +27,7 @@
       <p>Knowing that 2,300&nbsp;rpm is a reasonable moment to change up takes a minute to learn. <b>Coordinating the clutch and the throttle takes weeks</b> — and that is what nearly all of this is about: finding the friction zone, handing off between the two pedals, and letting the clutch back out in gear without the car juddering or stalling.</p>
       <p class="from-bike">If you ride, the revs and the blip already make sense to you. What does not transfer is that a car's clutch is <b>dry</b>: no oil, no cooling, and far less tolerance of being slipped. Drills 1&ndash;5 and the reference section are about exactly that difference.</p>
     </div>
-    <p class="speed-intro">Everything runs at <b>0.4× real time</b> to begin with, so the timing is catchable while you learn it. There is a speed control in each drill — wind it up towards 1× as it stops needing to be slow. A real car gives you no such option, which is rather the point.</p>
+    <p class="speed-intro">Everything runs at <b>0.1× real time</b> to begin with — a tenth of what a real car does — so the timing is catchable while you learn it. <b>Setup</b> inside each drill also lets you slow the pedals on their own, and swap the clutch between <i>press &amp; hold</i> and <i>place it with your thumb</i>. For finding the bite point, try <i>place it</i> and turn the sound on: the clutch has a voice, and you can learn to find the bite without looking at it.</p>
     <div id="drill-list" class="drill-list"></div>
     <p class="disclaimer">
       One invented, clearly stated car. Real pedals, bite points and shift points vary enormously, so everything here is a <b>range and a principle</b>, not your car's numbers. For use at home — never while driving.
@@ -59,7 +59,9 @@
         <button class="link-back" id="back-btn">‹ Exit</button>
         <span id="run-title" class="run-title"></span>
         <span id="grade-note" class="grade-note" hidden></span>
-        <span class="speed-wrap"><span class="speed-label">SPEED</span><span class="speed-pick"></span></span>
+        <button class="sound" id="pause-btn">❚❚ Pause</button>
+        <button class="sound" id="replay-btn">↺ Replay</button>
+        <button class="sound" id="settings-btn">⚙ Setup</button>
         <button class="sound" id="sound-btn">Sound on</button>
       </div>
 
@@ -73,7 +75,23 @@
 
       <!-- middle: what the car is doing -->
       <div class="centre-bay">
-        <div class="speed-note" id="speed-note"></div>
+        <div class="settings-panel" id="settings-panel" hidden>
+          <div class="set-row"><span class="set-label">Practice speed<i>how fast the whole car runs</i></span><span class="speed-pick pick"></span></div>
+          <div class="set-row"><span class="set-label">Pedal travel<i>how fast the pedals themselves move</i></span><span class="rate-pick pick"></span></div>
+          <div class="set-row"><span class="set-label">Clutch control<i>press and hold, or place it with your thumb</i></span><span class="mode-pick pick"></span></div>
+          <div class="set-row"><label class="set-check"><input type="checkbox" id="autohold-cb"> <span>Stop the clutch at the top of the friction zone<i>a training wheel — real pedals do not do this</i></span></label></div>
+          <div class="set-note" id="speed-note"></div>
+          <button class="secondary set-close" id="settings-close">Done</button>
+        </div>
+
+        <div class="replay-panel" id="replay-panel" hidden>
+          <div class="rp-top"><b>Replay</b><span id="replay-read" class="rp-read"></span></div>
+          <div class="rp-controls">
+            <button class="sound" id="rp-play">▶</button>
+            <input type="range" id="replay-scrub" min="0" max="1" value="0" step="1">
+            <button class="sound" id="rp-exit">Close</button>
+          </div>
+        </div>
         <div class="instruction" id="instruction">
           <b id="ins-title"></b>
           <span id="ins-detail"></span>

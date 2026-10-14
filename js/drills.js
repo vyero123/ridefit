@@ -26,7 +26,7 @@ class Drill {
 /* ============================================ 1. finding the bite point */
 
 export class BitePointDrill extends Drill {
-  id = 'bite'; group = 'Clutch control';
+  id = 'bite'; pace = 'fine'; group = 'Clutch control';
   title = 'Finding the bite point';
   aim = 'Feel where the clutch starts to take hold — with no throttle at all.';
   teach = [
@@ -61,7 +61,7 @@ export class BitePointDrill extends Drill {
     };
   }
 
-  tick(sim, dt) {
+  tick(sim, dt, realDt = dt) {
     if (this.done) return null;
     if (sim.stalled && !this.notedStall) {
       this.notedStall = true;
@@ -80,7 +80,7 @@ export class BitePointDrill extends Drill {
     // slower steady creep to hold, and asking for one would be a lie.
     const inZone = sim.clutchPedal > CLUTCH.biteStart && sim.clutchPedal < CLUTCH.biteEnd + 0.06;
     if (sim.kph > 0.4 && inZone) {
-      this.holdTime += dt;
+      this.holdTime += realDt;
       if (this.holdTime >= 3) {
         this.done = true;
         const lines = [
@@ -101,7 +101,7 @@ export class BitePointDrill extends Drill {
 /* ======================================================= 2. the launch */
 
 export class LaunchDrill extends Drill {
-  id = 'launch'; group = 'Clutch control';
+  id = 'launch'; pace = 'fine'; group = 'Clutch control';
   title = 'Pulling away';
   aim = 'Hand over from clutch to throttle without stalling, juddering or burning the plate.';
   teach = [
@@ -148,7 +148,7 @@ export class LaunchDrill extends Drill {
 /* =================================================== 3. traffic crawl */
 
 export class CrawlDrill extends Drill {
-  id = 'crawl'; group = 'Clutch control';
+  id = 'crawl'; pace = 'fine'; group = 'Clutch control';
   title = 'Crawling in traffic';
   aim = 'The hardest real-world clutch test: moving slowly, repeatedly, without living on the pedal.';
   teach = [
@@ -219,7 +219,7 @@ export class CrawlDrill extends Drill {
 /* ============================================ 4. rolling stop, restart */
 
 export class StopStartDrill extends Drill {
-  id = 'stopstart'; group = 'Clutch control';
+  id = 'stopstart'; pace = 'fine'; group = 'Clutch control';
   title = 'Stopping and starting again';
   aim = 'Bring the car to rest without stalling it, leave it tidy, then go again.';
   teach = [
@@ -242,7 +242,7 @@ export class StopStartDrill extends Drill {
     return { title: 'Now away again in first', detail: 'Same hand-off as before: a little gas, then up through the friction zone.' };
   }
 
-  tick(sim, dt) {
+  tick(sim, dt, realDt = dt) {
     if (this.done) return null;
     if (sim.stalled && !this.stalledOnStop && this.phase === 0) {
       this.stalledOnStop = true;
@@ -254,7 +254,7 @@ export class StopStartDrill extends Drill {
     if (this.phase === 0 && sim.kph < 0.6) { this.phase = 1; this.tidyTime = 0; }
     if (this.phase === 1) {
       if (sim.gear === 0 && sim.clutchPedal < 0.08) {
-        this.tidyTime += dt;
+        this.tidyTime += realDt;
         if (this.tidyTime > 1.2) {
           this.phase = 2;
           return this.push({
@@ -263,7 +263,7 @@ export class StopStartDrill extends Drill {
             lines: ['Neutral with your foot off the pedal. That is the right state to wait in: nothing loaded, nothing wearing, and if you are shunted from behind the car will not leap forwards.'],
           });
         }
-      } else this.tidyTime = Math.max(0, this.tidyTime - dt);
+      } else this.tidyTime = Math.max(0, this.tidyTime - realDt);
     }
     return null;
   }
@@ -278,7 +278,7 @@ export class StopStartDrill extends Drill {
 /* ========================================================= 5. hill start */
 
 export class HillStartDrill extends Drill {
-  id = 'hill'; group = 'Clutch control';
+  id = 'hill'; pace = 'fine'; group = 'Clutch control';
   title = 'Hill start';
   aim = 'Pull away uphill without rolling back — and without holding the car on the clutch.';
   teach = [
@@ -317,7 +317,7 @@ export class HillStartDrill extends Drill {
 /* ================================================== 6. the shift hand-off */
 
 export class HandoffDrill extends Drill {
-  id = 'handoff'; group = 'Shifting';
+  id = 'handoff'; pace = 'road'; group = 'Shifting';
   title = 'The hand-off in a gear change';
   aim = 'Change gear without the car nodding — judged on the clutch, not on the timing.';
   teach = [
@@ -360,7 +360,7 @@ export class HandoffDrill extends Drill {
 /* ======================================================= 7. rev matching */
 
 export class RevMatchDrill extends Drill {
-  id = 'revmatch'; group = 'Shifting';
+  id = 'revmatch'; pace = 'road'; group = 'Shifting';
   title = 'Rev matching on downshifts';
   aim = 'Bring the engine up to meet the gear before the clutch has to.';
   teach = [
@@ -411,7 +411,7 @@ export class RevMatchDrill extends Drill {
 /* =============================================== 8. downshift for a corner */
 
 export class CornerDrill extends Drill {
-  id = 'corner'; group = 'Shifting';
+  id = 'corner'; pace = 'road'; group = 'Shifting';
   title = 'Downshifting into a corner';
   aim = 'Brake, change down and get back on the power without unsettling the car.';
   teach = [
@@ -474,7 +474,7 @@ export class CornerDrill extends Drill {
 /* ========================================================= 9. shift timing */
 
 export class TimingDrill extends Drill {
-  id = 'timing'; group = 'When to change';
+  id = 'timing'; pace = 'road'; group = 'When to change';
   title = 'When to change up and down';
   aim = 'The easy part: the rev ranges, and the one mistake that destroys engines.';
   teach = [
@@ -531,7 +531,7 @@ export class TimingDrill extends Drill {
 /* ========================================================= 10. a short drive */
 
 export class DriveDrill extends Drill {
-  id = 'drive'; group = 'Putting it together';
+  id = 'drive'; pace = 'road'; group = 'Putting it together';
   title = 'A short drive';
   aim = 'Everything at once, at the pace of an ordinary road.';
   teach = [

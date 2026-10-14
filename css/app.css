@@ -165,6 +165,37 @@ body.in-run main { max-width: none; padding: 0; margin: 0; }
 .speed-pick button.is-on { background: var(--accent); color: #07243a; }
 .speed-note { font-size: 9.5px; color: var(--ink-dim); letter-spacing: 0.01em; padding: 0 2px; }
 
+/* Setup and replay drop over the centre column; the controls never move. */
+.settings-panel, .replay-panel {
+  background: var(--panel-2); border: 1px solid var(--hairline); border-radius: 10px;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 7px;
+}
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.set-label { font-size: 10.5px; color: var(--ink); display: flex; flex-direction: column; line-height: 1.25; }
+.set-label i, .set-check i { font-style: normal; font-size: 8.5px; color: var(--ink-dim); display: block; }
+.pick { display: flex; border: 1px solid var(--hairline); border-radius: 6px; overflow: hidden; flex: none; }
+.pick button {
+  appearance: none; background: none; border: 0; border-right: 1px solid var(--hairline);
+  color: var(--ink-dim); font: inherit; font-size: 9.5px; font-weight: 700;
+  padding: 4px 6px; cursor: pointer; white-space: nowrap;
+}
+.pick button:last-child { border-right: 0; }
+.pick button.is-on { background: var(--accent); color: #07243a; }
+.set-check { display: flex; align-items: flex-start; gap: 7px; font-size: 10.5px; color: var(--ink); cursor: pointer; }
+.set-check input { margin-top: 2px; accent-color: var(--accent); }
+.set-note { font-size: 9.5px; color: var(--ink-dim); border-top: 1px solid var(--hairline); padding-top: 6px; }
+.set-close { margin-top: 0; padding: 7px; font-size: 12px; }
+
+.rp-top { display: flex; align-items: baseline; gap: 8px; font-size: 11px; }
+.rp-read { color: var(--ink-dim); font-size: 10px; }
+.rp-mark { color: var(--needle); font-style: normal; font-weight: 700; }
+.rp-controls { display: flex; align-items: center; gap: 8px; }
+.rp-controls input[type=range] { flex: 1; accent-color: var(--accent); }
+body.is-paused .cluster-svg { outline: 2px solid var(--bite); outline-offset: 2px; border-radius: 11px; }
+body.is-replaying .cluster-svg { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 11px; }
+.pedal.is-autoheld .pedal-plate { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(111,183,232,0.4); }
+.pedal.is-touch .pedal-body { cursor: grab; }
+
 /* ---- pedals (left thumb) ---- */
 
 .pedal-bay { grid-area: pedals; display: grid; grid-template-columns: 1fr 0.8fr 1fr; grid-template-rows: 1fr auto; gap: 6px; min-height: 0; }
@@ -363,3 +394,5 @@ body.in-run main { max-width: none; padding: 0; margin: 0; }
   .instruction span { font-size: 11px; }
   .pedal-body { min-height: 56px; }
 }
+
+.pace-warn { color: var(--bite); display: block; margin-top: 3px; }

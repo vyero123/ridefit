@@ -48,6 +48,20 @@ export const REFERENCE = [
       <p>Note the asymmetry a rider needs to internalise: the mistake that <i>feels</i> worst — stalling — is free, and the one that feels like competent smooth driving is what wears the clutch out.</p>`,
   },
   {
+    id: 'controls',
+    title: 'The controls, and which to use',
+    body: () => `
+      <p>A real clutch pedal tells your foot where it is. A touchscreen cannot, and that one missing channel is the hardest problem this app has. There are two answers in Setup, and they are genuinely different instruments.</p>
+      <dl class="mech">
+        <dt>Press &amp; hold</dt>
+        <dd>Holding pushes the pedal down; letting go lets it return. Like a real pedal in that you cannot teleport it — but unlike one in that <b>you have no idea where it is without looking</b>, because your thumb is commanding speed, not position. Honest about the sequence; hard for fine work.</dd>
+        <dt>Place it</dt>
+        <dd>Your thumb <i>is</i> the pedal: put it anywhere on the pedal and slide, and the pedal moves with you. Lift off and the spring returns it. This gives back the one thing the other mode cannot — <b>you know where the pedal is because you know where your thumb is</b>. For finding and holding the bite point it is simply the better instrument. Use it for drills 1 to 5.</dd>
+      </dl>
+      <p><b>Listen rather than look.</b> With sound on, the clutch has a voice: silence while the plate is clear, a tone that appears the instant it starts to grip and rises as it grips harder, and a flutter whose speed tracks how fast the plate is slipping. As the two sides converge the flutter slows; when it stops, you are locked. That is the closest this can get to feeling the bite, and it is worth learning to find the bite with your eyes somewhere else.</p>
+      <p class="caveat"><b>Pedal travel</b> is a separate setting from practice speed. Slowing the pedals alone does break the exact correspondence between what you do and what the car does — a slower pedal is a gentler release in the car's terms — but while you are learning where the friction zone is, that is a reasonable trade. Put it back towards 1× as you stop needing it.</p>`,
+  },
+  {
     id: 'speed',
     title: 'Why it runs slower than a real car',
     body: () => `
@@ -55,6 +69,7 @@ export const REFERENCE = [
       <p>The reason is that the useful part of a clutch release lasts under a second in a real car, and a thumb on a screen cannot resolve it. Slowed down, you can feel yourself crossing the friction zone and still have time to do something about it.</p>
       <p>What is slowed is <b>everything, together</b> — pedals, engine response, how fast the revs fall, how quickly the car gathers speed. That matters: slowing only the controls would put them out of step with the car, and the relationship between the two is the entire thing you are here to learn. Because the scale is uniform, the same sequence of pedal movements gives exactly the same result at any speed; you just have more real seconds in which to make it.</p>
       <p>Everything the app measures — slip seconds, clutch heat, how long the pedal was down, the size of the take-up jolt — is counted in the car's own time, not yours. A verdict means the same thing at 0.4× as at 1×.</p>
+      <p>The very slow settings suit the clutch drills (1 to 5). The later drills have to reach road speed, and at 0.05× that is twenty times as long a wait — the app will warn you when the setting and the drill do not suit each other.</p>
       <p class="caveat"><b>Wind it up as you improve.</b> 0.4× is a long way from a real car, and the gap between them is real work. The friction zone has <i>not</i> been widened to help — it is the same fraction of pedal travel it would be in the car, which is to say narrower than you would like.</p>`,
   },
   {

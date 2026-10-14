@@ -77,11 +77,35 @@ export const GEAR_NAMES = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5
  * same thing at every setting.
  */
 export const SPEEDS = [
-  { id: 'slow', scale: 0.4, label: '0.4×', note: 'Practice — well slower than a real car' },
-  { id: 'mid', scale: 0.6, label: '0.6×', note: 'Closing on real time' },
-  { id: 'real', scale: 1.0, label: '1×', note: 'Real time — what the car actually does' },
+  { id: 'crawl', scale: 0.05, label: '0.05×', note: 'Twenty times slower than the car. Everything is visible; nothing is realistic.' },
+  { id: 'verySlow', scale: 0.1, label: '0.1×', note: 'Ten times slower. Good place to meet the friction zone.' },
+  { id: 'slower', scale: 0.15, label: '0.15×', note: 'Still far slower than a real car.' },
+  { id: 'quarter', scale: 0.25, label: '0.25×', note: 'A quarter speed.' },
+  { id: 'slow', scale: 0.4, label: '0.4×', note: 'Practice — well slower than a real car.' },
+  { id: 'mid', scale: 0.6, label: '0.6×', note: 'Closing on real time.' },
+  { id: 'real', scale: 1.0, label: '1×', note: 'Real time — what the car actually does.' },
 ];
-export const DEFAULT_SPEED = 'slow';
+export const DEFAULT_SPEED = 'verySlow';
+
+/**
+ * How fast the pedals themselves move, as a multiple of their normal rate —
+ * a second axis, independent of the practice speed.
+ *
+ * The uniform time scale above is the right way to slow the *car*, because it
+ * keeps the controls and the car in step. But it cannot fix a separate
+ * problem: a press-and-hold pedal is a rate control, and a thumb has no sense
+ * of where a rate control has got to. Slowing the pedals alone does break the
+ * exact correspondence between pedal movement and car response — a slower
+ * pedal means a gentler release in the car's terms — but that is a legitimate
+ * thing to want while learning where the friction zone is.
+ */
+export const PEDAL_RATES = [
+  { id: 'glacial', mult: 0.2, label: '0.2×' },
+  { id: 'verySlow', mult: 0.35, label: '0.35×' },
+  { id: 'slow', mult: 0.6, label: '0.6×' },
+  { id: 'normal', mult: 1.0, label: '1×' },
+];
+export const DEFAULT_PEDAL_RATE = 'slow';
 
 /** Total reduction from crank to wheel for a gear. 0 (neutral) has none. */
 export function totalRatio(gear) {

@@ -1,6 +1,6 @@
 // main.js — app shell: views, drill flow, the loop.
 
-import { CAR, CLUTCH, SPEEDS, DEFAULT_SPEED } from './car.js';
+import { CAR, CLUTCH, SPEEDS, DEFAULT_SPEED, PEDAL_RATES, DEFAULT_PEDAL_RATE } from './car.js';
 import { Sim } from './sim.js';
 import { Cluster } from './instruments.js';
 import { Gate } from './gate.js';
@@ -9,6 +9,7 @@ import { EngineAudio } from './audio.js';
 import { DRILLS } from './drills.js';
 import { habitNotes } from './coach.js';
 import { REFERENCE } from './reference.js';
+import { Recorder } from './recorder.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -20,6 +21,11 @@ const app = {
   audio: new EngineAudio(),
   timeScale: SPEEDS.find((s) => s.id === DEFAULT_SPEED).scale,
   speedId: DEFAULT_SPEED,
+  pedalRate: 1,
+  clutchMode: 'press',
+  paused: false,
+  replay: null,
+  recorder: new Recorder(),
   drill: null, drillClass: null,
   cluster: null, gate: null,
   running: false,
@@ -86,10 +92,13 @@ function startRun() {
   $('#run-title').textContent = d.title;
   app.gate.syncTo(app.sim.gear);
   app.clutch.reset(); app.throttle.reset(); app.brakePedal.reset();
+  app.recorder.reset(); endReplay(); setPaused(false);
+  $('#settings-panel').hidden = true;
   app.handbrake.set(!!app.sim.handbrake);
   $('#grade-note').textContent = app.sim.gradePercent ? `${app.sim.gradePercent}% UPHILL` : '';
   $('#grade-note').hidden = !app.sim.gradePercent;
   app.cluster.setWindow(d.band);
+  setSpeed(app.speedId);   // refresh the pace warning for this drill
   warnHold = { key: null, until: 0 };
   app.running = true;
   app.audio.enable();
@@ -184,13 +193,22 @@ function advance(dt) {
 
   const d = app.drill;
   if (d) {
-    pushCard(d.tick?.(app.sim, dt));
+    pushCard(d.tick?.(app.sim, dt, dt / app.timeScale));
     const ins = d.instruction(app.sim);
     $('#ins-title').textContent = ins.title;
     $('#ins-detail').innerHTML = ins.detail || '';
     app.gate.setTarget(d.targetGear ?? null);
     app.cluster.setWindow(d.band);
     if (d.done) $('#finish-btn').textContent = 'See the breakdown →';
+  }
+
+  app.recorder.sample(app.sim, dt, {
+    clutch: app.clutch.value, throttle: app.throttle.value, brake: app.brakePedal.value,
+  });
+  for (const f of app.sim.flags) {
+    if (f === 'stall') app.recorder.mark(app.sim.t, 'stall', 'stalled');
+    else if (f === 'snatch') app.recorder.mark(app.sim.t, 'snatch', 'take-up jolt');
+    else if (f === 'riding') app.recorder.mark(app.sim.t, 'slip', 'slipping');
   }
 
   app.cluster.update(app.sim);
@@ -203,8 +221,72 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  advance(dt);
+  if (app.replay) stepReplay(dt);
+  else if (!app.paused) advance(dt);
   requestAnimationFrame(frame);
+}
+
+/* ------------------------------------------------------- pause & replay */
+
+function setPaused(on) {
+  app.paused = on;
+  $('#pause-btn').textContent = on ? '▶ Resume' : '❚❚ Pause';
+  $('#pause-btn').classList.toggle('is-on', on);
+  document.body.classList.toggle('is-paused', on);
+  if (on) app.audio.disable();
+  else if ($('#sound-btn').classList.contains('is-on')) app.audio.enable();
+}
+
+function startReplay() {
+  const span = app.recorder.span;
+  if (!span) return;
+  const from = Math.max(span[0], span[1] - 7);
+  app.replay = { ...app.recorder.slice(from, span[1]), i: 0, acc: 0, rate: 0.25 };
+  if (!app.replay.frames.length) { app.replay = null; return; }
+  app.audio.disable();
+  $('#replay-panel').hidden = false;
+  $('#replay-scrub').max = String(app.replay.frames.length - 1);
+  document.body.classList.add('is-replaying');
+}
+
+function endReplay() {
+  app.replay = null;
+  $('#replay-panel').hidden = true;
+  document.body.classList.remove('is-replaying');
+  if ($('#sound-btn').classList.contains('is-on')) app.audio.enable();
+}
+
+function stepReplay(dtReal) {
+  const R = app.replay;
+  if (!R.playing) { renderReplayFrame(R.i); return; }
+  R.acc += dtReal * R.rate;
+  const period = 1 / 40;
+  while (R.acc >= period && R.i < R.frames.length - 1) { R.acc -= period; R.i++; }
+  if (R.i >= R.frames.length - 1) R.playing = false;
+  $('#replay-scrub').value = String(R.i);
+  renderReplayFrame(R.i);
+}
+
+/** Draw the instruments from a recorded frame rather than the live sim. */
+function renderReplayFrame(i) {
+  const R = app.replay, f = R.frames[i];
+  if (!f) return;
+  const ghost = {
+    stalled: f.stalled, rpm: f.rpm, kph: f.kph, gear: f.gear,
+    inGear: f.gear !== 0, drivenRpm: f.wheelRpm, slipRpm: f.slip,
+    engagement: f.engagement, clutchHeat: f.heat, clutchPedal: f.clutch,
+  };
+  app.cluster.update(ghost);
+  app.clutch.showGhost(f.clutch);
+  app.throttle.showGhost(f.throttle);
+  app.brakePedal.showGhost(f.brake);
+  const near = R.marks.filter((m) => Math.abs(m.t - f.t) < 0.25);
+  $('#replay-read').innerHTML =
+    `<b>${(f.t - R.frames[0].t).toFixed(2)}s</b> · clutch ${Math.round(f.clutch * 100)}%`
+    + ` · gas ${Math.round(f.throttle * 100)}%`
+    + ` · engine ${Math.round(f.rpm)} rpm · wheels want ${Math.round(f.wheelRpm)}`
+    + ` · ${Math.round(f.kph)} km/h`
+    + (near.length ? ` <em class="rp-mark">${near.map((m) => m.text).join(', ')}</em>` : '');
 }
 
 const WARNINGS = {
@@ -246,26 +328,81 @@ function renderWarnings() {
 
 /* ----------------------------------------------------- practice speed */
 
+const store = {
+  get(k, d) { try { return localStorage.getItem('shift.' + k) || d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('shift.' + k, v); } catch (e) { /* private mode */ } },
+};
+
 function setSpeed(id) {
   const s = SPEEDS.find((x) => x.id === id) || SPEEDS[0];
   app.speedId = s.id;
   app.timeScale = s.scale;
-  $$('.speed-pick button').forEach((b) => b.classList.toggle('is-on', b.dataset.speed === s.id));
-  $('#speed-note').textContent = s.note;
-  try { localStorage.setItem('shift.speed', s.id); } catch (e) { /* private mode */ }
+  $$('.speed-pick button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === s.id));
+  $('#speed-note').innerHTML = s.note + paceWarning(s.scale);
+  store.set('speed', s.id);
 }
 
-function buildSpeedPicker() {
-  const host = $('.speed-pick');
-  host.innerHTML = SPEEDS.map((s) =>
-    `<button data-speed="${s.id}" title="${s.note}">${s.label}</button>`).join('');
-  host.addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if (b) setSpeed(b.dataset.speed);
+/**
+ * The very slow settings are for clutch work. A drill that has to reach road
+ * speed simply takes twenty times as long at 0.05×, which is not training,
+ * it is waiting — so say so rather than letting him discover it.
+ */
+function paceWarning(scale) {
+  const d = app.drill;
+  if (!d || d.pace !== 'road' || scale > 0.2) return '';
+  return ` <b class="pace-warn">This drill needs road speed — at this setting it will take several minutes. The slow settings suit drills 1–5.</b>`;
+}
+
+function setPedalRate(id) {
+  const r = PEDAL_RATES.find((x) => x.id === id) || PEDAL_RATES[2];
+  app.pedalRate = r.mult;
+  $$('.rate-pick button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === r.id));
+  for (const p of [app.clutch, app.throttle, app.brakePedal]) p?.setResponse(r.mult);
+  store.set('pedalRate', r.id);
+}
+
+function setClutchMode(mode) {
+  app.clutchMode = mode;
+  $$('.mode-pick button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === mode));
+  app.clutch?.setMode(mode);
+  // Auto-hold only means anything for a pedal that moves on its own.
+  $('#autohold-cb').disabled = mode === 'touch';
+  store.set('clutchMode', mode);
+}
+
+function buildSettings() {
+  const fill = (sel, items, onPick) => {
+    const host = $(sel);
+    host.innerHTML = items.map((i) => `<button data-v="${i.id}" title="${i.note || ''}">${i.label}</button>`).join('');
+    host.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b) onPick(b.dataset.v);
+    });
+  };
+  fill('.speed-pick', SPEEDS, setSpeed);
+  fill('.rate-pick', PEDAL_RATES, setPedalRate);
+  fill('.mode-pick', [
+    { id: 'press', label: 'Press & hold', note: 'Hold to push the pedal down; let go and it returns.' },
+    { id: 'touch', label: 'Place it', note: 'Your thumb is the pedal: slide to put it where you want.' },
+  ], setClutchMode);
+
+  $('#settings-btn').addEventListener('click', () => {
+    const p = $('#settings-panel');
+    p.hidden = !p.hidden;
+    if (!p.hidden) $('#replay-panel').hidden = true;
   });
-  let saved = DEFAULT_SPEED;
-  try { saved = localStorage.getItem('shift.speed') || DEFAULT_SPEED; } catch (e) { /* private mode */ }
-  setSpeed(saved);
+  $('#settings-close').addEventListener('click', () => { $('#settings-panel').hidden = true; });
+  $('#autohold-cb').addEventListener('change', (e) => {
+    app.clutch.setAutoHold(e.target.checked);
+    store.set('autoHold', e.target.checked ? '1' : '0');
+  });
+
+  setSpeed(store.get('speed', DEFAULT_SPEED));
+  setPedalRate(store.get('pedalRate', DEFAULT_PEDAL_RATE));
+  setClutchMode(store.get('clutchMode', 'press'));
+  const ah = store.get('autoHold', '0') === '1';
+  $('#autohold-cb').checked = ah;
+  app.clutch.setAutoHold(ah);
 }
 
 /* ------------------------------------------------------- reference */
@@ -332,7 +469,23 @@ function init() {
     else { app.audio.enable(); e.currentTarget.classList.add('is-on'); e.currentTarget.textContent = 'Sound on'; }
   });
   $('#sound-btn').classList.add('is-on');
-  buildSpeedPicker();
+  buildSettings();
+
+  $('#pause-btn').addEventListener('click', () => setPaused(!app.paused));
+  $('#replay-btn').addEventListener('click', () => { setPaused(false); startReplay(); });
+  $('#rp-exit').addEventListener('click', endReplay);
+  $('#rp-play').addEventListener('click', () => {
+    const R = app.replay; if (!R) return;
+    if (R.i >= R.frames.length - 1) R.i = 0;
+    R.playing = !R.playing;
+    $('#rp-play').textContent = R.playing ? '❚❚' : '▶';
+  });
+  $('#replay-scrub').addEventListener('input', (e) => {
+    if (!app.replay) return;
+    app.replay.playing = false; $('#rp-play').textContent = '▶';
+    app.replay.i = Number(e.target.value);
+    renderReplayFrame(app.replay.i);
+  });
 
   const keys = { ' ': 'clutch', c: 'clutch', x: 'throttle', z: 'brake' };
   addEventListener('keydown', (e) => {

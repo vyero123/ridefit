@@ -42,8 +42,11 @@ export class Pedal {
     this.onChange = onChange;
     this.value = 0;
     this.pressed = false;
+    this.autoHeld = false;
+    this.mode = opts.mode || 'press';
     this.pointers = new Set();
     this._build();
+    this.setMode(this.mode);
   }
 
   _build() {
@@ -69,7 +72,22 @@ export class Pedal {
       e.preventDefault();
       this.pointers.add(e.pointerId);
       this.body.setPointerCapture?.(e.pointerId);
+      // Position mode grabs from wherever the thumb lands, so the pedal never
+      // jumps: the touch point becomes "here", and moving from it moves the
+      // pedal by the same proportion of the body's height.
+      this._grabY = e.clientY;
+      this._grabValue = this.value;
+      this.autoHeld = false;
       this._setPressed(true);
+    };
+    const move = (e) => {
+      if (!this.pointers.has(e.pointerId) || this.mode !== 'touch') return;
+      e.preventDefault();
+      const h = this.body.getBoundingClientRect().height || 1;
+      const gain = 1 / (this.opts.response ?? 1);   // slower pedal = more thumb per unit
+      const v = this._grabValue + ((e.clientY - this._grabY) / h) / Math.max(0.35, gain * 0.9);
+      this.value = Math.max(0, Math.min(1, v));
+      this._dirty = true;
     };
     const up = (e) => {
       this.pointers.delete(e.pointerId);
@@ -77,6 +95,7 @@ export class Pedal {
       if (!this.pointers.size) this._setPressed(false);
     };
     this.body.addEventListener('pointerdown', down);
+    this.body.addEventListener('pointermove', move);
     this.body.addEventListener('pointerup', up);
     this.body.addEventListener('pointercancel', up);
     this.body.addEventListener('lostpointercapture', up);
@@ -86,23 +105,58 @@ export class Pedal {
   _setPressed(on) {
     this.pressed = on;
     this.host.classList.toggle('is-pressed', on);
+    if (on) this.autoHeld = false;
   }
 
   /** Keyboard and programmatic pressing use the same path as a finger. */
   hold(on) { this._setPressed(on); }
 
+  /** 'press' = hold to push it down; 'touch' = the thumb is the pedal. */
+  setMode(mode) {
+    this.mode = mode;
+    this.host.classList.toggle('is-touch', mode === 'touch');
+    const sub = this.host.querySelector('.pedal-name i');
+    if (sub) sub.innerHTML = mode === 'touch' ? 'slide to place' : (this.opts.sub || '&nbsp;');
+  }
+
+  setResponse(mult) { this.opts.response = mult; }
+  setAutoHold(on) { this.opts.autoHold = on; if (!on) this.autoHeld = false; }
+
   tick(dt) {
-    const { downRate, upRate, fineZone, fineFactor = 0.42 } = this.opts;
+    const { downRate, upRate, fineZone, fineFactor = 0.42, response = 1, autoHold } = this.opts;
     const before = this.value;
-    // The pedal moves more slowly through the band where the skill lives.
-    // A real pedal does this too — the diaphragm spring goes over centre and
-    // the force needed changes — but the reason it is here is resolution: all
-    // of clutch control happens inside a third of the travel, and a control
-    // that crosses that band in a tenth of a second cannot be held in it.
-    const fine = fineZone && this.value > fineZone[0] && this.value < fineZone[1];
-    const k = fine ? fineFactor : 1;
-    if (this.pressed) this.value = Math.min(1, this.value + downRate * k * dt);
-    else this.value = Math.max(0, this.value - upRate * k * dt);
+
+    if (this.mode === 'touch') {
+      // The finger holds the position; nothing moves on its own except the
+      // spring, which returns the pedal when the foot comes off.
+      if (!this.pressed && this.value > 0) {
+        this.value = Math.max(0, this.value - upRate * response * dt);
+      }
+    } else {
+      // The pedal moves more slowly through the band where the skill lives.
+      // A real pedal does this too — the diaphragm spring goes over centre and
+      // the force needed changes — but the reason it is here is resolution: all
+      // of clutch control happens inside a third of the travel, and a control
+      // that crosses that band in a tenth of a second cannot be held in it.
+      const fine = fineZone && this.value > fineZone[0] && this.value < fineZone[1];
+      const k = (fine ? fineFactor : 1) * response;
+      if (this.pressed) {
+        this.value = Math.min(1, this.value + downRate * k * dt);
+      } else if (!this.autoHeld) {
+        const next = Math.max(0, this.value - upRate * k * dt);
+        // Auto-hold: coming up, stop dead at the top of the friction zone so
+        // the pedal can be inspected there. An explicit training wheel.
+        if (autoHold && fineZone && this.value > fineZone[1] && next <= fineZone[1]) {
+          this.value = fineZone[1];
+          this.autoHeld = true;
+          this.host.classList.add('is-autoheld');
+        } else {
+          this.value = next;
+        }
+      }
+    }
+    if (!this.autoHeld) this.host.classList.remove('is-autoheld');
+
     if (this.value !== before || this._dirty) {
       this._dirty = false;
       this._render();
@@ -112,12 +166,21 @@ export class Pedal {
 
   reset() {
     this.pressed = false;
+    this.autoHeld = false;
     this.pointers.clear();
     this.value = 0;
-    this.host.classList.remove('is-pressed');
+    this.host.classList.remove('is-pressed', 'is-autoheld');
     this._dirty = true;
     this._render();
     this.onChange(0);
+  }
+
+  /** Draw a recorded position during replay, without touching the live value. */
+  showGhost(v) {
+    this.fill.style.height = (v * 100) + '%';
+    this.plate.style.top = `calc(${(v * 100).toFixed(1)}% - ${(v * 24).toFixed(1)}px)`;
+    this.pct.textContent = Math.round(v * 100);
+    this._dirty = true;
   }
 
   _render() {
