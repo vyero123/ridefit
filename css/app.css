@@ -345,13 +345,21 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 }
 .mech dd { margin: 3px 0 0; font-size: 13.5px; color: var(--ink); }
 
-.ref-table { width: 100%; border-collapse: collapse; margin: 10px 0 12px; font-size: 12px; }
-.ref-table th {
-  text-align: left; color: var(--ink-dim); font-size: 9.5px; letter-spacing: 0.06em;
-  text-transform: uppercase; padding: 0 5px 6px; border-bottom: 1px solid var(--hairline);
-  font-weight: 700; line-height: 1.3;
+/* Nothing may make the document wider than the screen. */
+body, main, .view { max-width: 100%; }
+.ref-content, .teach-body, .card, .habit { overflow-wrap: anywhere; }
+
+.ref-table {
+  width: 100%; table-layout: fixed; border-collapse: collapse;
+  margin: 10px 0 8px; font-size: 12.5px;
 }
-.ref-table td { padding: 7px 5px; border-bottom: 1px solid rgba(57,67,76,0.5); }
+.ref-table th {
+  text-align: left; color: var(--ink-dim); font-size: 9px; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 0 4px 6px; border-bottom: 1px solid var(--hairline);
+  font-weight: 700; line-height: 1.25;
+}
+.ref-table td { padding: 7px 4px; border-bottom: 1px solid rgba(57,67,76,0.5); }
+.table-note { font-size: 12px; color: var(--ink-dim); }
 .ref-table td.g { font-weight: 800; color: var(--ink-bright); }
 .ref-table td.lim { color: var(--needle); font-weight: 650; }
 

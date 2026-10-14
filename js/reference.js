@@ -5,14 +5,15 @@ import { CAR, kphPer1000, maxSpeedForGear, speedAtRpm } from './car.js';
 const r = (n) => Math.round(n).toLocaleString('en-GB');
 
 function gearTable() {
-  const head = `<tr><th>Gear</th><th>km/h per<br>1,000 rpm</th><th>${CAR.upshiftNormal[0]}–${CAR.upshiftNormal[1]} rpm<br>(upshift window)</th><th>Max before<br>the limiter</th></tr>`;
+  const head = `<tr><th>Gear</th><th>km/h per<br>1,000&nbsp;rpm</th><th>Upshift<br>window</th><th>Ceiling</th></tr>`;
   const rows = [];
   for (let g = 1; g <= 6; g++) {
     const lo = speedAtRpm(CAR.upshiftNormal[0], g) * 3.6;
     const hi = speedAtRpm(CAR.upshiftNormal[1], g) * 3.6;
-    rows.push(`<tr><td class="g">${g}</td><td>${kphPer1000(g).toFixed(1)}</td><td>${r(lo)}–${r(hi)} km/h</td><td class="lim">${r(maxSpeedForGear(g))} km/h</td></tr>`);
+    rows.push(`<tr><td class="g">${g}</td><td>${kphPer1000(g).toFixed(1)}</td><td>${r(lo)}–${r(hi)}</td><td class="lim">${r(maxSpeedForGear(g))}</td></tr>`);
   }
-  return `<table class="ref-table">${head}${rows.join('')}</table>`;
+  return `<table class="ref-table">${head}${rows.join('')}</table>
+    <p class="table-note">Upshift window and ceiling in km/h. The window is where you would normally change <i>up</i>; the ceiling is the fastest you can select that gear without going past the limiter — the number that matters changing <i>down</i>.</p>`;
 }
 
 export const REFERENCE = [
@@ -29,7 +30,7 @@ export const REFERENCE = [
     body: () => `
       <p>Three things that are really one thing. Fix any two and the third is decided — that is all a gearbox is.</p>
       ${gearTable()}
-      <p>The middle column is where you would normally be changing <i>up</i>. The last column is the one that matters for changing <i>down</i>: select a gear above that speed and you are over the limiter the instant the clutch bites.</p>
+      <p>Select a gear above its ceiling and you are over the limiter the instant the clutch bites. That is the whole of the money shift.</p>
       <p class="caveat">Rough shape worth carrying in your head: <b>second is a town gear, third is a roundabout gear, fourth and fifth are road gears, sixth is a motorway gear.</b></p>`,
   },
   {
