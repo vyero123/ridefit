@@ -119,7 +119,7 @@ function pushCard(c) {
   app.cards.push(c);
   // Live, only the newest and only the first couple of sentences: this sits
   // above the controls, and anything longer pushes the gate off the screen.
-  const brief = { ...c, lines: c.lines.slice(0, 2) };
+  const brief = { ...c, lines: c.lines.slice(0, 1) };
   $('#cards').innerHTML = cardHtml(brief);
 }
 

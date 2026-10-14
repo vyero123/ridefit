@@ -100,12 +100,12 @@ export class Cluster {
         svg.appendChild(el('line', { x1: hx1, y1: hy1, x2: hx2, y2: hy2, stroke: 'var(--hairline)', 'stroke-width': 1.5 }));
       }
     }
-    // The scale sweep stops well short of the bottom of the dial, so the
-    // digital readout lives down there where it cannot crowd the numerals.
-    svg.appendChild(el('text', { x: cx, y: cy - 28, 'text-anchor': 'middle', class: 'dial-unit' }, 'rpm x1000'));
+    // The scale sweep stops short of the bottom of the dial, and that gap is
+    // the only part of the interior the numerals do not reach — so the
+    // digital readout goes there, and nothing else goes inside at all.
     this.rpmText = el('text', { x: cx, y: cy + 30, 'text-anchor': 'middle', class: 'rpm-digits' }, '800');
     svg.appendChild(this.rpmText);
-    this.rpmLabel = el('text', { x: cx, y: cy + 45, 'text-anchor': 'middle', class: 'dial-sub' }, 'idle');
+    this.rpmLabel = el('text', { x: cx, y: cy + 44, 'text-anchor': 'middle', class: 'dial-sub' }, 'rpm');
     svg.appendChild(this.rpmLabel);
 
     // Needle last, on top.
@@ -172,15 +172,16 @@ export class Cluster {
     this.needle.setAttribute('transform', `translate(${cx} ${cy}) rotate(${rpmToDeg(rpm).toFixed(2)})`);
 
     this.rpmText.textContent = sim.stalled ? '—' : String(Math.round(rpm / 10) * 10);
-    let label = '';
+    let label = 'rpm';
     if (sim.stalled) label = 'stalled';
     else if (rpm > CAR.mechanicalLimitRpm) label = 'DAMAGE';
     else if (rpm > CAR.redlineRpm) label = 'over-rev';
     else if (sim.inGear && sim.engagement > 0.9 && rpm < CAR.lugBand[0]) label = 'lugging';
     else if (rpm < CAR.idleRpm + 120) label = 'idle';
+    else if (sim.inGear && sim.engagement > 0.9 && rpm < CAR.lugBand[1]) label = 'low';
     this.rpmLabel.textContent = label;
     this.rpmLabel.setAttribute('class',
-      'dial-sub' + (rpm > CAR.redlineRpm ? ' is-danger' : (label === 'lugging' ? ' is-warn' : '')));
+      'dial-sub' + (rpm > CAR.redlineRpm ? ' is-danger' : (label === 'lugging' || label === 'low' ? ' is-warn' : '')));
 
     this.speedText.textContent = String(Math.round(Math.abs(sim.kph)));
     this.gearText.textContent = sim.gear === 0 ? 'N' : (sim.gear === -1 ? 'R' : String(sim.gear));
