@@ -158,10 +158,9 @@ function drainEvents() {
 }
 
 let last = performance.now();
-function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
 
+/** One step of the world. Split out so it can be driven by hand. */
+function advance(dt) {
   if (app.running) {
     app.throttle.tick(dt);
     app.brakePedal.tick(dt);
@@ -184,6 +183,12 @@ function frame(now) {
     renderWarnings();
     app.sim.flags.clear();
   }
+}
+
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  advance(dt);
   requestAnimationFrame(frame);
 }
 
@@ -289,6 +294,11 @@ function init() {
     if (!k) return;
     (k === 'clutch' ? app.clutch : k === 'throttle' ? app.throttle : app.brakePedal).hold(false);
   });
+
+  // With ?debug, hand the app and a manual clock to the console. Useful for
+  // poking at the physics, and necessary for testing where requestAnimation-
+  // Frame is throttled (an offscreen or background tab).
+  if (location.search.includes('debug')) window.shift = { app, advance };
 
   renderDrillList();
   renderReference();
