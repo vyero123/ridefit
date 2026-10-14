@@ -119,7 +119,11 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 
 /* =================================================== the run view */
 
+/* The run view is the one screen that owns the whole display: it has to
+   escape the reading column the rest of the app lives in. */
 .view-run { padding: 0; }
+body.in-run { overflow: hidden; }
+body.in-run main { max-width: none; padding: 0; margin: 0; }
 .rotate-prompt { display: none; }
 
 .run-grid {
