@@ -1,67 +1,72 @@
-# Shift — a manual-transmission timing trainer
+# Shift — a clutch and gear coordination trainer
 
-A focused trainer for learning **when** to change gear in a manual car, and
-**how** to treat a dry clutch. Built for someone who can already ride a
-motorcycle with a wet clutch and is moving to a pedal-operated car.
+A trainer for the part of driving a manual car that actually takes weeks:
+**coordinating the clutch and the throttle.** Finding the friction zone,
+handing off between the two pedals, and letting the clutch back out in gear
+without the car lurching or stalling. Shift timing is in here too, but as
+supporting material — knowing that 2,300 rpm is a sensible moment to change
+up takes a minute to learn.
 
-It is not a racing simulator. Nothing here is timed or scored for speed.
-The only things measured are the rpm at which a shift was made, where that
-left the engine, and what the clutch pedal did.
+Built for someone who can already ride a motorcycle with a wet clutch and is
+moving to a dry, pedal-operated one.
 
 Live: https://ride-fit.netlify.app
 
-## What it teaches
+## Layout
 
-- **Upshifts** — the principle (shift up when you no longer need the
-  acceleration the gear is giving you) plus the ranges: ~2,000–2,500 rpm
-  petrol, ~1,800–2,200 diesel, 3,000–3,500 when driving briskly.
-- **Downshifts** — change down before the engine lugs (below roughly
-  1,200–1,500 rpm under load), and the maximum safe speed for each gear.
-  The money shift — selecting a gear so low that the wheels spin the engine
-  past its mechanical limit — is treated as the headline risk it is.
-- **The clutch**, tailored to a rider: a wet clutch sits in oil and tolerates
-  slip; a dry clutch has no cooling and does not. Pedal down only as long as
-  the shift takes; never ride it; neutral and foot off at a stop; never hold
-  a hill on it; release speed matters more than total duration.
-- **Damage mechanisms** as cause and effect: lugging, over-revving, clutch
-  slip and heat, release-bearing wear, resting a foot on the pedal.
+Landscape, laid out the way the car is: **pedals under the left thumb, gear
+lever under the right, instruments between them.** Portrait asks you to
+rotate, with an upright fallback for anyone who would rather not.
 
-## The app
+## Controls
 
-- Tachometer with a marked shift window, speedometer, gear indicator and a
-  clutch-position gauge with a live hold timer.
-- A real H-pattern gate the lever is dragged through — not six buttons. The
-  lever will not enter a gear while the clutch is still gripping.
-- Clutch and throttle are travel strips: your finger position is the pedal
-  position, in both directions, so you control release speed through the
-  bite point and can hold a steady 2,000 rpm or deliver a blip.
-- Six progressive drills: upshifts, downshifts, both, rev matching, hill
-  start, a short mixed drive. Each teaches, then tests, then reports.
-- A reference section: gear/speed/rpm table, the clutch rules, the damage
-  mechanisms, and a plain statement of what the model does not cover.
+Pedals are **pressed, not dragged**: hold to push one down, let go and it
+comes back up, neither instantly. Holding a position part-way — which is the
+whole of clutch control — is therefore a matter of pressing and easing off in
+rhythm. The clutch moves at about 60% speed inside the friction zone, because
+all of the skill lives in a third of the travel and a control that crosses
+that band in a tenth of a second cannot be held in it. Travel and effort are
+shown live on each pedal.
+
+The gear lever is a real H-pattern gate you drag through, and it will not
+enter a gear while the clutch is still gripping.
+
+## Drills
+
+**Clutch control** — finding the bite point, pulling away, crawling in
+traffic, stopping and starting again, hill start.
+**Shifting** — the hand-off in a gear change, rev matching, downshifting into
+a corner.
+**When to change** — the rev ranges and the money shift.
+**Putting it together** — a short drive.
+
+Each one teaches, then tests, then reports. Launches are judged as single
+events: **stalled**, **slipped** or **clean**, with the size of the take-up
+jolt reported alongside.
 
 ## Model
 
-One invented, clearly-stated car: generic 1.6 petrol hatchback, 6-speed,
-ratios 3.73/2.05/1.39/1.03/0.84/0.69, final drive 4.06, 205/55 R16.
+Three bodies — engine, gearbox input shaft, car. A friction clutch couples the
+first two, with grip that rises as the slip falls; a torsion spring couples
+the second two. An idle governor with real authority, which is what lets the
+car creep away on idle alone and therefore what makes the bite-point drill
+possible. Hydraulic lag on the clutch and intake lag on the throttle, both
+real, and both needed so that holding a pedal in rhythm does not read as
+roughness.
 
-Two masses — engine flywheel and vehicle — joined by a clutch that can slip.
-rpm comes from road speed through gear ratio, final drive and tyre
-circumference. An asymmetric torque curve, closed-throttle engine braking,
-clutch slip with heat accumulation, and a stall when the engine is dragged
-below idle while engaged. Fixed 1/480 s substeps.
+Stalling, clutch heat, engine braking, lugging and over-revving all fall out
+of that rather than being scripted. **Sustained judder does not** — the model
+produces a single take-up jolt and settles, so the app reports the jolt and
+says plainly that it is not reproducing judder proper.
 
-Rev-match error is sampled at the *top* of the bite range, where engine and
-wheels are still turning independently; by the bottom of the range the clutch
-has already pulled them together and the difference has become heat.
+One invented car: generic 1.6 petrol hatchback, 6-speed, ratios
+3.73/2.05/1.39/1.03/0.84/0.69, final drive 4.06, 205/55 R16, ~1,300 kg.
 
-`?debug` exposes the app object and a manual `advance(dt)` on `window.shift`.
+Real pedals, bite points and shift points vary enormously. Everything here is
+a range and a principle, not your car's numbers — and **pedal feel, which is
+most of real clutch control, is the one thing a touchscreen cannot give you.**
 
-Real shift points vary by vehicle, load and gradient. Everything here is a
-range and a principle, not a specification — and the app says so.
-
-**For use away from the road.** Nobody should be looking at a phone while
-driving, and this is no substitute for instruction in a real car.
+**For use away from the road.**
 
 ## Structure
 
@@ -69,16 +74,18 @@ No build step, no dependencies, plain ES modules.
 
     index.html
     css/app.css
-    js/car.js         vehicle constants, ratios, torque curve, clutch curve
-    js/sim.js         the two-mass drivetrain simulation
-    js/instruments.js SVG gauge cluster
+    js/car.js         vehicle constants, torque curve, clutch friction
+    js/sim.js         the three-body drivetrain simulation
+    js/instruments.js SVG cluster, including the engine-vs-wheels slip bar
     js/gate.js        H-pattern gate
-    js/controls.js    clutch travel strip and ramp pedals
+    js/controls.js    pressed pedals with progressive travel
     js/audio.js       engine note
-    js/coach.js       feedback and habit assessment
-    js/drills.js      the six drills
+    js/coach.js       verdicts and habit assessment
+    js/drills.js      the ten drills
     js/reference.js   reference content
     js/main.js        app shell and loop
 
-The previous occupant of this repo root, a piano practice app, is preserved
+`?debug` exposes the app object and a manual `advance(dt)` on `window.shift`.
+
+The piano practice app that previously occupied this repo root is preserved
 on branch `piano-final` and tag `piano-v1`.
