@@ -84,7 +84,9 @@ export class DownshiftDrill extends Drill {
   // down is the lugging zone, which the dial always shows.
   constructor() { super(); this.band = null; }
 
-  setup() { return { speed: 100 / 3.6, gear: 6, rpm: rpmAtSpeed(100 / 3.6, 6) }; }
+  // 115 km/h on purpose: from here, second really would destroy the engine
+  // rather than merely frighten it, so the mistake is available to make.
+  setup() { return { speed: 115 / 3.6, gear: 6, rpm: rpmAtSpeed(115 / 3.6, 6) }; }
 
   instruction(sim) {
     if (sim.kph < 12 && sim.gear <= 2) { this.done = true; }
