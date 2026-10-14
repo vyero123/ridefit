@@ -50,7 +50,7 @@ export class Pedal {
     const { label, sub, zones, marks = [], cls = '' } = this.opts;
     this.host.className = 'pedal ' + cls;
     this.host.innerHTML = `
-      <div class="pedal-name">${label}<i>${sub || ''}</i></div>
+      <div class="pedal-name">${label}<i>${sub || '&nbsp;'}</i></div>
       <div class="pedal-body">
         <div class="pedal-zones">
           ${zones.map((z) => `<div class="pedal-zone ${z.cls}" style="flex:${z.h}"><span>${z.text}</span></div>`).join('')}
@@ -116,7 +116,8 @@ export class Pedal {
   _render() {
     const v = this.value;
     this.fill.style.height = (v * 100) + '%';
-    this.plate.style.top = `calc(${v * 100}% - 11px)`;
+    // The pedal face travels inside the body rather than off the top of it.
+    this.plate.style.top = `calc(${(v * 100).toFixed(1)}% - ${(v * 24).toFixed(1)}px)`;
     this.pct.textContent = Math.round(v * 100);
     this.host.classList.toggle('is-down', v > 0.02);
   }

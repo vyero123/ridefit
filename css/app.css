@@ -180,7 +180,7 @@ body.in-run main { max-width: none; padding: 0; margin: 0; }
 .is-throttle .pedal-fill { background: rgba(62,201,138,0.2); }
 .is-brake .pedal-fill { background: rgba(229,72,77,0.2); }
 .pedal-plate {
-  position: absolute; left: 3px; right: 3px; height: 22px; top: -11px; border-radius: 5px;
+  position: absolute; left: 3px; right: 3px; height: 24px; top: 0; border-radius: 5px;
   background: #434e59; border: 1px solid #5d6b78; box-shadow: 0 2px 7px rgba(0,0,0,0.55);
   display: grid; place-items: center;
 }
