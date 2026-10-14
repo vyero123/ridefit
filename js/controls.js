@@ -1,149 +1,142 @@
 // controls.js — the pedals.
 //
-// The clutch is the important one. It is a travel strip, not a button: your
-// finger position *is* the pedal position, so you control the release speed
-// through the bite point, which is the thing being taught. Lifting your
-// finger off is taking your foot off.
+// A pedal is pressed, not dragged. Holding it down pushes it further down;
+// letting go lets it come back up. Neither happens instantly, so holding a
+// position part-way — which is the whole of clutch control — is a matter of
+// pressing and easing off in rhythm. That is a real analogue of modulating
+// with a foot: you are managing a position you cannot simply set.
+//
+// The rates matter more than anything else here. Too fast and the friction
+// zone is impossible to sit in; too slow and it is not a pedal, it is a
+// slider. These are tuned so that the bite range takes roughly a second to
+// cross on a steady release, and a tap of 100 ms buys about 200 ms of hold.
 
 import { CLUTCH } from './car.js';
 
 export const CLUTCH_ZONES = [
-  { h: CLUTCH.biteStart, cls: 'ct-free', text: 'free travel' },
-  { h: CLUTCH.biteEnd - CLUTCH.biteStart, cls: 'ct-bite', text: 'BITE POINT' },
-  { h: 1 - CLUTCH.biteEnd, cls: 'ct-clear', text: 'clear' },
+  { h: CLUTCH.biteStart, cls: 'pz-free', text: 'free play' },
+  { h: CLUTCH.biteEnd - CLUTCH.biteStart, cls: 'pz-bite', text: 'FRICTION ZONE' },
+  { h: 1 - CLUTCH.biteEnd, cls: 'pz-clear', text: 'disengaged' },
 ];
 
 export const THROTTLE_ZONES = [
-  { h: 0.22, cls: 'tt-0', text: 'off' },
-  { h: 0.38, cls: 'tt-1', text: 'light' },
-  { h: 0.40, cls: 'tt-2', text: 'full' },
+  { h: 0.26, cls: 'pz-t0', text: '' },
+  { h: 0.36, cls: 'pz-t1', text: '' },
+  { h: 0.38, cls: 'pz-t2', text: '' },
 ];
 
-/**
- * A pedal whose position follows your finger, in both directions. Press-and-
- * hold keeps it where you are holding it; sliding up is you letting it out at
- * whatever speed you choose; lifting the finger is taking your foot off.
- * The clutch needs this because release speed is half of what it teaches, and
- * the throttle needs it because a pedal that is only ever flat to the floor
- * cannot hold a steady 2,000 rpm or deliver a blip.
- */
-export class TravelPedal {
-  constructor(host, { label, hint, zones, cls = '' }, onChange) {
+export const BRAKE_ZONES = [
+  { h: 0.35, cls: 'pz-b0', text: '' },
+  { h: 0.65, cls: 'pz-b1', text: '' },
+];
+
+export class Pedal {
+  /**
+   * @param {HTMLElement} host
+   * @param {object} opts  label, sub, zones, downRate, upRate, marks, cls
+   * @param {(v:number)=>void} onChange
+   */
+  constructor(host, opts, onChange) {
     this.host = host;
+    this.opts = opts;
     this.onChange = onChange;
     this.value = 0;
-    this.active = false;
-    this.opts = { label, hint, zones, cls };
+    this.pressed = false;
+    this.pointers = new Set();
     this._build();
   }
 
   _build() {
-    const { label, hint, zones, cls } = this.opts;
-    this.host.classList.add('travel-pad');
-    if (cls) this.host.classList.add(cls);
+    const { label, sub, zones, marks = [], cls = '' } = this.opts;
+    this.host.className = 'pedal ' + cls;
     this.host.innerHTML = `
-      <div class="pad-label">${label}<span class="pad-hint">${hint}</span></div>
-      <div class="clutch-track" aria-hidden="true">
-        ${zones.map((z) => `<div class="ct-zone ${z.cls}" style="height:${z.h * 100}%"><span>${z.text}</span></div>`).join('')}
-        <div class="ct-foot"></div>
+      <div class="pedal-name">${label}<i>${sub || ''}</i></div>
+      <div class="pedal-body">
+        <div class="pedal-zones">
+          ${zones.map((z) => `<div class="pedal-zone ${z.cls}" style="flex:${z.h}"><span>${z.text}</span></div>`).join('')}
+        </div>
+        ${marks.map((m) => `<div class="pedal-mark" style="top:${m.at * 100}%"><span>${m.text}</span></div>`).join('')}
+        <div class="pedal-fill"></div>
+        <div class="pedal-plate"><span class="pedal-pct">0</span></div>
       </div>`;
-    this.track = this.host.querySelector('.clutch-track');
-    this.foot = this.host.querySelector('.ct-foot');
+    this.body = this.host.querySelector('.pedal-body');
+    this.fill = this.host.querySelector('.pedal-fill');
+    this.plate = this.host.querySelector('.pedal-plate');
+    this.pct = this.host.querySelector('.pedal-pct');
 
-    const frac = (e) => {
-      const r = this.track.getBoundingClientRect();
-      return Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-    };
-    const set = (v) => {
-      this.value = v;
-      this.foot.style.top = (v * 100) + '%';
-      this.host.classList.toggle('is-down', v > 0.05);
-      this.onChange(v);
-    };
-
-    this.track.style.touchAction = 'none';
-    this.track.addEventListener('pointerdown', (e) => {
+    this.body.style.touchAction = 'none';
+    const down = (e) => {
       e.preventDefault();
-      this.active = true;
-      this.track.setPointerCapture?.(e.pointerId);
-      this.host.classList.add('is-held');
-      set(frac(e));
-    });
-    this.track.addEventListener('pointermove', (e) => {
-      if (!this.active) return;
-      e.preventDefault();
-      set(frac(e));
-    });
-    const end = (e) => {
-      if (!this.active) return;
-      this.active = false;
-      this.host.classList.remove('is-held');
-      this.track.releasePointerCapture?.(e.pointerId);
-      // Foot off: the pedal comes back up on its own spring, fast.
-      this._springUp();
+      this.pointers.add(e.pointerId);
+      this.body.setPointerCapture?.(e.pointerId);
+      this._setPressed(true);
     };
-    this.track.addEventListener('pointerup', end);
-    this.track.addEventListener('pointercancel', end);
-    this._set = set;
+    const up = (e) => {
+      this.pointers.delete(e.pointerId);
+      this.body.releasePointerCapture?.(e.pointerId);
+      if (!this.pointers.size) this._setPressed(false);
+    };
+    this.body.addEventListener('pointerdown', down);
+    this.body.addEventListener('pointerup', up);
+    this.body.addEventListener('pointercancel', up);
+    this.body.addEventListener('lostpointercapture', up);
+    this._render();
   }
 
-  // A timer rather than requestAnimationFrame: a pedal that got stuck down
-  // because the tab was throttled would be measuring nonsense.
-  _springUp() {
-    clearInterval(this._timer);
-    this._timer = setInterval(() => {
-      if (this.active) { clearInterval(this._timer); return; }
-      const v = Math.max(0, this.value - 0.16);
-      this._set(v);
-      if (v <= 0) clearInterval(this._timer);
-    }, 16);
+  _setPressed(on) {
+    this.pressed = on;
+    this.host.classList.toggle('is-pressed', on);
   }
 
-  /** Keyboard / programmatic: hold to the floor, release to spring up. */
-  hold(down) {
-    if (down) {
-      this.active = true;
-      this.host.classList.add('is-held');
-      this._set(1);
-    } else if (this.active) {
-      this.active = false;
-      this.host.classList.remove('is-held');
-      this._springUp();
+  /** Keyboard and programmatic pressing use the same path as a finger. */
+  hold(on) { this._setPressed(on); }
+
+  tick(dt) {
+    const { downRate, upRate } = this.opts;
+    const before = this.value;
+    if (this.pressed) this.value = Math.min(1, this.value + downRate * dt);
+    else this.value = Math.max(0, this.value - upRate * dt);
+    if (this.value !== before || this._dirty) {
+      this._dirty = false;
+      this._render();
     }
+    this.onChange(this.value);
+  }
+
+  reset() {
+    this.pressed = false;
+    this.pointers.clear();
+    this.value = 0;
+    this.host.classList.remove('is-pressed');
+    this._dirty = true;
+    this._render();
+    this.onChange(0);
+  }
+
+  _render() {
+    const v = this.value;
+    this.fill.style.height = (v * 100) + '%';
+    this.plate.style.top = `calc(${v * 100}% - 11px)`;
+    this.pct.textContent = Math.round(v * 100);
+    this.host.classList.toggle('is-down', v > 0.02);
   }
 }
 
-/** A simple press-and-hold pedal that ramps up and falls back. */
-export class RampPedal {
-  constructor(host, { label, hint, max = 1, riseMs = 260, fallMs = 190, cls = '' }, onChange) {
+/** A latching button, for the handbrake. */
+export class Toggle {
+  constructor(host, label, onChange) {
     this.host = host;
-    this.max = max;
-    this.rise = 1 / (riseMs / 1000);
-    this.fall = 1 / (fallMs / 1000);
-    this.value = 0;
-    this.pressed = false;
-    this.onChange = onChange;
-    host.classList.add('ramp-pad', cls);
-    host.innerHTML = `<div class="pad-label">${label}<span class="pad-hint">${hint || ''}</span></div>
-      <div class="ramp-fill"></div><div class="ramp-cap">HOLD</div>`;
-    this.fill = host.querySelector('.ramp-fill');
-    host.style.touchAction = 'none';
-    const on = (e) => { e.preventDefault(); this.pressed = true; host.setPointerCapture?.(e.pointerId); host.classList.add('is-held'); };
-    const off = (e) => { this.pressed = false; host.releasePointerCapture?.(e.pointerId); host.classList.remove('is-held'); };
-    host.addEventListener('pointerdown', on);
-    host.addEventListener('pointerup', off);
-    host.addEventListener('pointercancel', off);
-    host.addEventListener('pointerleave', (e) => { if (!host.hasPointerCapture?.(e.pointerId)) off(e); });
+    this.on = false;
+    host.className = 'toggle';
+    host.innerHTML = label;
+    host.addEventListener('click', () => {
+      this.on = !this.on;
+      host.classList.toggle('is-on', this.on);
+      onChange(this.on);
+    });
   }
-
-  tick(dt) {
-    const target = this.pressed ? 1 : 0;
-    const rate = this.pressed ? this.rise : this.fall;
-    const next = this.value + Math.sign(target - this.value) * rate * dt;
-    this.value = target > this.value ? Math.min(target, next) : Math.max(target, next);
-    this.fill.style.height = (this.value * 100) + '%';
-    this.onChange(this.value * this.max);
+  set(on) {
+    this.on = on;
+    this.host.classList.toggle('is-on', on);
   }
-
-  hold(down) { this.pressed = down; this.host.classList.toggle('is-held', down); }
 }

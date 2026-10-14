@@ -21,8 +21,25 @@ export const CAR = {
   dragCoeff: 0.39,     // N per (m/s)^2  -> 0.5 * rho * Cd * A
   rollingResist: 166,  // N, roughly 0.013 * m * g
 
-  engineInertia: 0.18, // kg m^2 at the crank, flywheel included
+  engineInertia: 0.25, // kg m^2 at the crank, flywheel and clutch included
   clutchCapacity: 330, // Nm the clutch can transmit fully clamped
+  idleAuthority: 88,   // Nm the idle governor can add to hold idle under load
+
+  // Friction material grips harder the slower it is slipping. That one fact
+  // is what makes a clutch judder: as the plate approaches lock-up it grabs,
+  // drags the engine down, breaks away again, and the car shunts back and
+  // forth. It is not scripted here — it falls out of these two numbers.
+  muStaticRatio: 1.9,   // peak grip, as a multiple of the fully-sliding grip
+  muSlipRef: 40,        // rad/s of slip over which the extra grip decays
+  muRise: 10,           // rad/s over which torque builds from zero slip
+
+  // A driveline is not a rigid bar. Clutch damper springs and driveshafts
+  // wind up and spring back, and that is the thing judder is an oscillation
+  // *of* — the grabbing clutch is only what feeds it. Without this the model
+  // cannot judder at all, it can only snap.
+  shaftInertia: 0.05,   // kg m^2, gearbox input shaft and clutch disc
+  shaftStiffness: 300,  // Nm per radian of wind-up
+  shaftDamping: 2.2,    // Nm per rad/s
 
   idleRpm: 800,
   stallRpm: 420,
@@ -114,10 +131,17 @@ export function engineTorque(rpm, throttle) {
 }
 
 /** Idle control: a little extra torque to hold idle when the driver is off the gas. */
+/**
+ * The idle governor. Not a nicety: it is the reason a car will creep away in
+ * first with no throttle at all, which is how the bite point gets found. A
+ * real ECU opens the throttle on its own as soon as the clutch starts to drag
+ * the engine down, and it has a lot of authority.
+ */
 export function idleAssist(rpm, throttle) {
-  if (throttle > 0.08 || rpm > CAR.idleRpm + 260) return 0;
-  const deficit = (CAR.idleRpm + 45 - rpm) / 130;
-  return Math.max(0, Math.min(1, deficit)) * 58;
+  if (throttle > 0.1 || rpm > CAR.idleRpm + 450) return 0;
+  const droop = CAR.idleRpm + 60 - rpm;
+  if (droop <= 0) return 0;
+  return Math.min(CAR.idleAuthority, droop * 0.95);
 }
 
 /**
@@ -146,3 +170,15 @@ export function clutchEngagement(pedal) {
 
 /** Where the bite point sits, as a fraction of pedal travel. For the gauge. */
 export const BITE_CENTRE = (CLUTCH.biteStart + CLUTCH.biteEnd) / 2;
+
+/**
+ * Torque the clutch can transmit, given how hard it is clamped and how fast
+ * it is slipping. Positive means the engine is driving the wheels.
+ *
+ * @param {number} engagement 0 (clear) .. 1 (fully clamped)
+ * @param {number} slip  engine minus driven speed, rad/s
+ */
+export function clutchTorque(engagement, slip) {
+  const grip = 1 + (CAR.muStaticRatio - 1) * Math.exp(-Math.abs(slip) / CAR.muSlipRef);
+  return engagement * CAR.clutchCapacity * grip * Math.tanh(slip / CAR.muRise);
+}

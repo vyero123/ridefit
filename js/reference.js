@@ -18,6 +18,36 @@ function gearTable() {
 
 export const REFERENCE = [
   {
+    id: 'coordination',
+    title: 'Clutch and throttle: the hand-off',
+    body: () => `
+      <p>Everything difficult about a manual car is one problem wearing different hats: <b>two controls that have to trade off against each other in the right order, at the right rate.</b> The gear lever is incidental. The hand-off is the skill.</p>
+      <p>The clutch pedal has three regions, and only one of them matters:</p>
+      <ul>
+        <li><b>Free play</b>, the first part of the travel. Nothing happens. Move through it quickly — there is nothing to be careful about.</li>
+        <li><b>The friction zone</b>, the middle. The plate goes from touching to gripping. <i>All</i> of clutch control happens in this band, and the bite point is where the car first wants to move.</li>
+        <li><b>Disengaged</b>, the rest of the way to the floor. Also nothing — you only need to be past the top of the friction zone to change gear, not flat on the carpet.</li>
+      </ul>
+      <p>The hand-off itself: as the clutch comes up through the friction zone, the throttle comes on. Not after; <b>during</b>. The engine needs to be making enough torque to take the load as the plate starts carrying it, and if it is not, it dies. Too much and the extra goes into spinning the plate against the flywheel, which is heat.</p>
+      <p class="caveat">The order that works, every time: a little gas first → quickly through the free play → slowly through the friction zone, feeding in more gas → then the rest of the pedal once the car is moving.</p>`,
+  },
+  {
+    id: 'faults',
+    title: 'Stalling, juddering and slipping',
+    body: () => `
+      <p>Three ways a take-up goes wrong, and they are not interchangeable.</p>
+      <dl class="mech">
+        <dt>Stalling</dt>
+        <dd>The clutch asked for more torque than the engine could make at those revs, so the engine was dragged to a stop. Causes: too little throttle, or the pedal coming up faster than the engine could follow. <b>Costs nothing.</b> It is embarrassing and completely harmless, and it is the only one of these three you should be relaxed about.</dd>
+        <dt>Snatching, and judder</dt>
+        <dd>The clutch goes from carrying nothing to carrying everything in one step, and the car jolts. Friction material grips <i>harder</i> the slower it is slipping, so near lock-up the plate tends to grab rather than ease in — and in a real car, at low revs with a worn plate, it can grab and let go repeatedly, which is <b>judder</b>. Causes: low revs, a snatchy release, or both.
+        <br><br><i>What this app measures is the size of that first jolt, which it has.</i> Sustained judder — the repeated shunting — does not emerge from this model, so the app does not claim it. Treat a large take-up jolt here as standing in for the thing that would make a real car shake.</dd>
+        <dt>Slipping</dt>
+        <dd>The engine races while the car crawls, and the difference is burned off as heat in a plate with no oil to cool it. Causes: too much throttle, too slow a release, or holding the car on the clutch. <b>This is the expensive one</b>, and the one that is invisible while it is happening.</dd>
+      </dl>
+      <p>Note the asymmetry a rider needs to internalise: the mistake that <i>feels</i> worst — stalling — is free, and the one that feels like competent smooth driving is what wears the clutch out.</p>`,
+  },
+  {
     id: 'car',
     title: 'The car being modelled',
     body: () => `
@@ -101,9 +131,12 @@ export const REFERENCE = [
     id: 'honesty',
     title: 'What this app is and is not',
     body: () => `
-      <p>It is a timing trainer. It models one invented car with a simple physical model: rpm from road speed through the gear ratio, final drive and tyre circumference; a torque curve that peaks in the middle and falls off at both ends; engine braking on a closed throttle; a clutch that slips and dissipates heat; and a stall when the engine is dragged below idle while engaged.</p>
-      <p>It is <b>not</b> a racing simulator and keeps no lap times. There is no reward here for going faster — only for shifting at the right moment and treating the clutch properly.</p>
-      <p>Things it does not model: tyre grip, weight transfer, synchromesh wear, a real clutch's temperature dependence, turbo lag, or a gradient other than the one in the hill drill. Pedal feel, which is most of real clutch control, cannot be simulated at all on a touchscreen — this can teach you the sequence, the timing and the reasoning, but your left foot has to learn the bite point in the actual car.</p>
+      <p>It is a coordination trainer. The model is three bodies: an engine, a gearbox input shaft, and the car. A clutch joins the first two by friction whose grip rises as the slip falls; a torsion spring joins the second two. Everything you see comes out of that — a stall is the engine dragged below idle, slip heat is the clutch torque times the speed difference. None of those outcomes are scripted.</p>
+      <p>It is <b>not</b> a racing simulator and keeps no lap times. There is no reward for going faster — only for handing off between the pedals cleanly and treating the clutch properly.</p>
+      <p>Things it does not model: tyre grip, weight transfer, synchromesh wear, a real clutch's temperature dependence, turbo lag, or any gradient other than the hill drill's.</p>
+      <div class="warn-box">
+        And the honest limit: <b>pedal feel is most of real clutch control, and a touchscreen has none of it.</b> In a car you find the bite through the sole of your foot — resistance, a dip of the nose, the revs sagging. Here you find it by watching a bar. This app can teach you the sequence, the order of operations, what each failure means and why the dry clutch changes your habits. Your left foot still has to learn the rest in the actual car.
+      </div>
       <div class="warn-box">
         Use this at home, on the sofa, away from a vehicle. Nobody should be looking at a phone while driving, and no amount of practice here substitutes for proper instruction in a car with someone qualified beside you.
       </div>`,

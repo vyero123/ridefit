@@ -3,18 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shift — manual transmission timing trainer</title>
-<meta name="description" content="A timing trainer for learning when to change gear in a manual car, and how to treat a dry clutch. Built for riders moving from a wet motorcycle clutch to a pedal-operated car.">
-<meta name="theme-color" content="#101316">
+<title>Shift — clutch and gear coordination trainer</title>
+<meta name="description" content="A trainer for the muscle memory of driving a manual car: coordinating clutch and throttle, pulling away without stalling or juddering, and letting the clutch out cleanly in gear. Built for riders moving from a wet motorcycle clutch to a pedal-operated car.">
+<meta name="theme-color" content="#0d1013">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand">
-    <span class="brand-mark">SHIFT</span>
-    <span class="brand-sub">timing trainer</span>
-  </div>
+  <div class="brand"><span class="brand-mark">SHIFT</span><span class="brand-sub">clutch &amp; gear trainer</span></div>
   <nav class="tabs">
     <button class="tab is-active" data-tab="drills">Drills</button>
     <button class="tab" data-tab="reference">Reference</button>
@@ -26,13 +23,13 @@
   <!-- ------------------------------------------------ drill list -->
   <section class="view is-active" data-view="drills">
     <div class="intro">
-      <h1>Learning when to shift</h1>
-      <p>Six drills, each one isolating a single thing. No lap times, no score for going fast — the only thing measured here is <b>whether you changed gear at the right moment and what you did with the clutch</b>.</p>
-      <p class="from-bike">If you ride, you already have the instincts for revs and for a clutch. The part that does not transfer is that a car's clutch is <b>dry</b>: no oil, no cooling, and much less tolerance for being slipped. Drill&nbsp;5 and the reference section are about that.</p>
+      <h1>The part that takes weeks</h1>
+      <p>Knowing that 2,300&nbsp;rpm is a reasonable moment to change up takes a minute to learn. <b>Coordinating the clutch and the throttle takes weeks</b> — and that is what nearly all of this is about: finding the friction zone, handing off between the two pedals, and letting the clutch back out in gear without the car juddering or stalling.</p>
+      <p class="from-bike">If you ride, the revs and the blip already make sense to you. What does not transfer is that a car's clutch is <b>dry</b>: no oil, no cooling, and far less tolerance of being slipped. Drills 1&ndash;5 and the reference section are about exactly that difference.</p>
     </div>
     <div id="drill-list" class="drill-list"></div>
     <p class="disclaimer">
-      One invented, clearly stated car. Real shift points vary by engine, gearbox, load and gradient, so everything here is a <b>range and a principle</b>, not your car's numbers. For use at home — never while driving.
+      One invented, clearly stated car. Real pedals, bite points and shift points vary enormously, so everything here is a <b>range and a principle</b>, not your car's numbers. For use at home — never while driving.
     </p>
   </section>
 
@@ -47,52 +44,57 @@
 
   <!-- ------------------------------------------------------- run -->
   <section class="view view-run" data-view="run">
-    <div class="run-top">
-      <button class="link-back" id="back-btn">‹ Exit</button>
-      <span id="run-title" class="run-title"></span>
-      <button class="sound" id="sound-btn">Sound on</button>
+
+    <div class="rotate-prompt">
+      <div class="rotate-icon">⟳</div>
+      <h2>Turn your phone sideways</h2>
+      <p>The controls are laid out the way the car is: <b>pedals under your left thumb, gear lever under your right</b>. That needs the long edge of the screen.</p>
+      <button class="secondary" id="rotate-anyway">Use it upright anyway</button>
     </div>
 
-    <!-- The instruction and the newest verdict share this slot: see pushCard.
-         Both sit in the eyeline, and the controls below never move. -->
-    <div class="instruction" id="instruction">
-      <b id="ins-title"></b>
-      <span id="ins-detail"></span>
-    </div>
-    <div id="cards" class="cards"></div>
+    <div class="run-grid">
 
-    <div id="warn" class="warn-strip"></div>
-
-    <div id="cluster" class="cluster"></div>
-
-    <div class="heat-row">
-      <span class="heat-label">Clutch heat</span>
-      <span class="heat-bar"><span id="heat-fill" class="heat-fill"></span></span>
-      <span id="grade-note" class="grade-note"></span>
-    </div>
-
-    <div id="gate" class="gate"></div>
-
-    <div class="pedals">
-      <div id="clutch"></div>
-      <div id="throttle"></div>
-      <div class="pedal-col">
-        <div id="brake"></div>
-        <button id="handbrake" class="handbrake">HAND<br>BRAKE</button>
+      <div class="run-top">
+        <button class="link-back" id="back-btn">‹ Exit</button>
+        <span id="run-title" class="run-title"></span>
+        <span id="grade-note" class="grade-note" hidden></span>
+        <button class="sound" id="sound-btn">Sound on</button>
       </div>
+
+      <!-- left thumb: the pedals, in the order they sit in the footwell -->
+      <div class="pedal-bay">
+        <div id="clutch"></div>
+        <div id="brake"></div>
+        <div id="throttle"></div>
+        <button id="handbrake"></button>
+      </div>
+
+      <!-- middle: what the car is doing -->
+      <div class="centre-bay">
+        <div class="instruction" id="instruction">
+          <b id="ins-title"></b>
+          <span id="ins-detail"></span>
+        </div>
+        <div id="cards" class="cards"></div>
+        <div id="warn" class="warn-strip"></div>
+        <div id="cluster" class="cluster"></div>
+        <button id="restart-btn" class="primary restart" hidden>Restart the engine</button>
+      </div>
+
+      <!-- right thumb: the lever -->
+      <div class="gate-bay">
+        <div id="gate" class="gate"></div>
+        <button class="primary finish" id="finish-btn">Finish and review</button>
+      </div>
+
     </div>
-
-    <button id="restart-btn" class="primary restart" hidden>Restart the engine</button>
-
-    <button class="primary" id="finish-btn">Finish and review</button>
-    <p class="kbd-note">The clutch and throttle follow your finger: where you hold it is where the pedal is, and lifting off is taking your foot off. On a keyboard, <b>space</b> clutch, <b>X</b> throttle and <b>Z</b> brake go all the way down; the lever takes the arrow keys once you tap it.</p>
   </section>
 
   <!-- ---------------------------------------------------- report -->
   <section class="view" data-view="report">
     <h2>What happened</h2>
     <p class="aim" id="report-title"></p>
-    <h3 class="sec-head">Each gear change</h3>
+    <h3 class="sec-head">Each attempt</h3>
     <div id="report-attempts"></div>
     <h3 class="sec-head">Habits recorded</h3>
     <div id="report-habits"></div>
