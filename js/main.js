@@ -1,6 +1,6 @@
 // main.js — app shell: views, drill flow, the loop.
 
-import { CAR } from './car.js';
+import { CAR, CLUTCH } from './car.js';
 import { Sim } from './sim.js';
 import { Cluster } from './instruments.js';
 import { Gate } from './gate.js';
@@ -257,6 +257,7 @@ function init() {
   app.clutch = new Pedal($('#clutch'), {
     label: 'CLUTCH', sub: 'hold to press',
     zones: CLUTCH_ZONES, downRate: 3.2, upRate: 1.0, cls: 'is-clutch',
+    fineZone: [CLUTCH.biteStart - 0.05, CLUTCH.biteEnd + 0.05],
   }, (v) => app.sim.setClutch(v));
 
   app.throttle = new Pedal($('#throttle'), {

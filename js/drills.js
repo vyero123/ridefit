@@ -4,7 +4,7 @@
 // throttle. Shift timing comes afterwards, because knowing that 2,300 rpm is
 // a sensible upshift takes a minute to learn and the hand-off takes weeks.
 
-import { CAR, maxSpeedForGear, kphPer1000, rpmAtSpeed, BITE_CENTRE } from './car.js';
+import { CAR, CLUTCH, maxSpeedForGear, kphPer1000, rpmAtSpeed, BITE_CENTRE } from './car.js';
 import { judgeShift, judgeHandoff, judgeLaunch, habitNotes } from './coach.js';
 
 const r = (n) => Math.round(n).toLocaleString('en-GB');
@@ -32,7 +32,8 @@ export class BitePointDrill extends Drill {
   teach = [
     'Everything else rests on this. Somewhere in the clutch pedal\'s travel is a band, maybe two or three centimetres of it, where the plate goes from touching nothing to gripping fully. That band is the <b>friction zone</b>, and the point where the car first wants to move is the <b>bite point</b>.',
     'In a car you find it by feel: the nose dips slightly, the revs sag a touch, the car strains against the brake. Here you find it by watching the <b>engine-versus-wheels</b> bar: the moment the gap starts closing, the clutch is taking up.',
-    'No throttle for this one. A modern engine holds its own idle, and in first gear that is enough to move the car on its own — which is exactly how you find the bite without having to manage the gas at the same time.',
+    `No throttle for this one. A modern engine holds its own idle, and in first gear that is enough to move the car on its own — which is exactly how you find the bite without having to manage the gas at the same time. Left alone it will settle at about <b>${r(kphPer1000(1) * (CAR.idleRpm / 1000))} km/h</b>, walking pace, because that is the speed first gear does at idle.`,
+    'So the test is not holding some particular speed. It is <b>stopping the pedal in the friction zone</b> once the car is moving, instead of letting your foot keep coming up — which is the habit the rest of the drills depend on.',
     'The pedal here works like a pedal: <b>hold to push it down, let go to let it come back up.</b> To sit part-way, you press and ease off in rhythm. That is fiddly on purpose; so is a real one, until it isn\'t.',
   ];
 
@@ -47,13 +48,16 @@ export class BitePointDrill extends Drill {
     if (sim.gear !== 1) return { title: 'Into first', detail: 'Clutch all the way down, lever into first, and leave the throttle alone entirely.' };
     if (sim.throttle > 0.1) return { title: 'No throttle for this one', detail: 'Let the idle do the work. Foot off the gas.' };
     if (sim.kph < 0.4) return {
-      title: 'Ease the clutch up until the car creeps',
+      title: 'Ease the clutch up until the car moves',
       detail: 'Let the pedal come up slowly. Watch the engine-versus-wheels gap — when it starts to close, you are at the bite.',
     };
-    if (sim.kph > 4) return { title: 'Too far — ease back down a little', detail: 'The clutch is nearly home. Press the pedal back towards the friction zone.' };
+    if (sim.clutchPedal < CLUTCH.biteStart) return {
+      title: 'Your foot came all the way up',
+      detail: 'The clutch is home, so there is nothing left to feel. Press back down into the friction zone and hold it there.',
+    };
     return {
-      title: `Hold it there — ${s1(this.holdTime)} s of ${3}`,
-      detail: 'Creeping, not accelerating. Small presses to hold the pedal where it is.',
+      title: `Hold the pedal there — ${s1(this.holdTime)} s of 3`,
+      detail: 'Small presses to keep it in the zone. The car will settle at walking pace on its own.',
     };
   }
 
@@ -70,22 +74,24 @@ export class BitePointDrill extends Drill {
 
     if (sim.kph > 0.4 && this.biteAt == null) this.biteAt = sim.clutchPedal;
 
-    if (sim.kph >= 0.4 && sim.kph <= 4) {
+    // The test is holding the pedal in the friction zone with the car under
+    // way — not holding a particular speed. Left at the bite with no
+    // throttle the car simply settles at idle speed in first, so there is no
+    // slower steady creep to hold, and asking for one would be a lie.
+    const inZone = sim.clutchPedal > CLUTCH.biteStart && sim.clutchPedal < CLUTCH.biteEnd + 0.06;
+    if (sim.kph > 0.4 && inZone) {
       this.holdTime += dt;
-      this.best = Math.max(this.best, this.holdTime);
       if (this.holdTime >= 3) {
         this.done = true;
         const lines = [
-          `Held the car creeping for three seconds on the clutch alone. The bite came in at about ${Math.round((this.biteAt ?? BITE_CENTRE) * 100)}% of pedal travel — a little over halfway down, which is where it sits in most cars.`,
-          `Note what that cost: ${r(sim.slipEnergy / 1000)} kJ of heat in ${s1(sim.slipSeconds)} s. Finding the bite is a legitimate use of the clutch. Driving around on it is not, and this is the rate it burns at.`,
+          `Three seconds with the pedal held in the friction zone and the car under way on idle alone. The bite came in at about <b>${Math.round((this.biteAt ?? BITE_CENTRE) * 100)}%</b> of pedal travel — a little over halfway down, which is roughly where it sits in a real car.`,
+          `What it cost: ${r(sim.slipEnergy / 1000)} kJ of heat in ${s1(sim.slipSeconds)} s of slipping. Finding the bite is a legitimate use of a clutch. Driving around on it is not — and that is the rate it burns at.`,
         ];
-        if (this.overshoots > 1) lines.push(`You went past it ${this.overshoots} times on the way. That is the normal way to find it.`);
+        if (this.overshoots) lines.push(`Your foot came right up ${this.overshoots} ${this.overshoots === 1 ? 'time' : 'times'} on the way. That is the normal way to find it.`);
         return this.push({ level: 'good', headline: 'Bite point found and held', lines });
       }
-    } else if (sim.kph > 4.5) {
-      if (this.holdTime > 0.3) this.overshoots++;
-      this.holdTime = 0;
-    } else if (sim.kph < 0.2) {
+    } else {
+      if (this.holdTime > 0.5 && !inZone) this.overshoots++;
       this.holdTime = 0;
     }
     return null;

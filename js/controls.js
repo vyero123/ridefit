@@ -92,10 +92,17 @@ export class Pedal {
   hold(on) { this._setPressed(on); }
 
   tick(dt) {
-    const { downRate, upRate } = this.opts;
+    const { downRate, upRate, fineZone, fineFactor = 0.42 } = this.opts;
     const before = this.value;
-    if (this.pressed) this.value = Math.min(1, this.value + downRate * dt);
-    else this.value = Math.max(0, this.value - upRate * dt);
+    // The pedal moves more slowly through the band where the skill lives.
+    // A real pedal does this too — the diaphragm spring goes over centre and
+    // the force needed changes — but the reason it is here is resolution: all
+    // of clutch control happens inside a third of the travel, and a control
+    // that crosses that band in a tenth of a second cannot be held in it.
+    const fine = fineZone && this.value > fineZone[0] && this.value < fineZone[1];
+    const k = fine ? fineFactor : 1;
+    if (this.pressed) this.value = Math.min(1, this.value + downRate * k * dt);
+    else this.value = Math.max(0, this.value - upRate * k * dt);
     if (this.value !== before || this._dirty) {
       this._dirty = false;
       this._render();
