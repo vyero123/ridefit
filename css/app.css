@@ -24,6 +24,9 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* An author `display` rule beats the UA stylesheet's rule for [hidden], and
+   several things here are display:flex. Make hidden mean hidden. */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 
 body {
