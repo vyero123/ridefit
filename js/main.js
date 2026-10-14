@@ -245,7 +245,12 @@ function renderWarnings() {
     el.textContent = text;
   }
   $('#restart-btn').hidden = !app.sim.stalled;
-  $('#heat-fill').style.width = Math.min(100, app.sim.clutchHeat * 100).toFixed(0) + '%';
+  // A solid colour per band rather than a gradient: a gradient inside an
+  // element this narrow just shows its own left-hand end whatever the value.
+  const heat = app.sim.clutchHeat;
+  const fill = $('#heat-fill');
+  fill.style.width = Math.min(100, heat * 100).toFixed(0) + '%';
+  fill.style.background = heat > 0.65 ? 'var(--danger)' : heat > 0.3 ? 'var(--bite)' : 'var(--go)';
 }
 
 /* ------------------------------------------------------- reference */

@@ -204,7 +204,7 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
 .heat-row { display: flex; align-items: center; gap: 8px; margin: 2px 0 7px; font-size: 9px; }
 .heat-label { color: var(--ink-dim); letter-spacing: 0.08em; text-transform: uppercase; }
 .heat-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
-.heat-fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--go), var(--bite) 55%, var(--danger)); transition: width 0.15s; }
+.heat-fill { display: block; height: 100%; width: 0; background: var(--go); transition: width 0.15s, background 0.3s; }
 .grade-note { color: var(--needle); font-weight: 700; letter-spacing: 0.04em; }
 
 /* ----------------------------------------------------------- gate */
