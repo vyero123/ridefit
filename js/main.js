@@ -1,153 +1,301 @@
-// main.js — the shell. Creates the one AudioSession, creates the views, and
-// switches between them.
-//
-// Note what is NOT here: any audio call in the tab-switching code. switchTab()
-// deactivates one observer and activates another, and that is all it is
-// allowed to do. The pipeline neither knows nor cares which tab is showing.
+// main.js — app shell: views, drill flow, the loop.
 
-import { AudioSession } from './app/session.js';
-import { StaffRenderer } from './notation/staff.js';
-import { loadAllExercises } from './exercises/loader.js';
-import { ListenView } from './views/listen.js';
-import { PracticeView } from './views/practice.js';
-import { LatencyView } from './views/latency.js';
+import { CAR } from './car.js';
+import { Sim } from './sim.js';
+import { Cluster } from './instruments.js';
+import { Gate } from './gate.js';
+import { ClutchPedal, RampPedal } from './controls.js';
+import { EngineAudio } from './audio.js';
+import { DRILLS } from './drills.js';
+import { habitNotes } from './coach.js';
+import { REFERENCE } from './reference.js';
 
-const $ = (id) => document.getElementById(id);
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-const session = new AudioSession({ windowSize: 4096 });
-const staff = new StaffRenderer($('staff'), { clef: 'treble', widthUnits: 34 });
+const LEVEL_WORD = { good: 'Good', ok: 'Fine', off: 'Off', bad: 'Harmful', damage: 'Destroyed' };
 
-const views = {
-  listen: new ListenView(session),
-  practice: new PracticeView(session, staff),
-  latency: new LatencyView(session)
+const app = {
+  sim: new Sim(),
+  audio: new EngineAudio(),
+  drill: null,
+  cluster: null,
+  gate: null,
+  running: false,
+  eventCursor: 0,
+  pendingShift: null,
+  cards: [],
 };
 
-const TABS = [
-  ['listen', 'tab-listen', 'panel-listen'],
-  ['practice', 'tab-practice', 'panel-practice'],
-  ['latency', 'tab-latency', 'panel-latency']
-];
+/* ---------------------------------------------------------- views */
 
-let activeTab = 'listen';
-
-// The status pill is owned by the shell, not by any view, so that it keeps
-// working regardless of which tab is showing.
-session.subscribe({
-  onStatus: (s) => {
-    const pill = $('status-pill');
-    pill.className = `pill ${s.state}`;
-    pill.textContent = s.message;
-  }
-});
-
-if (!window.isSecureContext) $('insecure-banner').hidden = false;
-
-for (const [name, tabId] of TABS) {
-  $(tabId).addEventListener('click', () => switchTab(name));
+function showView(name) {
+  $$('.view').forEach((v) => v.classList.toggle('is-active', v.dataset.view === name));
+  const tab = name === 'reference' ? 'reference' : 'drills';
+  $$('.tab').forEach((t) => t.classList.toggle('is-active', t.dataset.tab === tab));
+  window.scrollTo({ top: 0 });
 }
 
-/**
- * The whole of the tab-switching logic. Observers detach and attach; nothing
- * else happens. If you are ever tempted to add an audio call to this function,
- * that is the bug this refactor was written to prevent.
- */
-function switchTab(name) {
-  for (const [n, tabId, panelId] of TABS) {
-    const on = n === name;
-    $(tabId).setAttribute('aria-selected', String(on));
-    $(panelId).hidden = !on;
-  }
-  if (views[activeTab]) views[activeTab].deactivate();
-  activeTab = name;
-  views[name].activate();
-  session.noteViewChange();
+/* ------------------------------------------------------ drill list */
+
+function renderDrillList() {
+  const host = $('#drill-list');
+  host.innerHTML = '';
+  DRILLS.forEach((Cls, i) => {
+    const d = new Cls();
+    const b = document.createElement('button');
+    b.className = 'drill-card';
+    b.innerHTML = `<span class="dc-num">${i + 1}</span>
+      <span class="dc-body"><span class="dc-title">${d.title}</span>
+      <span class="dc-aim">${d.aim}</span></span>
+      <span class="dc-go">›</span>`;
+    b.addEventListener('click', () => openDrill(Cls));
+    host.appendChild(b);
+  });
 }
 
-views.listen.activate();
+/* ----------------------------------------------------- drill teach */
 
-// ---------------------------------------------------------------------------
-// Start / stop — the only two places that touch the audio graph
-// ---------------------------------------------------------------------------
+function openDrill(Cls) {
+  app.drillClass = Cls;
+  const d = new Cls();
+  app.drill = d;
+  $('#teach-title').textContent = d.title;
+  $('#teach-aim').textContent = d.aim;
+  $('#teach-body').innerHTML = d.teach
+    .map((t) => (typeof t === 'function' ? t() : `<p>${t}</p>`))
+    .join('');
+  showView('teach');
+}
 
-$('btn-start').addEventListener('click', async () => {
-  $('start-error').textContent = '';
-  try {
-    // No await before session.start() reaches engine.unlock(), or iOS stops
-    // counting this as a user gesture.
-    await session.start();
-    $('btn-start').hidden = true;
-    $('btn-stop').hidden = false;
-    views[activeTab].activate();
-    if (views[activeTab].render) views[activeTab].render();
-    if (views[activeTab].refreshPrompt) views[activeTab].refreshPrompt();
-  } catch (err) {
-    console.error(err);
-    if (!$('start-error').textContent) {
-      $('start-error').textContent = String((err && err.message) || err);
+/* ------------------------------------------------------- drill run */
+
+function startRun() {
+  const d = app.drill = new app.drillClass();
+  const s = d.setup();
+  app.sim.reset(s);
+  app.eventCursor = 0;
+  app.pendingShift = null;
+  app.cards = [];
+  $('#cards').innerHTML = '';
+  $('#run-title').textContent = d.title;
+  app.gate.syncTo(app.sim.gear);
+  app.clutch.hold(false);
+  app.throttle.hold(false);
+  app.brakePedal.hold(false);
+  $('#handbrake').classList.toggle('is-on', !!app.sim.handbrake);
+  $('#grade-note').textContent = app.sim.gradePercent ? `${app.sim.gradePercent}% uphill` : '';
+  app.cluster.setWindow(d.band);
+  warnHold = { key: null, until: 0 };
+  app.running = true;
+  app.audio.enable();
+  showView('run');
+  $('#finish-btn').textContent = 'Finish and review';
+}
+
+function stopRun() {
+  app.running = false;
+  const d = app.drill;
+  const notes = habitNotes(app.sim);
+  $('#report-title').textContent = d.title;
+  const attempts = d.attempts.length
+    ? d.attempts.map(cardHtml).join('')
+    : '<p class="muted">No gear changes were recorded, so there is nothing to review. Run it again and make some shifts — including bad ones; this is the place for them.</p>';
+  $('#report-attempts').innerHTML = attempts;
+  $('#report-habits').innerHTML = notes
+    .map((n) => `<div class="habit lv-${n.level}"><b>${LEVEL_WORD[n.level]}</b><p>${n.text}</p></div>`).join('');
+  showView('report');
+}
+
+function cardHtml(c) {
+  return `<div class="card lv-${c.level}">
+    <div class="card-head"><span class="pill">${LEVEL_WORD[c.level]}</span><b>${c.headline || ''}</b></div>
+    ${c.lines.map((l) => `<p>${l}</p>`).join('')}
+  </div>`;
+}
+
+function pushCard(c) {
+  if (!c) return;
+  app.cards.push(c);
+  const host = $('#cards');
+  const div = document.createElement('div');
+  div.innerHTML = cardHtml(c);
+  host.prepend(div.firstElementChild);
+  while (host.children.length > 4) host.lastElementChild.remove();
+}
+
+/* ------------------------------------------------------------ loop */
+
+function onSelect(gear) {
+  const res = app.sim.selectGear(gear);
+  if (!res.ok) {
+    app.audio.clunk(true);
+    pushCard({ level: 'off', headline: 'The lever would not go in', lines: [res.message] });
+    return res;
+  }
+  if (res.record && res.record.to !== 0) {
+    app.pendingShift = res.record;
+    app.audio.clunk(false);
+  }
+  return res;
+}
+
+function drainEvents() {
+  const evs = app.sim.events;
+  while (app.eventCursor < evs.length) {
+    const ev = evs[app.eventCursor++];
+    if (ev.kind !== 'release') continue;
+    const d = app.drill;
+    if (!d) continue;
+    const rec = app.pendingShift;
+    if (rec && rec.to === ev.gear) {
+      app.pendingShift = null;
+      pushCard(d.onShift?.(rec, ev, app.sim));
+      pushCard(d.onRelease?.(ev, app.sim));
+    } else {
+      pushCard(d.onRelease?.(ev, app.sim));
     }
   }
-});
+}
 
-$('btn-stop').addEventListener('click', async () => {
-  await session.stop();
-  $('btn-start').hidden = false;
-  $('btn-stop').hidden = true;
-  views.listen.clear();
-  staff.setPlayedNote(null);
-  if (views[activeTab].render) views[activeTab].render();
-});
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
 
-// iOS suspends the context when the app backgrounds or a call arrives. These
-// resume it; they never rebuild anything.
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && session.running) session.engine.resumeIfInterrupted();
-});
-document.addEventListener('touchend', () => {
-  if (session.running) session.engine.resumeIfInterrupted();
-}, { passive: true });
+  if (app.running) {
+    app.throttle.tick(dt);
+    app.brakePedal.tick(dt);
+    app.sim.step(dt);
+    drainEvents();
 
-session.engine.onStateChange(s => {
-  if (!session.running) return;
-  if (s === 'suspended') $('status-pill').textContent = 'Audio interrupted — tap anywhere';
-  if (s === 'running') $('status-pill').textContent = 'Listening';
-});
+    const d = app.drill;
+    if (d) {
+      pushCard(d.tick?.(app.sim, dt));
+      const ins = d.instruction(app.sim);
+      $('#ins-title').textContent = ins.title;
+      $('#ins-detail').innerHTML = ins.detail || '';
+      app.gate.setTarget(d.targetGear ?? null);
+      app.cluster.setWindow(d.band);
+      if (d.done) $('#finish-btn').textContent = 'See the breakdown →';
+    }
 
-// ---------------------------------------------------------------------------
-// Detector settings
-// ---------------------------------------------------------------------------
-
-$('a4').addEventListener('input', e => {
-  session.setA4(Number(e.target.value));
-  $('a4-value').textContent = `${session.a4.toFixed(1)} Hz`;
-  views.practice.draw();
-});
-
-$('lowrange').addEventListener('change', e => {
-  session.setWindowSize(e.target.checked ? 8192 : 4096);
-});
-
-// ---------------------------------------------------------------------------
-// Exercises
-// ---------------------------------------------------------------------------
-
-// The scale builder needs nothing loaded, so the Practice tab is usable
-// immediately; the hand-written drills arrive when they arrive.
-views.practice.buildScale();
-
-loadAllExercises('exercises/').then(({ exercises, errors }) => {
-  for (const e of errors) console.warn('Exercise failed to load:', e.file, e.message);
-  views.practice.setExercises(exercises);
-  if (errors.length) {
-    const o = document.createElement('option');
-    o.disabled = true;
-    o.textContent = `(${errors.length} file(s) failed — see console)`;
-    $('exercise-select').appendChild(o);
+    app.cluster.update(app.sim);
+    app.audio.update(app.sim);
+    renderWarnings();
+    app.sim.flags.clear();
   }
-}).catch(err => {
-  console.error(err);
-  $('exercise-desc').textContent = `Could not load exercises: ${err.message}`;
-});
+  requestAnimationFrame(frame);
+}
 
-// Exposed for the browser test harness and for console poking.
-window.pianoTrainer = { session, staff, views, switchTab };
+const WARNINGS = {
+  'money-shift': ['damage', 'ENGINE DESTROYED — the wheels have spun it past its mechanical limit'],
+  'over-rev': ['damage', 'OVER THE LIMITER'],
+  stall: ['bad', 'Stalled — nothing broken. Clutch down, restart.'],
+  lugging: ['bad', 'Lugging — on the throttle below ' + CAR.lugBand[1] + ' rpm'],
+  riding: ['bad', 'Riding the clutch — it is slipping and heating up'],
+  'clutch-hot': ['bad', 'Clutch getting hot — a dry clutch has nothing to cool it'],
+  resting: ['off', 'Foot resting on the clutch — that loads the release bearing'],
+  'held-at-stop': ['off', 'Pedal held down at a standstill — neutral, foot off'],
+};
+
+const WARN_ORDER = ['money-shift', 'over-rev', 'stall', 'lugging', 'riding', 'clutch-hot', 'held-at-stop', 'resting'];
+let warnHold = { key: null, until: 0 };
+
+function renderWarnings() {
+  const f = app.sim.flags;
+  const now = performance.now();
+  let shown = null;
+  for (const k of WARN_ORDER) if (f.has(k)) { shown = k; break; }
+
+  // A warning raised for a single frame (a money shift is decided in one)
+  // still has to be readable, so hold whatever is current for a moment.
+  if (shown) {
+    const rank = WARN_ORDER.indexOf(shown);
+    const heldRank = warnHold.key ? WARN_ORDER.indexOf(warnHold.key) : 99;
+    if (now > warnHold.until || rank <= heldRank) {
+      warnHold = { key: shown, until: now + (shown === 'money-shift' ? 4000 : 1400) };
+    }
+  }
+  const active = now < warnHold.until ? warnHold.key : null;
+
+  const el = $('#warn');
+  if (!active) { el.className = 'warn-strip'; el.textContent = ''; }
+  else {
+    const [lv, text] = WARNINGS[active];
+    el.className = 'warn-strip is-on lv-' + lv;
+    el.textContent = text;
+  }
+  $('#restart-btn').hidden = !app.sim.stalled;
+  $('#heat-fill').style.width = Math.min(100, app.sim.clutchHeat * 100).toFixed(0) + '%';
+}
+
+/* ------------------------------------------------------- reference */
+
+function renderReference() {
+  const host = $('#ref-body');
+  host.innerHTML = REFERENCE.map((s) => `
+    <details class="ref-sec" ${s.id === 'car' ? 'open' : ''}>
+      <summary>${s.title}</summary>
+      <div class="ref-content">${s.body()}</div>
+    </details>`).join('');
+}
+
+/* ------------------------------------------------------------ init */
+
+function init() {
+  app.cluster = new Cluster($('#cluster'));
+  app.gate = new Gate($('#gate'), onSelect);
+
+  app.clutch = new ClutchPedal($('#clutch'), (v) => app.sim.setClutch(v));
+  app.throttle = new RampPedal($('#throttle'), { label: 'THROTTLE', hint: 'hold', cls: 'is-throttle' }, (v) => { app.sim.throttle = v; });
+  app.brakePedal = new RampPedal($('#brake'), { label: 'BRAKE', hint: 'hold', max: 0.7, riseMs: 320, cls: 'is-brake' }, (v) => { app.sim.brake = v; });
+
+  $('#handbrake').addEventListener('click', (e) => {
+    app.sim.handbrake = !app.sim.handbrake;
+    e.currentTarget.classList.toggle('is-on', app.sim.handbrake);
+  });
+  $('#restart-btn').addEventListener('click', () => {
+    if (!app.sim.startEngine()) {
+      pushCard({ level: 'off', headline: 'It will not start like that', lines: ['The car is in gear with the clutch up — turning the engine over would make it lurch forward. Clutch down, or into neutral, then start.'] });
+    }
+  });
+
+  $('#start-btn').addEventListener('click', startRun);
+  $('#finish-btn').addEventListener('click', stopRun);
+  $('#again-btn').addEventListener('click', startRun);
+  $('#back-btn').addEventListener('click', () => { app.running = false; showView('drills'); });
+  $('#teach-back').addEventListener('click', () => showView('drills'));
+  $('#report-done').addEventListener('click', () => showView('drills'));
+  $$('.tab').forEach((t) => t.addEventListener('click', () => {
+    if (t.dataset.tab !== 'reference') app.running = false;
+    showView(t.dataset.tab);
+  }));
+
+  $('#sound-btn').addEventListener('click', (e) => {
+    if (app.audio.on) { app.audio.disable(); e.currentTarget.classList.remove('is-on'); e.currentTarget.textContent = 'Sound off'; }
+    else { app.audio.enable(); e.currentTarget.classList.add('is-on'); e.currentTarget.textContent = 'Sound on'; }
+  });
+
+  // Keyboard, for desktop. The gate takes the arrow keys when focused.
+  const keys = { ' ': 'clutch', c: 'clutch', x: 'throttle', z: 'brake' };
+  addEventListener('keydown', (e) => {
+    const k = keys[e.key.toLowerCase?.() ?? e.key];
+    if (!k || e.repeat) return;
+    e.preventDefault();
+    (k === 'clutch' ? app.clutch : k === 'throttle' ? app.throttle : app.brakePedal).hold(true);
+  });
+  addEventListener('keyup', (e) => {
+    const k = keys[e.key.toLowerCase?.() ?? e.key];
+    if (!k) return;
+    (k === 'clutch' ? app.clutch : k === 'throttle' ? app.throttle : app.brakePedal).hold(false);
+  });
+
+  renderDrillList();
+  renderReference();
+  app.cluster.update(app.sim);
+  showView('drills');
+  requestAnimationFrame((t) => { last = t; frame(t); });
+}
+
+init();

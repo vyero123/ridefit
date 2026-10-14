@@ -1,233 +1,113 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- viewport-fit=cover + the safe-area padding in app.css keeps the UI clear
-     of the iPhone notch and home indicator. maximum-scale is deliberately not
-     set: pinch-zoom stays available. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#12141a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Piano Trainer</title>
+<title>Shift — manual transmission timing trainer</title>
+<meta name="description" content="A timing trainer for learning when to change gear in a manual car, and how to treat a dry clutch. Built for riders moving from a wet motorcycle clutch to a pedal-operated car.">
+<meta name="theme-color" content="#101316">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<header>
-  <h1>Piano Trainer</h1>
-  <span id="status-pill" class="pill">Idle</span>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">SHIFT</span>
+    <span class="brand-sub">timing trainer</span>
+  </div>
+  <nav class="tabs">
+    <button class="tab is-active" data-tab="drills">Drills</button>
+    <button class="tab" data-tab="reference">Reference</button>
+  </nav>
 </header>
 
-<div id="insecure-banner" class="banner bad" hidden>
-  This page is not in a secure context, so the microphone will not work.
-  Open the <strong>https://</strong> address rather than a local file.
-</div>
+<main>
 
-<section class="panel" id="start-panel">
-  <h2>Step 1 — turn on the microphone</h2>
-  <p class="note-text" style="margin-top:0">
-    iOS will not start audio without a tap, so this button has to be pressed
-    before anything else happens. Put the phone somewhere it can hear the
-    piano clearly, and keep other apps quiet.
-  </p>
-  <button id="btn-start" class="primary">Start listening</button>
-  <button id="btn-stop" class="secondary" hidden>Stop</button>
-  <p class="note-text" id="start-error"></p>
-</section>
-
-<nav class="tabs" role="tablist">
-  <button role="tab" id="tab-listen" aria-selected="true" aria-controls="panel-listen">Listen</button>
-  <button role="tab" id="tab-practice" aria-selected="false" aria-controls="panel-practice">Practice</button>
-  <button role="tab" id="tab-latency" aria-selected="false" aria-controls="panel-latency">Latency</button>
-</nav>
-
-<!-- ===================== LISTEN ===================== -->
-<section class="panel" id="panel-listen" role="tabpanel" aria-labelledby="tab-listen">
-  <h2>What am I hearing</h2>
-
-  <div class="readout">
-    <div class="note-name silent" id="note-name">—</div>
-    <div class="freq"><span id="freq-hz">—</span> Hz<span class="onset-flash" id="onset-flash" title="flashes on each detected note onset"></span></div>
-  </div>
-
-  <div class="cents-wrap">
-    <div class="cents-bar">
-      <div class="zone"></div>
-      <div class="centre"></div>
-      <div class="needle" id="cents-needle"></div>
+  <!-- ------------------------------------------------ drill list -->
+  <section class="view is-active" data-view="drills">
+    <div class="intro">
+      <h1>Learning when to shift</h1>
+      <p>Six drills, each one isolating a single thing. No lap times, no score for going fast — the only thing measured here is <b>whether you changed gear at the right moment and what you did with the clutch</b>.</p>
+      <p class="from-bike">If you ride, you already have the instincts for revs and for a clutch. The part that does not transfer is that a car's clutch is <b>dry</b>: no oil, no cooling, and much less tolerance for being slipped. Drill&nbsp;5 and the reference section are about that.</p>
     </div>
-    <div class="cents-label"><span>−50¢</span><span id="cents-value">0¢</span><span>+50¢</span></div>
-  </div>
-
-  <div class="stat-grid">
-    <div class="stat"><div class="k">Confidence</div><div class="v"><span id="clarity-value">—</span></div>
-      <div class="meter" id="clarity-meter"><div></div></div></div>
-    <div class="stat"><div class="k">Level</div><div class="v"><span id="rms-value">—</span></div>
-      <div class="meter" id="rms-meter"><div></div></div></div>
-    <div class="stat"><div class="k">Notes detected</div><div class="v" id="onset-count">0</div></div>
-    <div class="stat"><div class="k">Last onset</div><div class="v" id="last-onset">—<small> s</small></div></div>
-  </div>
-
-  <details>
-    <summary>Detector settings</summary>
-    <label class="note-text" for="a4">Tuning reference A4 — set this to match your piano if it reads consistently sharp or flat.</label>
-    <div class="row" style="align-items:center">
-      <input type="range" id="a4" min="415" max="450" step="0.5" value="440">
-      <span class="mono" id="a4-value" style="flex:0 0 auto">440.0 Hz</span>
-    </div>
-    <label class="note-text" for="lowrange">
-      <input type="checkbox" id="lowrange"> Long window (8192 samples)
-    </label>
-    <p class="note-text">
-      The long window makes the bottom octave usable but roughly doubles how
-      long the detector needs before it is sure of a pitch. Leave it off unless
-      you are playing below about C2.
+    <div id="drill-list" class="drill-list"></div>
+    <p class="disclaimer">
+      One invented, clearly stated car. Real shift points vary by engine, gearbox, load and gradient, so everything here is a <b>range and a principle</b>, not your car's numbers. For use at home — never while driving.
     </p>
-  </details>
-</section>
+  </section>
 
-<!-- ===================== PRACTICE ===================== -->
-<section class="panel" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
-  <h2>Practice</h2>
+  <!-- ----------------------------------------------------- teach -->
+  <section class="view" data-view="teach">
+    <button class="link-back" id="teach-back">‹ All drills</button>
+    <h2 id="teach-title"></h2>
+    <p class="aim" id="teach-aim"></p>
+    <div class="teach-body" id="teach-body"></div>
+    <button class="primary" id="start-btn">Start the drill</button>
+  </section>
 
-  <div class="segmented" role="tablist">
-    <button id="src-scale" role="tab" aria-selected="true">Scales</button>
-    <button id="src-drill" role="tab" aria-selected="false">Drills</button>
-  </div>
-
-  <div id="scale-controls">
-    <div class="tonic-picker" id="tonic-picker" role="group" aria-label="Tonic"></div>
-    <div class="control-row">
-      <label>
-        <span>Mode</span>
-        <select id="scale-mode" aria-label="Scale mode"></select>
-      </label>
-      <label>
-        <span>Octaves</span>
-        <select id="scale-octaves" aria-label="Octaves">
-          <option value="1">1</option>
-          <option value="2" selected>2</option>
-        </select>
-      </label>
+  <!-- ------------------------------------------------------- run -->
+  <section class="view view-run" data-view="run">
+    <div class="run-top">
+      <button class="link-back" id="back-btn">‹ Exit</button>
+      <span id="run-title" class="run-title"></span>
+      <button class="sound" id="sound-btn">Sound on</button>
     </div>
-    <div class="control-row">
-      <label>
-        <span>Hand</span>
-        <div class="segmented small">
-          <button id="hand-right" aria-selected="true">Right</button>
-          <button id="hand-left" aria-selected="false">Left</button>
-        </div>
-      </label>
-      <label>
-        <span>Direction</span>
-        <select id="scale-direction" aria-label="Direction">
-          <option value="up-down" selected>Up and down</option>
-          <option value="up">Up only</option>
-          <option value="down">Down only</option>
-        </select>
-      </label>
+
+    <div class="instruction">
+      <b id="ins-title"></b>
+      <span id="ins-detail"></span>
     </div>
-  </div>
 
-  <div id="drill-controls" hidden>
-    <select id="exercise-select" aria-label="Exercise"></select>
-  </div>
+    <div id="warn" class="warn-strip"></div>
 
-  <p class="note-text" id="exercise-desc"></p>
+    <div id="cluster" class="cluster"></div>
 
-  <div class="staff-wrap">
-    <svg class="staff" id="staff" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Music staff"></svg>
-  </div>
-
-  <div class="legend">
-    <span class="key key-target"></span> next to play
-    <span class="key key-correct"></span> done
-    <span class="key key-played"></span> what you are playing, in the same column
-  </div>
-
-  <div class="target-line">
-    <span>Play <strong id="target-name">—</strong></span>
-    <span class="freq"><span id="progress-count"></span> · <span id="target-freq"></span></span>
-  </div>
-
-  <div class="hearing-row" id="played-readout">
-    <span>Hearing <strong id="played-name">—</strong></span>
-  </div>
-
-  <div class="feedback" id="feedback"></div>
-
-  <div class="row" style="margin-top:10px">
-    <button id="btn-restart" class="secondary">Restart</button>
-    <button id="btn-skip" class="secondary">Skip note</button>
-  </div>
-  <p class="note-text">
-    Self-paced: play the highlighted note and the sequence moves on. A wrong
-    note flashes and nothing is lost — the sequence never resets. Playing to a
-    beat comes next, and it is what the calibrated offset is for.
-  </p>
-</section>
-
-<!-- ===================== LATENCY ===================== -->
-<section class="panel" id="panel-latency" role="tabpanel" aria-labelledby="tab-latency" hidden>
-  <h2>Latency</h2>
-
-  <div class="stat-grid">
-    <div class="stat"><div class="k">Calibrated offset</div><div class="v" id="lat-offset">—<small> ms</small></div></div>
-    <div class="stat"><div class="k">Spread</div><div class="v" id="lat-spread">—<small> ms</small></div></div>
-    <div class="stat"><div class="k">baseLatency</div><div class="v" id="lat-base">—<small> ms</small></div></div>
-    <div class="stat"><div class="k">outputLatency</div><div class="v" id="lat-output">—<small> ms</small></div></div>
-    <div class="stat"><div class="k">Sample rate</div><div class="v" id="lat-sr">—<small> Hz</small></div></div>
-    <div class="stat"><div class="k">Render quantum</div><div class="v" id="lat-quantum">—<small> ms</small></div></div>
-  </div>
-
-  <p class="note-text">
-    Quality: <span class="quality none" id="lat-quality">not calibrated</span>
-    <span id="lat-quality-note"></span>
-  </p>
-
-  <h2 style="margin-top:16px">Calibrate</h2>
-  <p class="note-text" style="margin-top:0">
-    You will hear four counting-in clicks, then twelve more. Play <em>any single
-    note</em> exactly on each of those twelve. Same note every time is fine — the
-    pitch is irrelevant here, only when the attack lands.
-  </p>
-  <button id="btn-calibrate" class="primary">Run calibration</button>
-  <div class="calib-status" id="calib-status"></div>
-  <div class="calib-beats" id="calib-beats"></div>
-
-  <details>
-    <summary>Manual adjustment</summary>
-    <p class="note-text">
-      Added on top of the measured offset. Positive means "treat my playing as
-      even later than measured", which pulls scoring earlier.
-    </p>
-    <div class="row" style="align-items:center">
-      <input type="range" id="manual-adjust" min="-100" max="100" step="1" value="0">
-      <span class="mono" id="manual-value" style="flex:0 0 auto">0 ms</span>
+    <div class="heat-row">
+      <span class="heat-label">Clutch heat</span>
+      <span class="heat-bar"><span id="heat-fill" class="heat-fill"></span></span>
+      <span id="grade-note" class="grade-note"></span>
     </div>
-    <button id="btn-reset-calib" class="secondary">Reset calibration</button>
-  </details>
 
-  <details>
-    <summary>Raw diagnostics</summary>
-    <div class="mono" id="lat-raw">Nothing measured yet.</div>
-  </details>
+    <div id="gate" class="gate"></div>
 
-  <h2 style="margin-top:16px">Input pipeline</h2>
-  <p class="note-text" style="margin-top:0">
-    State: <span class="quality none" id="pipeline-state">stopped</span>.
-    Switching tabs must never change any of this — if the counters below stop
-    advancing after a tab change, something has regressed.
-  </p>
-  <div class="mono" id="pipeline-detail"></div>
+    <div class="pedals">
+      <div id="clutch"></div>
+      <div class="pedal-col">
+        <div id="throttle"></div>
+        <div id="brake"></div>
+        <button id="handbrake" class="handbrake">HANDBRAKE</button>
+      </div>
+    </div>
 
-  <p class="note-text">
-    No browser reports microphone input latency, so these platform numbers only
-    cover the output side. The calibrated offset is the one that matters, and
-    it is the only one the scorer uses.
-  </p>
-</section>
+    <button id="restart-btn" class="primary restart" hidden>Restart the engine</button>
+
+    <div id="cards" class="cards"></div>
+
+    <button class="primary" id="finish-btn">Finish and review</button>
+    <p class="kbd-note">On a keyboard: <b>space</b> clutch, <b>X</b> throttle, <b>Z</b> brake. The lever takes the arrow keys once you tap it.</p>
+  </section>
+
+  <!-- ---------------------------------------------------- report -->
+  <section class="view" data-view="report">
+    <h2>What happened</h2>
+    <p class="aim" id="report-title"></p>
+    <h3 class="sec-head">Each gear change</h3>
+    <div id="report-attempts"></div>
+    <h3 class="sec-head">Habits recorded</h3>
+    <div id="report-habits"></div>
+    <div class="report-actions">
+      <button class="primary" id="again-btn">Run it again</button>
+      <button class="secondary" id="report-done">Back to drills</button>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------- reference -->
+  <section class="view" data-view="reference">
+    <h1>Reference</h1>
+    <div id="ref-body"></div>
+  </section>
+
+</main>
 
 <script type="module" src="js/main.js"></script>
 </body>
