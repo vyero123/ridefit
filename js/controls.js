@@ -84,8 +84,11 @@ export class Pedal {
       if (!this.pointers.has(e.pointerId) || this.mode !== 'touch') return;
       e.preventDefault();
       const h = this.body.getBoundingClientRect().height || 1;
-      const gain = 1 / (this.opts.response ?? 1);   // slower pedal = more thumb per unit
-      const v = this._grabValue + ((e.clientY - this._grabY) / h) / Math.max(0.35, gain * 0.9);
+      // One body height is one full travel. Gearing it down would give finer
+      // control but would also put the floor out of reach in a single stroke,
+      // and you need the floor to change gear. Fineness comes from the body
+      // being tall and from the practice speed, not from gearing.
+      const v = this._grabValue + (e.clientY - this._grabY) / h;
       this.value = Math.max(0, Math.min(1, v));
       this._dirty = true;
     };
