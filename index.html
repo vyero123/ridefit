@@ -27,6 +27,7 @@
       <p>Knowing that 2,300&nbsp;rpm is a reasonable moment to change up takes a minute to learn. <b>Coordinating the clutch and the throttle takes weeks</b> — and that is what nearly all of this is about: finding the friction zone, handing off between the two pedals, and letting the clutch back out in gear without the car juddering or stalling.</p>
       <p class="from-bike">If you ride, the revs and the blip already make sense to you. What does not transfer is that a car's clutch is <b>dry</b>: no oil, no cooling, and far less tolerance of being slipped. Drills 1&ndash;5 and the reference section are about exactly that difference.</p>
     </div>
+    <p class="speed-intro">Everything runs at <b>0.4× real time</b> to begin with, so the timing is catchable while you learn it. There is a speed control in each drill — wind it up towards 1× as it stops needing to be slow. A real car gives you no such option, which is rather the point.</p>
     <div id="drill-list" class="drill-list"></div>
     <p class="disclaimer">
       One invented, clearly stated car. Real pedals, bite points and shift points vary enormously, so everything here is a <b>range and a principle</b>, not your car's numbers. For use at home — never while driving.
@@ -58,6 +59,7 @@
         <button class="link-back" id="back-btn">‹ Exit</button>
         <span id="run-title" class="run-title"></span>
         <span id="grade-note" class="grade-note" hidden></span>
+        <span class="speed-wrap"><span class="speed-label">SPEED</span><span class="speed-pick"></span></span>
         <button class="sound" id="sound-btn">Sound on</button>
       </div>
 
@@ -71,6 +73,7 @@
 
       <!-- middle: what the car is doing -->
       <div class="centre-bay">
+        <div class="speed-note" id="speed-note"></div>
         <div class="instruction" id="instruction">
           <b id="ins-title"></b>
           <span id="ins-detail"></span>

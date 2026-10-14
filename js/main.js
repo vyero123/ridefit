@@ -1,6 +1,6 @@
 // main.js — app shell: views, drill flow, the loop.
 
-import { CAR, CLUTCH } from './car.js';
+import { CAR, CLUTCH, SPEEDS, DEFAULT_SPEED } from './car.js';
 import { Sim } from './sim.js';
 import { Cluster } from './instruments.js';
 import { Gate } from './gate.js';
@@ -18,6 +18,8 @@ const LEVEL_WORD = { good: 'Good', ok: 'Fine', off: 'Off', bad: 'Harmful', damag
 const app = {
   sim: new Sim(),
   audio: new EngineAudio(),
+  timeScale: SPEEDS.find((s) => s.id === DEFAULT_SPEED).scale,
+  speedId: DEFAULT_SPEED,
   drill: null, drillClass: null,
   cluster: null, gate: null,
   running: false,
@@ -165,8 +167,15 @@ function drainEvents() {
   }
 }
 
+/**
+ * One step of the world. `dt` is real seconds; everything below runs in
+ * simulation seconds, which is where every threshold and every measurement
+ * lives. Scaling here and nowhere else is what keeps the verdicts honest at
+ * any practice speed.
+ */
 function advance(dt) {
   if (!app.running) return;
+  dt = dt * app.timeScale;
   app.clutch.tick(dt);
   app.throttle.tick(dt);
   app.brakePedal.tick(dt);
@@ -235,6 +244,30 @@ function renderWarnings() {
   $('#restart-btn').hidden = !app.sim.stalled;
 }
 
+/* ----------------------------------------------------- practice speed */
+
+function setSpeed(id) {
+  const s = SPEEDS.find((x) => x.id === id) || SPEEDS[0];
+  app.speedId = s.id;
+  app.timeScale = s.scale;
+  $$('.speed-pick button').forEach((b) => b.classList.toggle('is-on', b.dataset.speed === s.id));
+  $('#speed-note').textContent = s.note;
+  try { localStorage.setItem('shift.speed', s.id); } catch (e) { /* private mode */ }
+}
+
+function buildSpeedPicker() {
+  const host = $('.speed-pick');
+  host.innerHTML = SPEEDS.map((s) =>
+    `<button data-speed="${s.id}" title="${s.note}">${s.label}</button>`).join('');
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) setSpeed(b.dataset.speed);
+  });
+  let saved = DEFAULT_SPEED;
+  try { saved = localStorage.getItem('shift.speed') || DEFAULT_SPEED; } catch (e) { /* private mode */ }
+  setSpeed(saved);
+}
+
 /* ------------------------------------------------------- reference */
 
 function renderReference() {
@@ -258,7 +291,7 @@ function init() {
   app.clutch = new Pedal($('#clutch'), {
     label: 'CLUTCH', sub: 'hold to press',
     zones: CLUTCH_ZONES, downRate: 3.4, upRate: 1.7, cls: 'is-clutch',
-    fineZone: [CLUTCH.biteStart - 0.05, CLUTCH.biteEnd + 0.05], fineFactor: 0.6,
+    fineZone: [CLUTCH.biteStart - 0.05, CLUTCH.biteEnd + 0.05], fineFactor: 0.4,
   }, (v) => app.sim.setClutch(v));
 
   app.throttle = new Pedal($('#throttle'), {
@@ -299,6 +332,7 @@ function init() {
     else { app.audio.enable(); e.currentTarget.classList.add('is-on'); e.currentTarget.textContent = 'Sound on'; }
   });
   $('#sound-btn').classList.add('is-on');
+  buildSpeedPicker();
 
   const keys = { ' ': 'clutch', c: 'clutch', x: 'throttle', z: 'brake' };
   addEventListener('keydown', (e) => {

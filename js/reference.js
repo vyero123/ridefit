@@ -48,6 +48,16 @@ export const REFERENCE = [
       <p>Note the asymmetry a rider needs to internalise: the mistake that <i>feels</i> worst — stalling — is free, and the one that feels like competent smooth driving is what wears the clutch out.</p>`,
   },
   {
+    id: 'speed',
+    title: 'Why it runs slower than a real car',
+    body: () => `
+      <p>The drills default to <b>0.4× real time</b>, and the speed control sits in the top bar of every drill.</p>
+      <p>The reason is that the useful part of a clutch release lasts under a second in a real car, and a thumb on a screen cannot resolve it. Slowed down, you can feel yourself crossing the friction zone and still have time to do something about it.</p>
+      <p>What is slowed is <b>everything, together</b> — pedals, engine response, how fast the revs fall, how quickly the car gathers speed. That matters: slowing only the controls would put them out of step with the car, and the relationship between the two is the entire thing you are here to learn. Because the scale is uniform, the same sequence of pedal movements gives exactly the same result at any speed; you just have more real seconds in which to make it.</p>
+      <p>Everything the app measures — slip seconds, clutch heat, how long the pedal was down, the size of the take-up jolt — is counted in the car's own time, not yours. A verdict means the same thing at 0.4× as at 1×.</p>
+      <p class="caveat"><b>Wind it up as you improve.</b> 0.4× is a long way from a real car, and the gap between them is real work. The friction zone has <i>not</i> been widened to help — it is the same fraction of pedal travel it would be in the car, which is to say narrower than you would like.</p>`,
+  },
+  {
     id: 'car',
     title: 'The car being modelled',
     body: () => `

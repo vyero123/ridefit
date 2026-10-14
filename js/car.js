@@ -62,6 +62,27 @@ export const CAR = {
 
 export const GEAR_NAMES = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6' };
 
+/**
+ * Practice speed. The whole world runs at this fraction of real time —
+ * pedals, engine, how fast the revs fall, how fast the car gathers speed.
+ *
+ * It has to be all of them together. Slowing only the pedals would put the
+ * controls out of step with the car, and the thing being learned here is
+ * precisely the relationship between the two. Because the scale is uniform,
+ * a given sequence of pedal movements produces exactly the same outcome at
+ * any speed — you simply have more real seconds in which to make it.
+ *
+ * Everything the app measures (slip seconds, clutch heat, hold times, the
+ * take-up jolt) is computed from simulation time, so the verdicts mean the
+ * same thing at every setting.
+ */
+export const SPEEDS = [
+  { id: 'slow', scale: 0.4, label: '0.4×', note: 'Practice — well slower than a real car' },
+  { id: 'mid', scale: 0.6, label: '0.6×', note: 'Closing on real time' },
+  { id: 'real', scale: 1.0, label: '1×', note: 'Real time — what the car actually does' },
+];
+export const DEFAULT_SPEED = 'slow';
+
 /** Total reduction from crank to wheel for a gear. 0 (neutral) has none. */
 export function totalRatio(gear) {
   if (gear === 0) return 0;

@@ -18,6 +18,21 @@ Landscape, laid out the way the car is: **pedals under the left thumb, gear
 lever under the right, instruments between them.** Portrait asks you to
 rotate, with an upright fallback for anyone who would rather not.
 
+## Practice speed
+
+The whole world runs at **0.4× real time** by default, selectable per drill
+at 0.4× / 0.6× / 1×. What is slowed is everything together — pedals, engine
+response, how fast the revs fall, how quickly the car gathers speed — because
+slowing only the controls would put them out of step with the car, and the
+relationship between the two is the thing being learned.
+
+Because the scale is uniform, the same sequence of pedal movements gives the
+same result at any speed; you simply have more real seconds in which to make
+it. Every measurement — slip seconds, clutch heat, pedal-down time, take-up
+jolt — is counted in simulation time, so a verdict means the same thing at
+0.4× as at 1×. All ten drills have been run end to end at 0.4×, 0.6× and 1×
+and produce identical outcomes.
+
 ## Controls
 
 Pedals are **pressed, not dragged**: hold to push one down, let go and it

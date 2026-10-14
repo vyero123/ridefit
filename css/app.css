@@ -79,6 +79,10 @@ b, strong { color: var(--ink-bright); font-weight: 650; }
   border-left: 2px solid var(--accent); background: rgba(111,183,232,0.05);
   padding: 9px 11px; border-radius: 0 6px 6px 0;
 }
+.speed-intro {
+  font-size: 13px; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--hairline); border-radius: 9px; padding: 9px 11px; margin-top: 14px;
+}
 .disclaimer { margin-top: 20px; font-size: 12px; color: var(--ink-dim); border-top: 1px solid var(--hairline); padding-top: 12px; }
 .link-back { appearance: none; background: none; border: 0; color: var(--accent); font: inherit; font-size: 14px; padding: 4px 0; margin-bottom: 8px; cursor: pointer; }
 
@@ -146,6 +150,20 @@ body.in-run main { max-width: none; padding: 0; margin: 0; }
   color: var(--ink-dim); font: inherit; font-size: 10px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
 }
 .sound.is-on { color: var(--go); border-color: var(--go); }
+
+/* Practice speed. Default is well below real time: the point is to make the
+   timing catchable, then wind it up as it stops needing to be. */
+.speed-wrap { display: flex; align-items: center; gap: 5px; flex: none; }
+.speed-label { font-size: 8px; letter-spacing: 0.12em; color: var(--ink-dim); font-weight: 700; }
+.speed-pick { display: flex; border: 1px solid var(--hairline); border-radius: 6px; overflow: hidden; }
+.speed-pick button {
+  appearance: none; background: none; border: 0; border-right: 1px solid var(--hairline);
+  color: var(--ink-dim); font: inherit; font-size: 10px; font-weight: 700;
+  padding: 4px 7px; cursor: pointer;
+}
+.speed-pick button:last-child { border-right: 0; }
+.speed-pick button.is-on { background: var(--accent); color: #07243a; }
+.speed-note { font-size: 9.5px; color: var(--ink-dim); letter-spacing: 0.01em; padding: 0 2px; }
 
 /* ---- pedals (left thumb) ---- */
 
