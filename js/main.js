@@ -96,7 +96,7 @@ function startRun() {
 function stopRun() {
   app.running = false;
   const d = app.drill;
-  const notes = habitNotes(app.sim);
+  const notes = habitNotes(app.sim, d.attempts);
   $('#report-title').textContent = d.title;
   const attempts = d.attempts.length
     ? d.attempts.map(cardHtml).join('')

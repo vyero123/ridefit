@@ -131,7 +131,7 @@ export function judgeRelease(rel) {
 }
 
 /** Standing habit notes drawn from the accumulators, shown after a drill. */
-export function habitNotes(sim) {
+export function habitNotes(sim, attempts = []) {
   const out = [];
   if (sim.moneyShifted) out.push({
     level: 'bad',
@@ -161,7 +161,16 @@ export function habitNotes(sim) {
     level: 'off',
     text: `About ${(sim.slipEnergy / 1000).toFixed(0)} kJ went into the clutch as slip heat this run. A launch unavoidably costs 10–20 kJ; much more than that usually means one long, drawn-out release rather than several short ones.`,
   });
-  if (!out.length) out.push({ level: 'good', text: 'No bad habits recorded this run: no lugging, no over-rev, no clutch riding.' });
+  if (!out.length) {
+    // Don't declare a clean sheet if individual changes were judged harshly:
+    // the accumulators only catch sustained habits, not single bad moments.
+    const rough = attempts.filter((a) => a.level === 'bad' || a.level === 'damage').length;
+    if (rough) out.push({
+      level: 'off',
+      text: `No sustained bad habits — no lugging, no clutch riding, nothing held down — but ${rough} ${rough === 1 ? 'change was' : 'changes were'} marked harmful above. Those are single moments rather than habits, and single moments are what break things.`,
+    });
+    else out.push({ level: 'good', text: 'No bad habits recorded this run: no lugging, no over-rev, no clutch riding, and nothing held at a standstill.' });
+  }
   return out;
 }
 
